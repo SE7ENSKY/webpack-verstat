@@ -1,0 +1,7 @@
+{
+  "name": "bemto-loader",
+  "version": "1.0.0",
+  "dependencies": {
+    "strman": "^2.0.0"
+  }
+}

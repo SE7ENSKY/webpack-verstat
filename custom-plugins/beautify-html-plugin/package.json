@@ -1,0 +1,7 @@
+{
+  "name": "beautify-html-plugin",
+  "version": "1.0.0",
+  "dependencies": {
+    "pretty": "^2.0.0"
+  }
+}

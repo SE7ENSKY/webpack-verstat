@@ -1,0 +1,25 @@
+include ../vendor/bemto/bemto.pug
+
+- var file = {}
+- var global = {}
+if htmlWebpackPlugin.options.getTemplateData()
+  - var file = JSON.parse(htmlWebpackPlugin.options.getTemplateData())
+if htmlWebpackPlugin.options.getGlobalData()
+  - var global = JSON.parse(Object.assign({}, ...htmlWebpackPlugin.options.getGlobalData()))
+
+
+doctype html
+html
+  head
+    meta(charset="UTF-8")
+    meta(content="width=device-width, initial-scale=1" name="viewport")
+    meta(name="theme-color" content="#1073fb")
+    if file.title
+        title!= file.title
+    block styles
+
+  body
+    block root
+
+    block scripts
+    block analytics
