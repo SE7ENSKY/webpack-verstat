@@ -1,12 +1,7 @@
 include ../vendor/bemto/bemto.pug
 
-- var file = {}
-- var global = {}
-if htmlWebpackPlugin.options.getTemplateData()
-  - var file = JSON.parse(htmlWebpackPlugin.options.getTemplateData())
-if htmlWebpackPlugin.options.getGlobalData()
-  - var global = JSON.parse(Object.assign({}, ...htmlWebpackPlugin.options.getGlobalData()))
-
+- var file = htmlWebpackPlugin.options.getLocalData()
+- var global = htmlWebpackPlugin.options.getGlobalData()
 
 doctype html
 html

@@ -16,6 +16,7 @@ const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index
 // const ExtractTextPlugin = require('extract-text-webpack-plugin');
 // const CopyWebpackPlugin = require('copy-webpack-plugin'); // install
 
+const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
 
 const config = {
   entry: {
@@ -36,30 +37,22 @@ const config = {
       {
         test: /\.yaml$/,
         // include: path.resolve('data'), // ?
-        use: {
-          loader: 'yaml-loader',
-        },
+        use: { loader: 'yaml-loader' },
       },
       {
         test: /\.coffee$/,
-        use: {
-          loader: 'coffee-loader',
-        },
+        use: { loader: 'coffee-loader' },
       },
       {
         test: /\.html$/,
         use: {
           loader: 'html-loader',
-          options: {
-            minimize: false,
-          },
+          options: { minimize: false },
         },
       },
       {
         test: /\.pug$/,
-        use: {
-          loader: 'pug-loader',
-        },
+        use: { loader: 'pug-loader' },
       },
       {
         test: /\.js$/,
@@ -88,10 +81,10 @@ const config = {
 };
 
 glob.sync(`${path.resolve(__dirname, '../src/layouts')}/!(main|root).pug`).forEach((item) => {
-  const fileBaseName = path.basename(item, '.pug').replace('frontPage', 'index');
+  const templateFileBaseName = path.basename(item, '.pug').replace('frontPage', 'index');
   config.plugins.push(
     new HtmlWebpackPlugin({
-      filename: `${fileBaseName}.html`,
+      filename: `${templateFileBaseName}.html`,
       template: item,
       minify: {
         removeComments: true,
@@ -99,20 +92,23 @@ glob.sync(`${path.resolve(__dirname, '../src/layouts')}/!(main|root).pug`).forEa
       showErrors: false,
       renderBlock: (blockName, data) => {
         const compileTemplate = (mod, block) => {
-          const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
           return pug.compile(`${mod}\n${readFile(`${path.resolve(__dirname, '../src/components')}/${block}/${block}.pug`)}`);
         };
-
         data.renderBlock = (blockName, data) => compileTemplate(bemto, blockName)(data);
         return compileTemplate(bemto, blockName)(data);
       },
-      getTemplateData: () => {
-        const dataFile = `${path.resolve(__dirname, '../src/data')}/${fileBaseName}.json`;
-        const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
-
-        if (fs.existsSync(dataFile)) return readFile(dataFile);
+      getLocalData: () => {
+        const dataFile = `${path.resolve(__dirname, '../src/data/local')}/${templateFileBaseName}.json`;
+        return fs.existsSync(dataFile) ? JSON.parse(readFile(dataFile)) : {};
       },
-      getGlobalData: () => {},
+      getGlobalData: () => {
+        const globalData = glob.sync(`${path.resolve(__dirname, '../src/data/global')}/*.json`).map((file) => {
+          const obj = {};
+          obj[path.basename(file, '.json')] = JSON.parse(readFile(file));
+          return obj;
+        });
+        return globalData.length ? Object.assign({}, ...globalData) : {};
+      },
     })
   );
 });
