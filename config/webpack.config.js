@@ -9,34 +9,28 @@ const path = require('path');
 const glob = require('glob');
 const fs = require('fs');
 const pug = require('pug');
+const YAML = require('yamljs');
+// const cssnano = require('cssnano');
+// const autoprefixer = require('autoprefixer'); // ?
 const bemto = require('../src/vendor/bemto/bemto.js');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index');
-// const ROOT = path.resolve('node_modules').replace('node_modules', '');
 // const ExtractTextPlugin = require('extract-text-webpack-plugin');
+// const extractCSS = new ExtractTextPlugin('[name].bundle.css'); // ?
+
 // const CopyWebpackPlugin = require('copy-webpack-plugin'); // install
+// const ROOT = path.resolve('node_modules').replace('node_modules', '');
 
 const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
-const appPaths = {
-  webpackPaths: {
-    context: path.resolve(__dirname, '../src'),
-    output: path.resolve(__dirname, '../dist'),
-  },
-  dirPaths: {
-    layouts: `${path.resolve(__dirname, '../src/layouts')}/!(main|root).pug`,
-    getComponent: fileName => `${path.resolve(__dirname, '../src/components')}/${fileName}/${fileName}.pug`,
-    getLocalDataFile: fileName => `${path.resolve(__dirname, '../src/data/local')}/${fileName}.json`,
-    globalDataFiles: `${path.resolve(__dirname, '../src/data/global')}/*.json`,
-  },
-};
+const basePath = path.resolve(__dirname, '../');
 
 const config = {
-  context: appPaths.webpackPaths.context,
+  context: `${basePath}/src`,
   entry: {
     main: './main.js',
   },
   output: {
-    path: appPaths.webpackPaths.output,
+    path: `${basePath}/dist`,
     publicPath: '/assets/',
     filename: 'main.js',
   },
@@ -47,24 +41,88 @@ const config = {
   // },
   module: {
     rules: [
+      // {
+      //   test: /\.(eot|woff2?|otf|ttf|svg)/,
+      //   include: path.resolve(__dirname, '../src/static/f'),
+      //   loader: 'file?name=f/[name].[ext]&publicPath=./',
+      // },
+      // {
+      //   test: /\.(png|jpe?g|svg|gif)$/,
+      //   loader: 'file?name=i/[name].[ext]',
+      // },
+      // {
+      //   test: /\.mp4$/,
+      //   loader: 'file?mimetype=video/mp4',
+      // },
       {
-        test: /\.yaml$/,
-        use: { loader: 'yaml-loader' },
+        test: /\.txt$/,
+        use: {
+          loader: 'raw-loader',
+        },
       },
       {
-        test: /\.coffee$/,
-        use: { loader: 'coffee-loader' },
+        test: /\.yaml$/,
+        use: {
+          loader: 'yaml-loader',
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+        ],
+      },
+      {
+        test: /\.(sass|scss)$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          'sass-loader',
+        ],
+      },
+      {
+        test: /\.less$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          'less-loader',
+        ],
+      },
+      {
+        test: /\.styl$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: 'stylus-loader',
+            options: {
+              use: [require('nib')()],
+              import: ['~nib/lib/nib/index.styl'],
+            },
+          },
+        ],
       },
       {
         test: /\.html$/,
         use: {
           loader: 'html-loader',
-          options: { minimize: false },
+          options: {
+            minimize: false,
+          },
         },
       },
       {
-        test: /\.pug$/,
-        use: { loader: 'pug-loader' },
+        test: /\.(pug|jade)$/,
+        use: {
+          loader: 'pug-loader',
+        },
+      },
+      {
+        test: /\.coffee$/,
+        use: {
+          loader: 'coffee-loader',
+        },
       },
       {
         test: /\.js$/,
@@ -91,27 +149,49 @@ const config = {
   ],
 };
 
-glob.sync(appPaths.dirPaths.layouts).forEach((item) => {
-  const templateFileBaseName = path.basename(item, '.pug').replace('frontPage', 'index');
+glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => {
+  const templateFileBaseName = path.basename(item, path.extname(item)).replace('frontPage', 'index');
   config.plugins.push(
     new HtmlWebpackPlugin({
       filename: `${templateFileBaseName}.html`,
       template: item,
-      minify: { removeComments: true },
+      minify: {
+        removeComments: true,
+      },
       showErrors: false,
       renderBlock: (blockName, data) => {
-        const compileTemplate = (mod, block) => pug.compile(`${mod}\n${readFile(appPaths.dirPaths.getComponent(block))}`);
+        const compileTemplate = (mod, block) => {
+          const blockFile = glob.sync(`${basePath}/src/components/${block}/${block}.?(pug|jade)`);
+          if (blockFile.length) {
+            return pug.compile(`${mod}\n${readFile(blockFile[0])}`);
+          }
+        };
         data.renderBlock = (blockName, data) => compileTemplate(bemto, blockName)(data);
         return compileTemplate(bemto, blockName)(data);
       },
       getLocalData: () => {
-        const dataFile = appPaths.dirPaths.getLocalDataFile(templateFileBaseName);
-        return fs.existsSync(dataFile) ? JSON.parse(readFile(dataFile)) : {};
+        const dataFile = glob.sync(`${basePath}/src/data/local/${templateFileBaseName}.?(json|yml)`);
+        if (dataFile.length) {
+          switch (path.extname(dataFile[0])) {
+            case '.json':
+              return JSON.parse(readFile(dataFile[0]));
+            case '.yml':
+              return YAML.parse(readFile(dataFile[0]));
+          }
+        }
+        return {};
       },
       getGlobalData: () => {
-        const globalDataFiles = glob.sync(appPaths.dirPaths.globalDataFiles).map((file) => {
+        const globalDataFiles = glob.sync(`${basePath}/src/data/global/*.?(json|yml)`).map((file) => {
           const obj = {};
-          obj[path.basename(file, '.json')] = JSON.parse(readFile(file));
+          switch (path.extname(file)) {
+            case '.json':
+              obj[path.basename(file, '.json')] = JSON.parse(readFile(file));
+              break;
+            case '.yml':
+              obj[path.basename(file, '.yml')] = YAML.parse(readFile(file));
+              break;
+          }
           return obj;
         });
         return globalDataFiles.length ? Object.assign({}, ...globalDataFiles) : {};
