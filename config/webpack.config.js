@@ -17,13 +17,26 @@ const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index
 // const CopyWebpackPlugin = require('copy-webpack-plugin'); // install
 
 const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
+const appPaths = {
+  webpackPaths: {
+    context: path.resolve(__dirname, '../src'),
+    output: path.resolve(__dirname, '../dist'),
+  },
+  dirPaths: {
+    layouts: `${path.resolve(__dirname, '../src/layouts')}/!(main|root).pug`,
+    getComponent: fileName => `${path.resolve(__dirname, '../src/components')}/${fileName}/${fileName}.pug`,
+    getLocalDataFile: fileName => `${path.resolve(__dirname, '../src/data/local')}/${fileName}.json`,
+    globalDataFiles: `${path.resolve(__dirname, '../src/data/global')}/*.json`,
+  },
+};
 
 const config = {
+  context: appPaths.webpackPaths.context,
   entry: {
-    main: path.resolve(__dirname, '../src/main.js'),
+    main: './main.js',
   },
   output: {
-    path: path.resolve(__dirname, '../dist'),
+    path: appPaths.webpackPaths.output,
     publicPath: '/assets/',
     filename: 'main.js',
   },
@@ -36,7 +49,6 @@ const config = {
     rules: [
       {
         test: /\.yaml$/,
-        // include: path.resolve('data'), // ?
         use: { loader: 'yaml-loader' },
       },
       {
@@ -74,40 +86,35 @@ const config = {
     new webpack.ProvidePlugin({
       $: 'jquery',
       jQuery: 'jquery',
-      _: 'lodash', // поштучно!
     }),
     // new webpack.optimize.CommonsChunkPlugin(options),
   ],
 };
 
-glob.sync(`${path.resolve(__dirname, '../src/layouts')}/!(main|root).pug`).forEach((item) => {
+glob.sync(appPaths.dirPaths.layouts).forEach((item) => {
   const templateFileBaseName = path.basename(item, '.pug').replace('frontPage', 'index');
   config.plugins.push(
     new HtmlWebpackPlugin({
       filename: `${templateFileBaseName}.html`,
       template: item,
-      minify: {
-        removeComments: true,
-      },
+      minify: { removeComments: true },
       showErrors: false,
       renderBlock: (blockName, data) => {
-        const compileTemplate = (mod, block) => {
-          return pug.compile(`${mod}\n${readFile(`${path.resolve(__dirname, '../src/components')}/${block}/${block}.pug`)}`);
-        };
+        const compileTemplate = (mod, block) => pug.compile(`${mod}\n${readFile(appPaths.dirPaths.getComponent(block))}`);
         data.renderBlock = (blockName, data) => compileTemplate(bemto, blockName)(data);
         return compileTemplate(bemto, blockName)(data);
       },
       getLocalData: () => {
-        const dataFile = `${path.resolve(__dirname, '../src/data/local')}/${templateFileBaseName}.json`;
+        const dataFile = appPaths.dirPaths.getLocalDataFile(templateFileBaseName);
         return fs.existsSync(dataFile) ? JSON.parse(readFile(dataFile)) : {};
       },
       getGlobalData: () => {
-        const globalData = glob.sync(`${path.resolve(__dirname, '../src/data/global')}/*.json`).map((file) => {
+        const globalDataFiles = glob.sync(appPaths.dirPaths.globalDataFiles).map((file) => {
           const obj = {};
           obj[path.basename(file, '.json')] = JSON.parse(readFile(file));
           return obj;
         });
-        return globalData.length ? Object.assign({}, ...globalData) : {};
+        return globalDataFiles.length ? Object.assign({}, ...globalDataFiles) : {};
       },
     })
   );
