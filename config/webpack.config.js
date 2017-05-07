@@ -15,11 +15,8 @@ const YAML = require('yamljs');
 const bemto = require('../src/vendor/bemto/bemto.js');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index');
-// const ExtractTextPlugin = require('extract-text-webpack-plugin');
-// const extractCSS = new ExtractTextPlugin('[name].bundle.css'); // ?
-
-// const CopyWebpackPlugin = require('copy-webpack-plugin'); // install
-// const ROOT = path.resolve('node_modules').replace('node_modules', '');
+const ExtractTextPlugin = require('extract-text-webpack-plugin'); // production
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
 const basePath = path.resolve(__dirname, '../');
@@ -32,7 +29,7 @@ const config = {
   output: {
     path: `${basePath}/dist`,
     publicPath: '/assets/',
-    filename: 'main.js',
+    filename: 'assets/main.min.js',
   },
   // devtool: 'cheap-module-source-map', // development
   // devtool: 'source-map', // production
@@ -41,19 +38,37 @@ const config = {
   // },
   module: {
     rules: [
-      // {
-      //   test: /\.(eot|woff2?|otf|ttf|svg)/,
-      //   include: path.resolve(__dirname, '../src/static/f'),
-      //   loader: 'file?name=f/[name].[ext]&publicPath=./',
-      // },
-      // {
-      //   test: /\.(png|jpe?g|svg|gif)$/,
-      //   loader: 'file?name=i/[name].[ext]',
-      // },
-      // {
-      //   test: /\.mp4$/,
-      //   loader: 'file?mimetype=video/mp4',
-      // },
+      {
+        test: /\.(eot|woff2?|otf|ttf|svg)/,
+        include: `${basePath}/src/assets/fonts`, // ?
+        loader: 'file-loader',
+        options: {
+          name: './fonts/[name].[ext]', // ?
+          // publicPath: '../', // ?
+        },
+      },
+      {
+        test: /\.(png|jpe?g|svg|gif)$/,
+        include: `${basePath}/src/assets/img`, // ?
+        use: {
+          loader: 'file-loader',
+          options: {
+            name: './img/[name].[ext]', // ?
+            // publicPath: '../', // ?
+          },
+        },
+      },
+      {
+        test: /\.(mp4|webm|wav|mp3|m4a|aac|oga)$/,
+        include: `${basePath}/src/assets/video`, // ?
+        use: {
+          loader: 'file-loader',
+          options: {
+            name: './video/[name].[ext]', // ?
+            // publicPath: '../', // ?
+          },
+        },
+      },
       {
         test: /\.txt$/,
         use: {
@@ -68,40 +83,40 @@ const config = {
       },
       {
         test: /\.css$/,
-        use: [
-          'style-loader',
-          'css-loader',
-        ],
+        use: ExtractTextPlugin.extract({
+          use: ['css-loader'],
+          fallback: 'style-loader',
+        }),
       },
       {
         test: /\.(sass|scss)$/,
-        use: [
-          'style-loader',
-          'css-loader',
-          'sass-loader',
-        ],
+        use: ExtractTextPlugin.extract({
+          use: [
+            'css-loader',
+            'sass-loader',
+          ],
+          fallback: 'style-loader',
+        }),
       },
       {
         test: /\.less$/,
-        use: [
-          'style-loader',
-          'css-loader',
-          'less-loader',
-        ],
+        use: ExtractTextPlugin.extract({
+          use: [
+            'css-loader',
+            'less-loader',
+          ],
+          fallback: 'style-loader',
+        }),
       },
       {
         test: /\.styl$/,
-        use: [
-          'style-loader',
-          'css-loader',
-          {
-            loader: 'stylus-loader',
-            options: {
-              use: [require('nib')()],
-              import: ['~nib/lib/nib/index.styl'],
-            },
-          },
-        ],
+        use: ExtractTextPlugin.extract({
+          use: [
+            'css-loader',
+            'stylus-loader',
+          ],
+          fallback: 'style-loader',
+        }),
       },
       {
         test: /\.html$/,
@@ -145,6 +160,16 @@ const config = {
       $: 'jquery',
       jQuery: 'jquery',
     }),
+    new CopyWebpackPlugin([{ from: `${basePath}/src/assets/!(fonts)/*` }]),
+    new webpack.LoaderOptionsPlugin({
+      options: {
+        stylus: {
+          use: [require('nib')()],
+          import: ['~nib/lib/nib/index.styl'],
+        },
+      },
+    }),
+    new ExtractTextPlugin('assets/main.min.css'),
     // new webpack.optimize.CommonsChunkPlugin(options),
   ],
 };
@@ -153,8 +178,10 @@ glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => 
   const templateFileBaseName = path.basename(item, path.extname(item)).replace('frontPage', 'index');
   config.plugins.push(
     new HtmlWebpackPlugin({
-      filename: `${templateFileBaseName}.html`,
+      filename: `${templateFileBaseName}.html`, // can specify a subdirectory here too
       template: item,
+      // favicon: '', // favicons-webpack-plugin
+      inject: false,
       minify: {
         removeComments: true,
       },

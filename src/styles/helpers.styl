@@ -1,0 +1,20 @@
+.sr-only
+  position absolute
+  width 1px
+  height 1px
+  margin -1px
+  padding 0
+  overflow hidden
+  clip rect(0, 0, 0, 0)
+  border 0
+
+.fade
+  opacity 0
+  transition opacity .15s linear
+  &.in
+    opacity 1
+
+.tab-pane
+  display none
+  &.active
+    display block

@@ -1,0 +1,42 @@
+@import '~normalize.css/normalize.css'
+@import 'typo.styl'
+//@import '../assets/fonts/твій_шрифт/stylesheet.css'
+//@import '../assets/fonts/icons/stylesheet.css'
+@import 'variables.styl'
+@import 'mixins.styl'
+@import 'helpers.styl'
+@import 'buttons.styl'
+@import 'forms.styl'
+@import 'grid.styl'
+
+
+::selection
+  background-color rgba(0, 0, 0, 0.2)
+  color #fff
+::-moz-selection
+  background-color rgba(0, 0, 0, 0.2)
+  color #fff
+
+*
+  font-smoothing antialiased
+  box-sizing border-box
+  &:before
+  &:after
+    box-sizing border-box
+
+html
+body
+  margin 0
+  padding 0
+  height 100%
+
+body
+  position relative
+  display flex
+  flex-direction column
+  font-family mainFont
+  font-size 16px
+  line-height 1.5
+  color siteColor
+  background-color #eceff1
+  -webkit-tap-highlight-color transparent

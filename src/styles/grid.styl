@@ -1,0 +1,44 @@
+.row
+.row-simple
+  display flex
+  flex-wrap wrap
+
+.row
+  margin 0 -15px
+  &_offset
+    &-bottom
+      margin-bottom 30px
+.row-simple
+  margin 0 -6px
+  [class^="col-"]
+  [class*=" col-"]
+    padding 0 6px
+
+for item in 1..12
+  .col-{item}
+    width (100% / 12 * item)%
+    @media phone
+      width 100%
+
+// mobile grid
+for item in 1..12
+  .col-xs-{item}
+    @media phone
+      width (100% / 12 * item)%
+
+// sm grid
+for item in 1..12
+  .col-sm-{item}
+    @media sm
+      width (100% / 12 * item)%
+
+// tablet grid
+for item in 1..12
+  .col-tablet-{item}
+    @media tablet
+      width (100% / 12 * item)%
+
+[class^="col-"]
+[class*=" col-"]
+  padding 0 15px
+  min-height 1px
