@@ -3,6 +3,8 @@
 // TODO зробить розумний svgo
 // TODO перевести на webpack-blocks
 // TODO <link rel="preload"> і загальна оптимізація
+// TODO modernizrrc
+// TODO hash
 
 const webpack = require('webpack');
 const path = require('path');
@@ -11,7 +13,7 @@ const fs = require('fs');
 const pug = require('pug');
 const YAML = require('yamljs');
 // const cssnano = require('cssnano');
-// const autoprefixer = require('autoprefixer'); // ?
+const autoprefixer = require('autoprefixer');
 const bemto = require('../src/vendor/bemto/bemto.js');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index');
@@ -84,8 +86,14 @@ const config = {
       {
         test: /\.css$/,
         use: ExtractTextPlugin.extract({
-          use: ['css-loader'],
-          fallback: 'style-loader',
+          use: [
+            'css-loader',
+            'postcss-loader',
+          ],
+          fallback: [
+            'style-loader',
+            'postcss-loader',
+          ],
         }),
       },
       {
@@ -93,9 +101,13 @@ const config = {
         use: ExtractTextPlugin.extract({
           use: [
             'css-loader',
+            'postcss-loader',
             'sass-loader',
           ],
-          fallback: 'style-loader',
+          fallback: [
+            'style-loader',
+            'postcss-loader',
+          ],
         }),
       },
       {
@@ -103,9 +115,13 @@ const config = {
         use: ExtractTextPlugin.extract({
           use: [
             'css-loader',
+            'postcss-loader',
             'less-loader',
           ],
-          fallback: 'style-loader',
+          fallback: [
+            'style-loader',
+            'postcss-loader'
+          ],
         }),
       },
       {
@@ -115,7 +131,10 @@ const config = {
             'css-loader',
             'stylus-loader',
           ],
-          fallback: 'style-loader',
+          fallback: [
+            'style-loader',
+            'stylus-loader',
+          ],
         }),
       },
       {
@@ -167,9 +186,18 @@ const config = {
           use: [require('nib')()],
           import: ['~nib/lib/nib/index.styl'],
         },
+        postcss: [
+          autoprefixer({
+            browsers: ['last 5 versions'],
+          }),
+        ],
       },
     }),
-    new ExtractTextPlugin('assets/main.min.css'),
+    new ExtractTextPlugin({
+      filename: 'assets/main.min.css',
+      disable: false,
+      allChunks: true,
+    }),
     // new webpack.optimize.CommonsChunkPlugin(options),
   ],
 };
