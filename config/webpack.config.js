@@ -5,6 +5,7 @@
 // TODO <link rel="preload"> і загальна оптимізація
 // TODO modernizrrc
 // TODO hash
+// TODO CSS Modules
 
 const webpack = require('webpack');
 const path = require('path');
@@ -12,7 +13,6 @@ const glob = require('glob');
 const fs = require('fs');
 const pug = require('pug');
 const YAML = require('yamljs');
-// const cssnano = require('cssnano');
 const autoprefixer = require('autoprefixer');
 const bemto = require('../src/vendor/bemto/bemto.js');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -87,7 +87,16 @@ const config = {
         test: /\.css$/,
         use: ExtractTextPlugin.extract({
           use: [
-            'css-loader',
+            // 'css-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                minimize: {
+                  discardComments: { removeAll: true },
+                  discardDuplicates: true,
+                },
+              },
+            },
             'postcss-loader',
           ],
           fallback: [
@@ -100,7 +109,16 @@ const config = {
         test: /\.(sass|scss)$/,
         use: ExtractTextPlugin.extract({
           use: [
-            'css-loader',
+            // 'css-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                minimize: {
+                  discardComments: { removeAll: true },
+                  discardDuplicates: true,
+                },
+              },
+            },
             'postcss-loader',
             'sass-loader',
           ],
@@ -114,13 +132,22 @@ const config = {
         test: /\.less$/,
         use: ExtractTextPlugin.extract({
           use: [
-            'css-loader',
+            // 'css-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                minimize: {
+                  discardComments: { removeAll: true },
+                  discardDuplicates: true,
+                },
+              },
+            },
             'postcss-loader',
             'less-loader',
           ],
           fallback: [
             'style-loader',
-            'postcss-loader'
+            'postcss-loader',
           ],
         }),
       },
@@ -128,7 +155,16 @@ const config = {
         test: /\.styl$/,
         use: ExtractTextPlugin.extract({
           use: [
-            'css-loader',
+            // 'css-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                minimize: {
+                  discardComments: { removeAll: true },
+                  discardDuplicates: true,
+                },
+              },
+            },
             'stylus-loader',
           ],
           fallback: [
