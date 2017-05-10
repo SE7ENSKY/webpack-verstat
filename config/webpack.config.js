@@ -208,6 +208,7 @@ glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => 
         removeComments: true
       },
       showErrors: false,
+      isProduction,
       renderBlock: (blockName, data) => {
         const compileTemplate = (mod, block) => {
           const blockFile = glob.sync(`${basePath}/src/components/${block}/${block}.?(pug|jade)`);
