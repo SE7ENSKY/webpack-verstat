@@ -4,5 +4,8 @@
   ],
   "plugins": [
     "import"
-  ]
+  ],
+  "rules": {
+    "comma-dangle": ["error", "never"]
+  }
 }

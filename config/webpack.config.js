@@ -1,11 +1,13 @@
 // TODO gsap і immutable
 // TODO видалити pretty після npm-релізу
-// TODO зробить розумний svgo
+// TODO зробить розумний svgo ?
 // TODO перевести на webpack-blocks
 // TODO <link rel="preload"> і загальна оптимізація
 // TODO modernizrrc
-// TODO hash
-// TODO CSS Modules
+// TODO CSS Modules ?
+// TODO purifycss-webpack ?
+// TODO prepack-webpack-plugin ?
+// TODO допилить development server і hmr
 
 const webpack = require('webpack');
 const path = require('path');
@@ -17,182 +19,124 @@ const autoprefixer = require('autoprefixer');
 const bemto = require('../src/vendor/bemto/bemto.js');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index');
-const ExtractTextPlugin = require('extract-text-webpack-plugin'); // production
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
 const basePath = path.resolve(__dirname, '../');
+const isProduction = process.env.NODE_ENV === 'production';
+const developmentServerConfig = {
+  contentBase: `${basePath}/dist`,
+  historyApiFallback: {
+    disableDotRule: true
+  },
+  compress: false,
+  hot: false,
+  // open: true, // HMR
+  inline: true,
+  host: 'localhost',
+  port: 8080,
+  stats: {
+    colors: true
+  }
+};
+const cssDevelopmentLoaders = ['style-loader', 'css-loader', 'postcss-loader'];
+const sassDevelopmentLoaders = [...cssDevelopmentLoaders, 'sass-loader'];
+const lessDevelopmentLoaders = [...cssDevelopmentLoaders, 'less-loader'];
+const stylusDevelopmentLoaders = [...cssDevelopmentLoaders.filter(value => value !== 'postcss-loader'), 'stylus-loader'];
+const cssProductionLoaders = {
+  use: [
+    {
+      loader: 'css-loader',
+      options: {
+        minimize: {
+          discardComments: {
+            removeAll: true
+          },
+          discardDuplicates: true
+        }
+      }
+    },
+    'postcss-loader'
+  ],
+  fallback: [
+    'style-loader',
+    'postcss-loader'
+  ]
+};
+const sassProductionLoaders = Object.assign(
+  {},
+  cssProductionLoaders,
+  { use: [...cssProductionLoaders.use, 'sass-loader'] }
+);
+const lessProductionLoaders = Object.assign(
+  {},
+  cssProductionLoaders,
+  { use: [...cssProductionLoaders.use, 'less-loader'] }
+);
+const stylusProductionLoaders = Object.assign(
+  {},
+  cssProductionLoaders,
+  {
+    use: [...cssProductionLoaders.use.filter(value => value !== 'postcss-loader'), 'stylus-loader'],
+    fallback: [...cssProductionLoaders.fallback.filter(value => value !== 'postcss-loader'), 'stylus-loader']
+  }
+);
 
 const config = {
   context: `${basePath}/src`,
-  entry: {
-    main: './main.js',
-  },
+  entry: ['./main.js'],
   output: {
     path: `${basePath}/dist`,
     publicPath: '/assets/',
-    filename: 'assets/main.min.js',
+    // publicPath: '/', // HMR
+    filename: isProduction ? 'assets/main.min.js' : 'assets/[name].min.[hash].js'
   },
-  // devtool: 'cheap-module-source-map', // development
-  // devtool: 'source-map', // production
-  // resolveLoader: {
-  //   modules: ['node_modules', 'custom-loaders'],
-  // },
+  devtool: isProduction ? 'cheap-module-source-map' : 'source-map',
+  devServer: developmentServerConfig,
   module: {
     rules: [
       {
-        test: /\.(eot|woff2?|otf|ttf|svg)/,
-        include: `${basePath}/src/assets/fonts`, // ?
-        loader: 'file-loader',
-        options: {
-          name: './fonts/[name].[ext]', // ?
-          // publicPath: '../', // ?
-        },
-      },
-      {
-        test: /\.(png|jpe?g|svg|gif)$/,
-        include: `${basePath}/src/assets/img`, // ?
-        use: {
-          loader: 'file-loader',
-          options: {
-            name: './img/[name].[ext]', // ?
-            // publicPath: '../', // ?
-          },
-        },
-      },
-      {
-        test: /\.(mp4|webm|wav|mp3|m4a|aac|oga)$/,
-        include: `${basePath}/src/assets/video`, // ?
-        use: {
-          loader: 'file-loader',
-          options: {
-            name: './video/[name].[ext]', // ?
-            // publicPath: '../', // ?
-          },
-        },
-      },
-      {
         test: /\.txt$/,
-        use: {
-          loader: 'raw-loader',
-        },
+        use: 'raw-loader'
       },
       {
         test: /\.yaml$/,
-        use: {
-          loader: 'yaml-loader',
-        },
+        use: 'yaml-loader'
       },
       {
         test: /\.css$/,
-        use: ExtractTextPlugin.extract({
-          use: [
-            // 'css-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                minimize: {
-                  discardComments: { removeAll: true },
-                  discardDuplicates: true,
-                },
-              },
-            },
-            'postcss-loader',
-          ],
-          fallback: [
-            'style-loader',
-            'postcss-loader',
-          ],
-        }),
+        use: isProduction ? ExtractTextPlugin.extract(cssProductionLoaders) : cssDevelopmentLoaders
       },
       {
         test: /\.(sass|scss)$/,
-        use: ExtractTextPlugin.extract({
-          use: [
-            // 'css-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                minimize: {
-                  discardComments: { removeAll: true },
-                  discardDuplicates: true,
-                },
-              },
-            },
-            'postcss-loader',
-            'sass-loader',
-          ],
-          fallback: [
-            'style-loader',
-            'postcss-loader',
-          ],
-        }),
+        use: isProduction ? ExtractTextPlugin.extract(sassProductionLoaders) : sassDevelopmentLoaders
       },
       {
         test: /\.less$/,
-        use: ExtractTextPlugin.extract({
-          use: [
-            // 'css-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                minimize: {
-                  discardComments: { removeAll: true },
-                  discardDuplicates: true,
-                },
-              },
-            },
-            'postcss-loader',
-            'less-loader',
-          ],
-          fallback: [
-            'style-loader',
-            'postcss-loader',
-          ],
-        }),
+        use: isProduction ? ExtractTextPlugin.extract(lessProductionLoaders) : lessDevelopmentLoaders
       },
       {
         test: /\.styl$/,
-        use: ExtractTextPlugin.extract({
-          use: [
-            // 'css-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                minimize: {
-                  discardComments: { removeAll: true },
-                  discardDuplicates: true,
-                },
-              },
-            },
-            'stylus-loader',
-          ],
-          fallback: [
-            'style-loader',
-            'stylus-loader',
-          ],
-        }),
+        use: isProduction ? ExtractTextPlugin.extract(stylusProductionLoaders) : stylusDevelopmentLoaders
       },
       {
         test: /\.html$/,
         use: {
           loader: 'html-loader',
           options: {
-            minimize: false,
-          },
-        },
+            minimize: false
+          }
+        }
       },
       {
         test: /\.(pug|jade)$/,
-        use: {
-          loader: 'pug-loader',
-        },
+        use: 'pug-loader'
       },
       {
         test: /\.coffee$/,
-        use: {
-          loader: 'coffee-loader',
-        },
+        use: 'coffee-loader'
       },
       {
         test: /\.js$/,
@@ -203,39 +147,52 @@ const config = {
             cacheDirectory: true,
             babelrc: false,
             plugins: ['transform-runtime'],
-            presets: [['es2015', { loose: true, modules: false }]],
-          },
-        },
-      },
-    ],
+            presets: [['es2015', { loose: true, modules: false }]]
+          }
+        }
+      }
+    ]
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env': {
+        'NODE_ENV': process.env.NODE_ENV ? process.env.NODE_ENV : 'production'
+      }
+    }),
     new webpack.NoEmitOnErrorsPlugin(),
     new webpack.ProvidePlugin({
       $: 'jquery',
-      jQuery: 'jquery',
+      jQuery: 'jquery'
     }),
-    new CopyWebpackPlugin([{ from: `${basePath}/src/assets/!(fonts)/*` }]),
+    new CopyWebpackPlugin([{ from: `${basePath}/src/assets/**/*` }]),
     new webpack.LoaderOptionsPlugin({
       options: {
         stylus: {
           use: [require('nib')()],
-          import: ['~nib/lib/nib/index.styl'],
+          import: ['~nib/lib/nib/index.styl']
         },
         postcss: [
           autoprefixer({
-            browsers: ['last 5 versions'],
-          }),
-        ],
-      },
+            browsers: ['last 5 versions']
+          })
+        ]
+      }
     }),
+    new webpack.WatchIgnorePlugin([path.join(__dirname, 'node_modules')]),
     new ExtractTextPlugin({
-      filename: 'assets/main.min.css',
-      disable: false,
-      allChunks: true,
-    }),
-    // new webpack.optimize.CommonsChunkPlugin(options),
-  ],
+      filename: 'assets/[name].min.css',
+      disable: !isProduction,
+      allChunks: true
+    })
+    // new webpack.HotModuleReplacementPlugin() // HMR
+    // new webpack.NamedModulesPlugin() // HMR
+    // new webpack.optimize.CommonsChunkPlugin({
+    //   name: 'vendor',
+    //   children: true,
+    //   minChunks: 2,
+    //   async: true
+    // })
+  ]
 };
 
 glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => {
@@ -244,10 +201,11 @@ glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => 
     new HtmlWebpackPlugin({
       filename: `${templateFileBaseName}.html`, // can specify a subdirectory here too
       template: item,
-      // favicon: '', // favicons-webpack-plugin
+      cache: false,
+      hash: !isProduction,
       inject: false,
       minify: {
-        removeComments: true,
+        removeComments: true
       },
       showErrors: false,
       renderBlock: (blockName, data) => {
@@ -286,12 +244,35 @@ glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => 
           return obj;
         });
         return globalDataFiles.length ? Object.assign({}, ...globalDataFiles) : {};
-      },
+      }
     })
   );
 });
 
-// production
-config.plugins.push(new BeautifyHtmlPlugin({ ocd: true }));
+if (isProduction) {
+  config.plugins.push(new webpack.optimize.UglifyJsPlugin({
+    mangle: {
+      screw_ie8: true
+    },
+    compress: {
+      screw_ie8: true,
+      unused: true,
+      dead_code: true,
+      warnings: false
+    }
+  }));
+  config.plugins.push(
+    new CleanWebpackPlugin(
+      ['dist/'],
+      {
+        root: basePath,
+        verbose: true,
+        dry: false,
+        watch: false
+      }
+    )
+  );
+  config.plugins.push(new BeautifyHtmlPlugin({ ocd: true }));
+}
 
 module.exports = config;
