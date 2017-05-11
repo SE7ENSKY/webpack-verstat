@@ -1,20 +1,29 @@
 // TODO gsap і immutable
 // TODO видалити pretty після npm-релізу
-// TODO зробить розумний svgo ?
 // TODO перевести на webpack-blocks
 // TODO <link rel="preload"> і загальна оптимізація
 // TODO modernizrrc
-// TODO CSS Modules ?
 // TODO purifycss-webpack ?
 // TODO prepack-webpack-plugin ?
 // TODO допилить development server і hmr
 
-const webpack = require('webpack');
-const path = require('path');
-const glob = require('glob');
-const fs = require('fs');
-const pug = require('pug');
-const YAML = require('yamljs');
+const webpackDefinePlugin = require('webpack').DefinePlugin;
+const webpackNoEmitOnErrorsPlugin = require('webpack').NoEmitOnErrorsPlugin;
+const webpackProvidePlugin = require('webpack').ProvidePlugin;
+const webpackLoaderOptionsPlugin = require('webpack').LoaderOptionsPlugin;
+const webpackWatchIgnorePlugin = require('webpack').WatchIgnorePlugin;
+// const webpackHotModuleReplacementPlugin = require('webpack').HotModuleReplacementPlugin;
+// const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
+// const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
+const webpackUglifyJsPlugin = require('webpack').optimize.UglifyJsPlugin;
+const pathResolve = require('path').resolve;
+const pathJoin = require('path').join;
+const pathBasename = require('path').basename;
+const pathExtname = require('path').extname;
+const globSync = require('glob').sync;
+const fsReadFileSync = require('fs').readFileSync;
+const pugCompile = require('pug').compile;
+const yamlParse = require('yamljs').parse;
 const autoprefixer = require('autoprefixer');
 const bemto = require('../src/vendor/bemto/bemto.js');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -23,8 +32,8 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 
-const readFile = fileName => fs.readFileSync(fileName, { encoding: 'utf8' });
-const basePath = path.resolve(__dirname, '../');
+const readFile = fileName => fsReadFileSync(fileName, { encoding: 'utf8' });
+const basePath = pathResolve(__dirname, '../');
 const isProduction = process.env.NODE_ENV === 'production';
 const developmentServerConfig = {
   contentBase: `${basePath}/dist`,
@@ -84,6 +93,44 @@ const stylusProductionLoaders = Object.assign(
   }
 );
 
+const renderBlockEngine = (blockName, data) => {
+  const compileTemplate = (mod, block) => {
+    const blockFile = globSync(`${basePath}/src/components/${block}/${block}.?(pug|jade)`);
+    if (blockFile.length) {
+      return pugCompile(`${mod}\n${readFile(blockFile[0])}`);
+    }
+  };
+  data.renderBlock = (blockName, data) => compileTemplate(bemto, blockName)(data);
+  return compileTemplate(bemto, blockName)(data);
+};
+const localDataEngine = (templateFileBaseName) => {
+  const dataFile = globSync(`${basePath}/src/data/local/${templateFileBaseName}.?(json|yml)`);
+  if (dataFile.length) {
+    switch (pathExtname(dataFile[0])) {
+      case '.json':
+        return JSON.parse(readFile(dataFile[0]));
+      case '.yml':
+        return yamlParse(readFile(dataFile[0]));
+    }
+  }
+  return {};
+};
+const globalDataEngine = () => {
+  const globalDataFiles = globSync(`${basePath}/src/data/global/*.?(json|yml)`).map((file) => {
+    const obj = {};
+    switch (pathExtname(file)) {
+      case '.json':
+        obj[pathBasename(file, '.json')] = JSON.parse(readFile(file));
+        break;
+      case '.yml':
+        obj[pathBasename(file, '.yml')] = yamlParse(readFile(file));
+        break;
+    }
+    return obj;
+  });
+  return globalDataFiles.length ? Object.assign({}, ...globalDataFiles) : {};
+};
+
 const config = {
   context: `${basePath}/src`,
   entry: ['./main.js'],
@@ -91,10 +138,12 @@ const config = {
     path: `${basePath}/dist`,
     publicPath: '/assets/',
     // publicPath: '/', // HMR
-    filename: isProduction ? 'assets/main.min.js' : 'assets/[name].min.[hash].js'
+    filename: isProduction ? 'assets/[name].min.js' : 'assets/[name].min.[hash].js'
+    // chunkFilename: '[name].min.js' // ?
   },
   devtool: isProduction ? 'cheap-module-source-map' : 'source-map',
   devServer: developmentServerConfig,
+  // externals: {}, // ?
   module: {
     rules: [
       {
@@ -147,25 +196,25 @@ const config = {
             cacheDirectory: true,
             babelrc: false,
             plugins: ['transform-runtime'],
-            presets: [['es2015', { loose: true, modules: false }]]
+            presets: [['es2015', { modules: false }]]
           }
         }
       }
     ]
   },
   plugins: [
-    new webpack.DefinePlugin({
+    new webpackDefinePlugin({
       'process.env': {
         'NODE_ENV': process.env.NODE_ENV ? process.env.NODE_ENV : 'production'
       }
     }),
-    new webpack.NoEmitOnErrorsPlugin(),
-    new webpack.ProvidePlugin({
+    new webpackNoEmitOnErrorsPlugin(),
+    new webpackProvidePlugin({
       $: 'jquery',
       jQuery: 'jquery'
     }),
     new CopyWebpackPlugin([{ from: `${basePath}/src/assets/**/*` }]),
-    new webpack.LoaderOptionsPlugin({
+    new webpackLoaderOptionsPlugin({
       options: {
         stylus: {
           use: [require('nib')()],
@@ -178,15 +227,15 @@ const config = {
         ]
       }
     }),
-    new webpack.WatchIgnorePlugin([path.join(__dirname, 'node_modules')]),
+    new webpackWatchIgnorePlugin([pathJoin(__dirname, 'node_modules')]),
     new ExtractTextPlugin({
       filename: 'assets/[name].min.css',
       disable: !isProduction,
       allChunks: true
     })
-    // new webpack.HotModuleReplacementPlugin() // HMR
-    // new webpack.NamedModulesPlugin() // HMR
-    // new webpack.optimize.CommonsChunkPlugin({
+    // new webpackHotModuleReplacementPlugin() // HMR
+    // new webpackNamedModulesPlugin() // HMR
+    // new webpackCommonsChunkPlugin({
     //   name: 'vendor',
     //   children: true,
     //   minChunks: 2,
@@ -195,8 +244,8 @@ const config = {
   ]
 };
 
-glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => {
-  const templateFileBaseName = path.basename(item, path.extname(item)).replace('frontPage', 'index');
+globSync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => {
+  const templateFileBaseName = pathBasename(item, pathExtname(item)).replace('frontPage', 'index');
   config.plugins.push(
     new HtmlWebpackPlugin({
       filename: `${templateFileBaseName}.html`, // can specify a subdirectory here too
@@ -209,56 +258,22 @@ glob.sync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => 
       },
       showErrors: false,
       isProduction,
-      renderBlock: (blockName, data) => {
-        const compileTemplate = (mod, block) => {
-          const blockFile = glob.sync(`${basePath}/src/components/${block}/${block}.?(pug|jade)`);
-          if (blockFile.length) {
-            return pug.compile(`${mod}\n${readFile(blockFile[0])}`);
-          }
-        };
-        data.renderBlock = (blockName, data) => compileTemplate(bemto, blockName)(data);
-        return compileTemplate(bemto, blockName)(data);
-      },
-      getLocalData: () => {
-        const dataFile = glob.sync(`${basePath}/src/data/local/${templateFileBaseName}.?(json|yml)`);
-        if (dataFile.length) {
-          switch (path.extname(dataFile[0])) {
-            case '.json':
-              return JSON.parse(readFile(dataFile[0]));
-            case '.yml':
-              return YAML.parse(readFile(dataFile[0]));
-          }
-        }
-        return {};
-      },
-      getGlobalData: () => {
-        const globalDataFiles = glob.sync(`${basePath}/src/data/global/*.?(json|yml)`).map((file) => {
-          const obj = {};
-          switch (path.extname(file)) {
-            case '.json':
-              obj[path.basename(file, '.json')] = JSON.parse(readFile(file));
-              break;
-            case '.yml':
-              obj[path.basename(file, '.yml')] = YAML.parse(readFile(file));
-              break;
-          }
-          return obj;
-        });
-        return globalDataFiles.length ? Object.assign({}, ...globalDataFiles) : {};
-      }
+      renderBlock: renderBlockEngine,
+      getLocalData: () => localDataEngine(templateFileBaseName),
+      getGlobalData: globalDataEngine
     })
   );
 });
 
 if (isProduction) {
-  config.plugins.push(new webpack.optimize.UglifyJsPlugin({
+  config.plugins.push(new webpackUglifyJsPlugin({
     mangle: {
-      screw_ie8: true
+      screw_ie8: true,
+      props: false,
+      except: ['$super', '$', 'exports', 'require']
     },
     compress: {
       screw_ie8: true,
-      unused: true,
-      dead_code: true,
       warnings: false
     }
   }));
