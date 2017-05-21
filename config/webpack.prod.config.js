@@ -50,6 +50,7 @@ const developmentServerConfig = {
     colors: true
   }
 };
+const templates = globSync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`);
 const cssDevelopmentLoaders = ['style-loader', 'css-loader', 'postcss-loader'];
 const sassDevelopmentLoaders = [...cssDevelopmentLoaders, 'sass-loader'];
 const lessDevelopmentLoaders = [...cssDevelopmentLoaders, 'less-loader'];
@@ -244,8 +245,8 @@ const config = {
   ]
 };
 
-globSync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`).forEach((item) => {
-  const templateFileBaseName = pathBasename(item, pathExtname(item)).replace('frontPage', 'index');
+templates.forEach((item) => {
+  const templateFileBaseName = pathBasename(item, pathExtname(item)).replace('frontPage', 'index'); // оптимізувати
   config.plugins.push(
     new HtmlWebpackPlugin({
       filename: `${templateFileBaseName}.html`, // can specify a subdirectory here too
