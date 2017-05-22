@@ -30,6 +30,7 @@ const devServerConfig = {
 };
 
 const compiler = webpack(webpackConfig);
+const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 
 const watchFiles = [
   `${basePath}/src/components/**/*.?(pug|jade)`,
@@ -37,11 +38,11 @@ const watchFiles = [
   `${basePath}/src/data/local/*.?(json|yml)`,
   `${basePath}/config/webpack.dev.config.js`
 ];
-
-// FIXME chokidar add
-const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const handleFiles = () => webpackDevMiddlewareInstance.invalidate();
-chokidarWatch(watchFiles).on('add', handleFiles).on('change', handleFiles).on('unlink', handleFiles);
+chokidarWatch(watchFiles, { ignoreInitial: true })
+  .on('add', handleFiles)
+  .on('change', handleFiles)
+  .on('unlink', handleFiles);
 
 browserSync({
   server: {
