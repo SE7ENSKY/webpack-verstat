@@ -7,7 +7,7 @@ const webpackHotModuleReplacementPlugin = require('webpack').HotModuleReplacemen
 const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
 // const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
+// const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const webpackMerge = require('webpack-merge');
 const baseConfig = require('./webpack.base.config');
 const renderBlockEngine = require('./webpack.config.utils').renderBlockEngine;
@@ -73,7 +73,7 @@ templates.forEach((item) => {
       cache: false,
       hash: false,
       inject: 'body',
-      alwaysWriteToDisk: true,
+      // alwaysWriteToDisk: true,
       minify: {
         removeComments: true
       },
@@ -86,6 +86,6 @@ templates.forEach((item) => {
   );
 });
 
-devConfig.plugins.push(new HtmlWebpackHarddiskPlugin());
+// devConfig.plugins.push(new HtmlWebpackHarddiskPlugin());
 
 module.exports = webpackMerge(baseConfig, devConfig);

@@ -36,6 +36,19 @@ const handleFile = (event) => {
   }
 };
 
+const handleLayout = (event) => {
+  switch (event) {
+    case 'add':
+    case 'unlink':
+      webpackDevMiddlewareInstance.invalidate();
+      webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+      break;
+    case 'change':
+      webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+      break;
+  }
+};
+
 browserSync.init({
   ui: false,
   open: false,
@@ -56,6 +69,10 @@ browserSync.init({
     ]
   },
   files: [
+    {
+      match: [`${basePath}/src/layouts/*.?(pug|jade)`],
+      fn: (event, file) => handleLayout(event)
+    },
     {
       match: [`${basePath}/src/components/**/*.?(pug|jade)`],
       fn: (event, file) => handleFile(event)
