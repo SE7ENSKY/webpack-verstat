@@ -25,13 +25,12 @@ const baseConfig = {
         use: 'yaml-loader'
       },
       {
+        test: /\.md$/,
+        use: ['html-loader', 'markdown-loader']
+      },
+      {
         test: /\.html$/,
-        use: {
-          loader: 'html-loader',
-          options: {
-            minimize: false
-          }
-        }
+        use: 'html-loader'
       },
       {
         test: /\.(pug|jade)$/,
