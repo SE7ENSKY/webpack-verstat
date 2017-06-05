@@ -1,9 +1,10 @@
+const pathResolve = require('path').resolve;
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
 const webpackConfig = require('../config/webpack.dev.config');
-const basePath = require('../config/webpack.config.utils').basePath;
+const basePath = pathResolve(__dirname, '../');
 
 
 const devServerConfig = {
@@ -74,15 +75,11 @@ browserSync.init({
       fn: (event, file) => handleLayout(event)
     },
     {
-      match: [`${basePath}/src/components/**/*.?(pug|jade)`],
+      match: [`${basePath}/src/blocks/**/*.?(pug|jade)`],
       fn: (event, file) => handleFile(event)
     },
     {
-      match: [`${basePath}/src/data/global/*.?(json|yml)`],
-      fn: (event, file) => handleFile(event)
-    },
-    {
-      match: [`${basePath}/src/data/local/*.?(json|yml)`],
+      match: [`${basePath}/src/data/*.?(json|yml)`],
       fn: (event, file) => handleFile(event)
     },
     {

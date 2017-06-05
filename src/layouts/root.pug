@@ -1,8 +1,4 @@
-include ../vendor/bemto/bemto.pug
-
-- var file = htmlWebpackPlugin.options.getLocalData()
-- var global = htmlWebpackPlugin.options.getGlobalData()
-- var isProduction = htmlWebpackPlugin.options.isProduction
+include ../../node_modules/verstat-bemto/bemto.pug
 
 doctype html
 html
@@ -10,9 +6,11 @@ html
     meta(charset="UTF-8")
     meta(content="width=device-width, initial-scale=1" name="viewport")
     meta(name="theme-color" content="#1073fb")
-    if file.title
-        title!= file.title
+    //-
+      if file.title
+          title!= file.title
     block styles
+      rontEndWebDev
 
   body
     block root
