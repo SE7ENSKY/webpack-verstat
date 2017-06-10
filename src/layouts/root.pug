@@ -1,4 +1,6 @@
-include ../../node_modules/verstat-bemto/bemto.pug
+include ../globals/commons
+include ../../node_modules/verstat-bemto/bemto
+
 
 doctype html
 html
@@ -6,9 +8,8 @@ html
     meta(charset="UTF-8")
     meta(content="width=device-width, initial-scale=1" name="viewport")
     meta(name="theme-color" content="#1073fb")
-    //-
-      if file.title
-          title!= file.title
+    if file.title
+        title!= file.title
     block styles
       rontEndWebDev
 

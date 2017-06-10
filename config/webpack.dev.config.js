@@ -7,7 +7,8 @@ const baseConfig = require('./webpack.base.config');
 
 
 const devConfig = {
-  entry: ['webpack-hot-middleware/client', './assets/main.js'],
+  entry: ['webpack-hot-middleware/client?path=//localhost:8080/__webpack_hmr', './assets/main.js'],
+  // entry: ['webpack-hot-middleware/client', './assets/main.js'],
   output: {
     publicPath: '/',
     filename: 'assets/[name].min.[hash:8].js'

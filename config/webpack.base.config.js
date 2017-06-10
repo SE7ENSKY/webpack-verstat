@@ -50,7 +50,6 @@ const getGlobalLayoutsData = () => {
   return data.length ? Object.assign({}, ...data) : {};
 };
 
-
 const baseConfig = {
   context: `${basePath}/src`,
   output: {
@@ -128,30 +127,34 @@ layoutsData.forEach((layoutData) => {
   delete modifiedExtractedData.layout;
   delete modifiedExtractedData.content;
   const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
-  const fn = pugCompileFile(template[0]);
-  const initialLocals = {
-    renderBlock: renderBlockEngine,
-    file: modifiedExtractedData,
-    content: (function () {
-      const fn = pugCompile(`${bemto}\n${extractedData.content}`);
-      const initialLocals = { renderBlock: renderBlockEngine };
-      const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalLayoutsData());
-      return fn(locals);
-    })()
-  };
-  const locals = Object.assign(initialLocals, getGlobalLayoutsData());
-  baseConfig.plugins.push(
-    new HtmlWebpackPlugin({
-      filename: `${pathBasename(layoutData).replace(/\.[^/.]+$/, '')}.html`,
-      template: fn(locals),
-      cache: false,
-      hash: false,
-      inject: 'body',
-      minify: {
-        removeComments: true
-      }
-    })
-  );
+  if (template.length) {
+    const fn = pugCompileFile(template[0]);
+    const initialLocals = {
+      renderBlock: renderBlockEngine,
+      file: modifiedExtractedData,
+      content: (function () {
+        const fn = pugCompile(`${bemto}\n${extractedData.content}`);
+        const initialLocals = { renderBlock: renderBlockEngine };
+        const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalLayoutsData());
+        return fn(locals);
+      })()
+    };
+    const locals = Object.assign(initialLocals, getGlobalLayoutsData());
+    console.log('FILENAME:', `${pathBasename(layoutData).replace(/\.[^/.]+$/, '')}.html`);
+    console.log('TEMPLATECONTENT:', fn(locals));
+    baseConfig.plugins.push(
+      new HtmlWebpackPlugin({
+        filename: `${pathBasename(layoutData).replace(/\.[^/.]+$/, '')}.html`,
+        templateContent: fn(locals),
+        cache: false,
+        hash: false,
+        inject: 'body',
+        minify: {
+          removeComments: true
+        }
+      })
+    );
+  }
 });
 
 module.exports = baseConfig;

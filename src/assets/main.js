@@ -4,5 +4,6 @@ if (module.hot) {
   module.hot.accept();
 }
 
-require.context('../blocks/', true, /\.(css|styl|less|sass|scss)$/);
-require.context('../blocks/', true, /\.(js|coffe)$/);
+const getRequiredfiles = file => file.keys().forEach(file);
+getRequiredfiles(require.context('../blocks/', true, /\.(css|styl|less|sass|scss)$/));
+getRequiredfiles(require.context('../blocks/', true, /\.(js|coffe)$/));

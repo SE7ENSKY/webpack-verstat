@@ -71,8 +71,8 @@ browserSync.init({
   },
   files: [
     {
-      match: [`${basePath}/src/layouts/*.?(pug|jade)`],
-      fn: (event, file) => handleLayout(event)
+      match: [`${basePath}/config/webpack.*.js`],
+      fn: (event, file) => handleFile(event)
     },
     {
       match: [`${basePath}/src/blocks/**/*.?(pug|jade)`],
@@ -83,7 +83,15 @@ browserSync.init({
       fn: (event, file) => handleFile(event)
     },
     {
-      match: [`${basePath}/config/webpack.*.js`],
+      match: [`${basePath}/src/globals/commons.?(pug|jade)`],
+      fn: (event, file) => handleFile(event)
+    },
+    {
+      match: [`${basePath}/src/layouts/*.?(pug|jade)`],
+      fn: (event, file) => handleFile(event)
+    },
+    {
+      match: [`${basePath}/src/*.?(pug|jade)`],
       fn: (event, file) => handleFile(event)
     }
   ]
