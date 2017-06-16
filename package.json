@@ -4,8 +4,8 @@
   "description": "Frontend project for Verstat Template",
   "main": "index.js",
   "scripts": {
-    "build": "NODE_ENV='production' webpack --config config/webpack.config.js",
-    "start": "node bin/webpack.dev.server.js"
+    "prod": "node bin/webpack.prod.server.js",
+    "dev": "node bin/webpack.dev.server.js"
   },
   "author": "se7ensky",
   "license": "ISC",
@@ -14,7 +14,7 @@
     "babel-core": "^6.24.1",
     "babel-loader": "^7.0.0",
     "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-latest": "^6.24.1",
+    "babel-preset-env": "^1.5.2",
     "browser-sync": "^2.18.12",
     "clean-webpack-plugin": "^0.1.16",
     "coffee-loader": "^0.7.3",
@@ -47,6 +47,7 @@
     "verstat-nib": "^1.0.0",
     "webpack": "^2.3.2",
     "webpack-dev-middleware": "^1.10.2",
+    "webpack-dev-server": "^2.4.5",
     "webpack-hot-middleware": "^2.18.0",
     "webpack-merge": "^4.1.0",
     "yaml-front-matter": "^3.4.0",

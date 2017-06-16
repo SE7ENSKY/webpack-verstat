@@ -2,44 +2,33 @@ const pathResolve = require('path').resolve;
 const pathExtname = require('path').extname;
 const pathBasename = require('path').basename;
 const yamlParse = require('yamljs').parse;
+const yamlFrontLoadFront = require('yaml-front-matter').loadFront;
 const fsReadFileSync = require('fs').readFileSync;
 const globSync = require('glob').sync;
 const pugCompile = require('pug').compile;
-const bemto = require('../src/vendor/bemto/bemto.js');
-
+const pugCompileFile = require('pug').compileFile;
+const bemto = require('verstat-bemto');
 const basePath = pathResolve(__dirname, '../');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
 
 const readFile = function (fileName) {
   return fsReadFileSync(fileName, { encoding: 'utf8' });
 };
 
-const compileTemplate = function (mod, block) {
-  const blockFile = globSync(`${basePath}/src/components/${block}/${block}.?(pug|jade)`);
-  if (blockFile.length) {
-    return pugCompile(`${mod}\n${readFile(blockFile[0])}`);
-  }
+const compileBlock = function (mod, block) {
+  const blocks = globSync(`${basePath}/src/blocks/**/*.?(pug|jade)`);
+  const index = blocks.findIndex(item => item.indexOf(block) !== -1);
+  if (index !== -1) return pugCompile(`${mod}\n${readFile(blocks[index])}`);
 };
 
 const renderBlockEngine = function (blockName, data) {
-  data.renderBlock = function (blockName, data) { return compileTemplate(bemto, blockName)(data); };
-  return compileTemplate(bemto, blockName)(data);
+  data.renderBlock = function (blockName, data) { return compileBlock(bemto, blockName)(data); };
+  return compileBlock(bemto, blockName)(data);
 };
 
-const localDataEngine = function (templateFileBaseName) {
-  const dataFile = globSync(`${basePath}/src/data/local/${templateFileBaseName}.?(json|yml)`);
-  if (dataFile.length) {
-    switch (pathExtname(dataFile[0])) {
-      case '.json':
-        return JSON.parse(readFile(dataFile[0]));
-      case '.yml':
-        return yamlParse(readFile(dataFile[0]));
-    }
-  }
-  return {};
-};
-
-const globalDataEngine = function () {
-  const globalDataFiles = globSync(`${basePath}/src/data/global/*.?(json|yml)`).map((file) => {
+const getGlobalData = function () {
+  const data = globSync(`${basePath}/src/data/*.?(yml|json)`).map((file) => {
     const obj = {};
     switch (pathExtname(file)) {
       case '.json':
@@ -51,13 +40,44 @@ const globalDataEngine = function () {
     }
     return obj;
   });
-  return globalDataFiles.length ? Object.assign({}, ...globalDataFiles) : {};
+  return data.length ? Object.assign({}, ...data) : {};
 };
 
+const getCompiledTemplate = function () {
+  return globSync(`${basePath}/src/*.?(pug|jade)`).map((layoutData) => {
+    const extractedData = yamlFrontLoadFront(layoutData, '\/\/---', 'content');
+    const modifiedExtractedData = Object.assign({}, extractedData);
+    delete modifiedExtractedData.layout;
+    delete modifiedExtractedData.content;
+    const layouts = globSync(`${basePath}/src/layouts/!(main|root).?(pug|jade)`);
+    const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
+    if (template.length) {
+      const fn = pugCompileFile(template[0]);
+      const initialLocals = {
+        renderBlock: renderBlockEngine,
+        file: modifiedExtractedData,
+        content: (function () {
+          const fn = pugCompile(`${bemto}\n${extractedData.content}`);
+          const initialLocals = { renderBlock: renderBlockEngine };
+          const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalData());
+          return fn(locals);
+        })()
+      };
+      const locals = Object.assign(initialLocals, getGlobalData());
+      return new HtmlWebpackPlugin({
+        filename: `${pathBasename(layoutData).replace(/\.[^/.]+$/, '')}.html`,
+        templateContent: fn(locals),
+        cache: false,
+        hash: false,
+        inject: 'body',
+        minify: {
+          removeComments: true
+        }
+      });
+    }
+  });
+};
 
 module.exports = {
-  basePath,
-  renderBlockEngine,
-  localDataEngine,
-  globalDataEngine
+  getCompiledTemplate
 };

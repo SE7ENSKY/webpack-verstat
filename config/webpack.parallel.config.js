@@ -1,11 +1,3 @@
-// TODO gsap і immutable
-// TODO видалити pretty після npm-релізу
-// TODO перевести на webpack-blocks
-// TODO <link rel="preload"> і загальна оптимізація
-// TODO modernizrrc
-// TODO purifycss-webpack ?
-// TODO допилить development server і hmr
-
 const webpackDefinePlugin = require('webpack').DefinePlugin;
 const webpackNoEmitOnErrorsPlugin = require('webpack').NoEmitOnErrorsPlugin;
 const webpackProvidePlugin = require('webpack').ProvidePlugin;

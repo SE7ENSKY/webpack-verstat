@@ -1,4 +1,3 @@
-const webpackDefinePlugin = require('webpack').DefinePlugin;
 const webpackHotModuleReplacementPlugin = require('webpack').HotModuleReplacementPlugin;
 const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
 // const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
@@ -7,15 +6,14 @@ const baseConfig = require('./webpack.base.config');
 
 
 const devConfig = {
-  entry: ['webpack-hot-middleware/client?path=//localhost:8080/__webpack_hmr', './assets/main.js'],
-  // entry: ['webpack-hot-middleware/client', './assets/main.js'],
+  entry: ['webpack-dev-server/client?http://localhost:8080', 'webpack/hot/dev-server', './assets/main.js'],
   output: {
     publicPath: '/',
     filename: 'assets/[name].min.[hash:8].js'
-    // chunkFilename: '[name].min.js' // ?
+    // chunkFilename: '[name].min.js'
   },
   devtool: 'cheap-module-source-map',
-  // externals: {}, // ?
+  // externals: {},
   module: {
     rules: [
       {
@@ -37,11 +35,6 @@ const devConfig = {
     ]
   },
   plugins: [
-    new webpackDefinePlugin({
-      'process.env': {
-        'NODE_ENV': 'development'
-      }
-    }),
     new webpackHotModuleReplacementPlugin(),
     new webpackNamedModulesPlugin()
     // new webpackCommonsChunkPlugin({
