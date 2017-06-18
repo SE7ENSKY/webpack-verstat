@@ -1,8 +1,9 @@
 const pathResolve = require('path').resolve;
 const pathExtname = require('path').extname;
 const pathBasename = require('path').basename;
+const pathDirname = require('path').dirname;
 const yamlParse = require('yamljs').parse;
-const yamlFrontLoadFront = require('yaml-front-matter').loadFront;
+const verstatLoadFront = require('verstat-front-matter').loadFront;
 const fsReadFileSync = require('fs').readFileSync;
 const globSync = require('glob').sync;
 const pugCompile = require('pug').compile;
@@ -12,22 +13,28 @@ const basePath = pathResolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 
-const readFile = function (fileName) {
+function readFile(fileName) {
   return fsReadFileSync(fileName, { encoding: 'utf8' });
-};
+}
 
-const compileBlock = function (mod, block) {
+function getNibModification(path) {
+  const dirPath = pathDirname(path);
+  if (readFile(path).indexOf('path: fallback') !== -1) return `${dirPath}/nib-mod-fallback.styl`;
+  return `${dirPath}/nib-mod.styl`;
+}
+
+function compileBlock(mod, block) {
   const blocks = globSync(`${basePath}/src/blocks/**/*.?(pug|jade)`);
   const index = blocks.findIndex(item => item.indexOf(block) !== -1);
   if (index !== -1) return pugCompile(`${mod}\n${readFile(blocks[index])}`);
-};
+}
 
-const renderBlockEngine = function (blockName, data) {
+function renderBlockEngine(blockName, data) {
   data.renderBlock = function (blockName, data) { return compileBlock(bemto, blockName)(data); };
   return compileBlock(bemto, blockName)(data);
-};
+}
 
-const getGlobalData = function () {
+function getGlobalData() {
   const data = globSync(`${basePath}/src/data/*.?(yml|json)`).map((file) => {
     const obj = {};
     switch (pathExtname(file)) {
@@ -41,11 +48,11 @@ const getGlobalData = function () {
     return obj;
   });
   return data.length ? Object.assign({}, ...data) : {};
-};
+}
 
-const getCompiledTemplate = function () {
-  return globSync(`${basePath}/src/*.?(pug|jade)`).map((layoutData) => {
-    const extractedData = yamlFrontLoadFront(layoutData, '\/\/---', 'content');
+function getCompiledTemplate() {
+  return globSync(`${basePath}/src/*.?(pug|jade)`).map(function (layoutData) {
+    const extractedData = verstatLoadFront(layoutData, '\/\/---', 'content');
     const modifiedExtractedData = Object.assign({}, extractedData);
     delete modifiedExtractedData.layout;
     delete modifiedExtractedData.content;
@@ -76,8 +83,10 @@ const getCompiledTemplate = function () {
       });
     }
   });
-};
+}
 
 module.exports = {
+  readFile,
+  getNibModification,
   getCompiledTemplate
 };

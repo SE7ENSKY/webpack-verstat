@@ -1,3 +1,8 @@
+require('console-stamp')(console, {
+  pattern: 'HH:MM:ss',
+  label: false
+});
+
 const pathResolve = require('path').resolve;
 const webpack = require('webpack');
 const webpackDevServer = require('webpack-dev-server');

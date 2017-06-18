@@ -7,7 +7,10 @@ const webpackNoEmitOnErrorsPlugin = require('webpack').NoEmitOnErrorsPlugin;
 const webpackProvidePlugin = require('webpack').ProvidePlugin;
 const webpackLoaderOptionsPlugin = require('webpack').LoaderOptionsPlugin;
 const webpackWatchIgnorePlugin = require('webpack').WatchIgnorePlugin;
+const webpackDefinePlugin = require('webpack').DefinePlugin;
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const configUtils = require('./webpack.config.utils');
 
 
@@ -16,6 +19,13 @@ const baseConfig = {
   output: {
     path: `${basePath}/dist`
   },
+  resolve: {
+    modules: [
+      'node_modules',
+      pathResolve(basePath, 'src')
+    ]
+  },
+  target: 'web',
   module: {
     rules: [
       {
@@ -51,26 +61,33 @@ const baseConfig = {
             cacheDirectory: true,
             babelrc: false,
             plugins: ['transform-runtime'],
-            presets: ['env']
-            // presets: [
-            //   'env',
-            //   {
-            //     'targets': {
-            //       'browsers': [
-            //         'last 4 versions',
-            //         'ie >= 10'
-            //       ]
-            //     },
-            //     'modules': false,
-            //     'loose': true
-            //   }
-            // ]
+            presets: [
+              [
+                "env",
+                {
+                  "targets": {
+                    'browsers': [
+                      'last 4 versions',
+                      'ie >= 10'
+                    ]
+                  },
+                  "modules": false,
+                  "loose": true
+                }
+              ]
+            ]
           }
         }
       }
     ]
   },
   plugins: [
+    // new BundleAnalyzerPlugin(), // bundle analyzer
+    new webpackDefinePlugin({
+      'process.env': {
+        NODE_ENV: JSON.stringify(process.env.NODE_ENV)
+      }
+    }),
     ...configUtils.getCompiledTemplate(),
     new webpackNoEmitOnErrorsPlugin(),
     new webpackProvidePlugin({
@@ -86,8 +103,7 @@ const baseConfig = {
       options: {
         stylus: {
           use: [nib()],
-          import: [`${basePath}/src/vendor/nib/index.styl`]
-          // import: ['~verstat-nib/index.styl']
+          import: [configUtils.getNibModification(require.resolve('verstat-nib'))]
         },
         postcss: [
           autoprefixer({
@@ -96,7 +112,11 @@ const baseConfig = {
         ]
       }
     }),
-    new webpackWatchIgnorePlugin([pathJoin(__dirname, 'node_modules')])
+    new webpackWatchIgnorePlugin([pathJoin(basePath, 'node_modules')]),
+    new CircularDependencyPlugin({
+      exclude: /node_modules/,
+      failOnError: true
+    })
   ]
 };
 

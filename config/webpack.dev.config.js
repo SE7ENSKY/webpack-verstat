@@ -4,6 +4,11 @@ const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
 const webpackMerge = require('webpack-merge');
 const baseConfig = require('./webpack.base.config');
 
+// https://github.com/react-boilerplate/react-boilerplate
+// https://github.com/davezuko/react-redux-starter-kit
+// https://github.com/kriasoft/react-starter-kit
+// https://survivejs.com/webpack/developing/
+// TODO webpack.DllPlugin або CommonsChunkPlugin
 
 const devConfig = {
   entry: ['webpack-dev-server/client?http://localhost:8080', 'webpack/hot/dev-server', './assets/main.js'],
@@ -12,7 +17,7 @@ const devConfig = {
     filename: 'assets/[name].min.[hash:8].js'
     // chunkFilename: '[name].min.js'
   },
-  devtool: 'cheap-module-source-map',
+  devtool: 'cheap-module-eval-source-map',
   // externals: {},
   module: {
     rules: [
