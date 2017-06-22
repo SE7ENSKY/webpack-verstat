@@ -7,6 +7,8 @@
     "import"
   ],
   "rules": {
-    "comma-dangle": ["error", "never"]
+    "comma-dangle": ["error", "never"],
+    "indent": ["error", "tab"],
+    "no-tabs": 0
   }
 }
