@@ -3,10 +3,8 @@ const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
 // const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
 const webpackMerge = require('webpack-merge');
 const baseConfig = require('./webpack.base.config');
+const configUtils = require('./webpack.config.utils');
 
-
-// TODO CommonsChunkPlugin
-// TODO normalize paths
 
 const devConfig = {
 	entry: ['webpack-dev-server/client?http://localhost:8080', 'webpack/hot/dev-server', './assets/main.js'],
@@ -24,12 +22,7 @@ const devConfig = {
 				use: [
 					'style-loader',
 					'css-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							moduleDepth: 2
-						}
-					},
+					'resolve-url-loader',
 					'postcss-loader'
 				]
 			},
@@ -39,12 +32,7 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							moduleDepth: 2
-						}
-					},
+					'resolve-url-loader',
 					{
 						loader: 'sass-loader',
 						options: {
@@ -59,12 +47,7 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							moduleDepth: 2
-						}
-					},
+					'resolve-url-loader',
 					{
 						loader: 'less-loader',
 						options: {
@@ -79,12 +62,7 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							moduleDepth: 2
-						}
-					},
+					'resolve-url-loader',
 					{
 						loader: 'stylus-loader',
 						options: {

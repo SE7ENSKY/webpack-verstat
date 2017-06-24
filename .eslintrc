@@ -6,6 +6,11 @@
   "plugins": [
     "import"
   ],
+  "env": {
+    "browser": true,
+    "node": true,
+    "jquery": true
+  },
   "rules": {
     "comma-dangle": ["error", "never"],
     "indent": ["error", "tab"],

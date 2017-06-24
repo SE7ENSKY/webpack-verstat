@@ -3,16 +3,17 @@ require('console-stamp')(console, {
 	label: false
 });
 
-const pathResolve = require('path').resolve;
 const pathJoin = require('path').join;
+const nodemon = require('nodemon');
+const chokidarWatch = require('chokidar').watch;
 const webpack = require('webpack');
 const webpackDevServer = require('webpack-dev-server');
 const webpackDevConfig = require('../config/webpack.dev.config');
-const projectRoot = pathResolve(__dirname, '../');
+const configUtils = require('../config/webpack.config.utils');
 
 
 const devServerConfig = {
-	contentBase: pathJoin(projectRoot, 'dist'),
+	contentBase: pathJoin(configUtils.projectRoot, 'dist'),
 	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
 		ignored: /node_modules/
@@ -34,3 +35,8 @@ const devServerConfig = {
 const compiler = webpack(webpackDevConfig);
 const server = new webpackDevServer(compiler, devServerConfig);
 server.listen(devServerConfig.port);
+
+const handleEntriesFolder = () => nodemon.emit('restart');
+chokidarWatch(`${configUtils.projectRoot}/src/entries/*.js`)
+	.on('add', handleEntriesFolder)
+	.on('unlink', handleEntriesFolder);

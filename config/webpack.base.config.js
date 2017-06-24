@@ -1,4 +1,3 @@
-const pathResolve = require('path').resolve;
 const pathJoin = require('path').join;
 const nib = require('nib');
 const autoprefixer = require('autoprefixer');
@@ -11,13 +10,12 @@ const webpackDefinePlugin = require('webpack').DefinePlugin;
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const configUtils = require('./webpack.config.utils');
-const projectRoot = pathResolve(__dirname, '../');
 
 
 const baseConfig = {
-	context: pathJoin(projectRoot, 'src'),
+	context: pathJoin(configUtils.projectRoot, 'src'),
 	output: {
-		path: pathJoin(projectRoot, 'dist')
+		path: pathJoin(configUtils.projectRoot, 'dist')
 	},
 	target: 'web',
 	module: {
@@ -75,7 +73,8 @@ const baseConfig = {
 										]
 									},
 									modules: false,
-									loose: true
+									loose: true,
+									useBuiltIns: true
 								}
 							]
 						]
@@ -116,7 +115,7 @@ const baseConfig = {
 				]
 			}
 		}),
-		new webpackWatchIgnorePlugin([pathJoin(projectRoot, 'node_modules')]),
+		new webpackWatchIgnorePlugin([pathJoin(configUtils.projectRoot, 'node_modules')]),
 		new CircularDependencyPlugin({
 			exclude: /node_modules/,
 			failOnError: true
