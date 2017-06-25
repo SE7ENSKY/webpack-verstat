@@ -2,7 +2,7 @@ const pathJoin = require('path').join;
 const webpackMerge = require('webpack-merge');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const webpackUglifyJsPlugin = require('webpack').optimize.UglifyJsPlugin;
-const BeautifyHtmlPlugin = require('../custom-plugins/beautify-html-plugin/index');
+const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 // const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
@@ -156,10 +156,7 @@ const prodConfig = {
 			}
 		}),
 		new CleanWebpackPlugin(
-			[
-				// 'dist/**/*.*',
-				'dist/**'
-			],
+			['dist/*'],
 			{
 				root: configUtils.projectRoot,
 				verbose: true,
