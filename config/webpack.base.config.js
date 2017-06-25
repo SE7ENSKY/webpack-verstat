@@ -8,7 +8,6 @@ const webpackWatchIgnorePlugin = require('webpack').WatchIgnorePlugin;
 const webpackDefinePlugin = require('webpack').DefinePlugin;
 // const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
-// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const configUtils = require('./webpack.config.utils');
 
 
@@ -18,6 +17,10 @@ const baseConfig = {
 		path: pathJoin(configUtils.projectRoot, 'dist')
 	},
 	target: 'web',
+	// externals: {},
+	// resolveLoader: {
+	// 	modules: ['node_modules', 'custom-loaders']
+	// },
 	module: {
 		rules: [
 			{
@@ -25,7 +28,8 @@ const baseConfig = {
 				use: {
 					loader: 'file-loader',
 					options: {
-						name: '[name].[ext]'
+						regExp: '\\b(assets.+)',
+						name: '[1]'
 					}
 				}
 			},
@@ -84,7 +88,6 @@ const baseConfig = {
 		]
 	},
 	plugins: [
-		// new BundleAnalyzerPlugin(), // bundle analyzer
 		new webpackDefinePlugin({
 			'process.env': {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
@@ -110,7 +113,10 @@ const baseConfig = {
 				},
 				postcss: [
 					autoprefixer({
-						browsers: ['last 5 versions']
+						browsers: [
+							'last 4 versions',
+							'ie >= 10'
+						]
 					})
 				]
 			}

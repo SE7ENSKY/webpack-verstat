@@ -1,20 +1,16 @@
 const webpackHotModuleReplacementPlugin = require('webpack').HotModuleReplacementPlugin;
 const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
-// const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
 const webpackMerge = require('webpack-merge');
 const baseConfig = require('./webpack.base.config');
-const configUtils = require('./webpack.config.utils');
 
 
 const devConfig = {
 	entry: ['webpack-dev-server/client?http://localhost:8080', 'webpack/hot/dev-server', './assets/main.js'],
 	output: {
 		publicPath: '/',
-		filename: 'assets/[name].min.[hash:8].js'
-		// chunkFilename: '[name].min.js'
+		filename: 'assets/[name].js'
 	},
 	devtool: 'cheap-module-eval-source-map',
-	// externals: {},
 	module: {
 		rules: [
 			{
@@ -22,7 +18,12 @@ const devConfig = {
 				use: [
 					'style-loader',
 					'css-loader',
-					'resolve-url-loader',
+					{
+						loader: 'resolve-url-loader',
+						options: {
+							includeRoot: true
+						}
+					},
 					'postcss-loader'
 				]
 			},
@@ -32,7 +33,12 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					'resolve-url-loader',
+					{
+						loader: 'resolve-url-loader',
+						options: {
+							includeRoot: true
+						}
+					},
 					{
 						loader: 'sass-loader',
 						options: {
@@ -47,7 +53,12 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					'resolve-url-loader',
+					{
+						loader: 'resolve-url-loader',
+						options: {
+							includeRoot: true
+						}
+					},
 					{
 						loader: 'less-loader',
 						options: {
@@ -62,7 +73,12 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					'resolve-url-loader',
+					{
+						loader: 'resolve-url-loader',
+						options: {
+							includeRoot: true
+						}
+					},
 					{
 						loader: 'stylus-loader',
 						options: {
@@ -76,12 +92,6 @@ const devConfig = {
 	plugins: [
 		new webpackHotModuleReplacementPlugin(),
 		new webpackNamedModulesPlugin()
-		// new webpackCommonsChunkPlugin({
-		//	 name: 'vendor',
-		//	 children: true,
-		//	 minChunks: 2,
-		//	 async: true
-		// })
 	]
 };
 

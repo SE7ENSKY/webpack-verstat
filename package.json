@@ -4,7 +4,7 @@
   "description": "Frontend project for Verstat Template",
   "main": "index.js",
   "scripts": {
-    "prod": "NODE_ENV=production node bin/webpack.prod.server.js",
+    "prod": "NODE_ENV=production nodemon --watch config --watch bin bin/webpack.prod.server.js",
     "dev": "NODE_ENV=development nodemon --watch config --watch bin bin/webpack.dev.server.js"
   },
   "author": "se7ensky",
@@ -16,6 +16,7 @@
     "babel-loader": "^7.0.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.5.2",
+    "browser-sync": "^2.18.12",
     "browser-sync-webpack-plugin": "^1.1.4",
     "chokidar": "^1.7.0",
     "circular-dependency-plugin": "^3.0.0",
@@ -55,7 +56,6 @@
     "verstat-front-matter": "^1.0.0",
     "verstat-nib": "^1.0.0",
     "webpack": "^2.3.2",
-    "webpack-bundle-analyzer": "^2.8.2",
     "webpack-dev-server": "^2.4.5",
     "webpack-merge": "^4.1.0",
     "yaml-loader": "^0.4.0",
