@@ -4,7 +4,6 @@ require('console-stamp')(console, {
 });
 
 const pathJoin = require('path').join;
-const nodemon = require('nodemon');
 const chokidarWatch = require('chokidar').watch;
 const webpack = require('webpack');
 const webpackDevServer = require('webpack-dev-server');
@@ -32,11 +31,14 @@ const devServerConfig = {
 	}
 };
 
+// configUtils.renderTemplates(configUtils.compileTemplates());
+
+// chokidarWatch(`${configUtils.projectRoot}/src/pages/*.html`)
+// 	.on('change', () => {
+// 		console.log('FIRE!');
+// 		renderTemplates(compileTemplates());
+// 	});
+
 const compiler = webpack(webpackDevConfig);
 const server = new webpackDevServer(compiler, devServerConfig);
 server.listen(devServerConfig.port);
-
-const handleEntriesFolder = () => nodemon.emit('restart');
-chokidarWatch(`${configUtils.projectRoot}/src/entries/*.js`)
-	.on('add', handleEntriesFolder)
-	.on('unlink', handleEntriesFolder);

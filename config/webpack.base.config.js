@@ -93,7 +93,7 @@ const baseConfig = {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
 		}),
-		...configUtils.getCompiledTemplate(),
+		...configUtils.initHtmlWebpackPlugin(),
 		new webpackNoEmitOnErrorsPlugin(),
 		new webpackProvidePlugin({
 			$: 'jquery',
@@ -108,7 +108,7 @@ const baseConfig = {
 			options: {
 				stylus: {
 					use: [nib()],
-					import: [configUtils.getNibModification(require.resolve('verstat-nib'))],
+					import: [configUtils.getModifiedNib(require.resolve('verstat-nib'))],
 					preferPathResolver: 'webpack'
 				},
 				postcss: [

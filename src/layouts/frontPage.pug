@@ -1,6 +1,6 @@
 extends main
 
 block main
-  .container
-    +b.header: +i
-    != content
+	.container
+		+b.header: +i({ data: index })
+		!= content

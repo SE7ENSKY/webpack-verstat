@@ -5,7 +5,11 @@ const baseConfig = require('./webpack.base.config');
 
 
 const devConfig = {
-	entry: ['webpack-dev-server/client?http://localhost:8080', 'webpack/hot/dev-server', './assets/main.js'],
+	entry: [
+		'webpack-dev-server/client?http://localhost:8080',
+		'webpack/hot/dev-server',
+		'./assets/main.js'
+	],
 	output: {
 		publicPath: '/',
 		filename: 'assets/[name].js'
