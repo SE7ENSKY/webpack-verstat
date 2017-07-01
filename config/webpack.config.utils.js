@@ -6,7 +6,7 @@ const pathSep = require('path').sep;
 const pathIsAbsolute = require('path').isAbsolute;
 const pathJoin = require('path').join;
 const yamlParse = require('js-yaml').safeLoad;
-// const pretty = require('pretty');
+const pretty = require('pretty');
 const verstatLoadFront = require('verstat-front-matter').loadFront;
 const fsReadFileSync = require('fs').readFileSync;
 const fsWriteFileSync = require('fs').writeFileSync;
@@ -21,8 +21,8 @@ const projectRoot = pathResolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 
-const templateInfo = [];
-let templateInfoIndex;
+const templateDependencies = new Map();
+let templateDependenciesKey;
 
 function shortenAbsolutePath(absolutePath) {
 	if (pathIsAbsolute(absolutePath)) {
@@ -46,9 +46,9 @@ function compileBlock(mod, block) {
 	const blocks = globSync(`${projectRoot}/src/blocks/**/*.?(pug|jade)`);
 	const index = blocks.findIndex(item => item.indexOf(block) !== -1);
 	if (index !== -1) {
-		const block = blocks[index];
-		templateInfo[templateInfoIndex].blocks.push(pathBasename(block, pathExtname(block)));
-		return pugCompile(`${mod}\n${readFile(block)}`);
+		const blockPath = blocks[index];
+		templateDependencies.get(templateDependenciesKey).blocks.push(blockPath);
+		return pugCompile(`${mod}\n${readFile(blockPath)}`);
 	}
 }
 
@@ -66,40 +66,66 @@ function getGlobalData() {
 	return data.length ? Object.assign({}, ...data) : {};
 }
 
-function compileTemplates() {
-	return globSync(`${projectRoot}/src/*.?(pug|jade)`).map(function (layoutData, index) {
-		const extractedData = verstatLoadFront(layoutData, '\/\/---', 'content');
-		const modifiedExtractedData = Object.assign({}, extractedData);
-		delete modifiedExtractedData.layout;
-		delete modifiedExtractedData.content;
-		const layouts = globSync(`${projectRoot}/src/layouts/!(main|root).?(pug|jade)`);
-		const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
-		if (template.length) {
-			const file = template[0];
-			templateInfoIndex = index;
-			templateInfo[templateInfoIndex] = {
-				name: pathBasename(file, pathExtname(file)),
-				blocks: []
-			};
-			const fn = pugCompileFile(file);
-			const initialLocals = {
-				renderBlock: renderBlockEngine,
-				file: modifiedExtractedData,
-				content: (function () {
-					const fn = pugCompile(`${bemto}\n${extractedData.content}`);
-					const initialLocals = { renderBlock: renderBlockEngine };
-					const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalData());
-					return fn(locals);
-				})()
-			};
-			const locals = Object.assign(initialLocals, getGlobalData());
-			return {
-				filename: `${pathBasename(layoutData, pathExtname(layoutData))}.html`,
-				content: fn(locals) // minify
-				// content: pretty(fn(locals), { ocd: true }) // unminify & pretty
-			};
+function templateDependenciesEngine(template, data) {
+	const fileExt = pathExtname(data);
+	const key = `${pathBasename(data, fileExt)}${fileExt}`;
+	templateDependenciesKey = key;
+	templateDependencies.set(
+		key,
+		{
+			file: data,
+			layout: template,
+			blocks: []
 		}
-	});
+	);
+}
+
+function getTemplateBranch(templateWithData, template, block) {
+	const branch = [];
+	if (templateDependencies.size) {
+		for (const [key, value] of templateDependencies) {
+			if (value.file === templateWithData || value.layout === template || value.blocks.indexOf(block) !== -1) {
+				branch.push(value.file);
+			}
+		}
+	}
+	return branch;
+}
+
+function compileTemplate(templateWithData) {
+	const extractedData = verstatLoadFront(templateWithData, '\/\/---', 'content');
+	const modifiedExtractedData = Object.assign({}, extractedData);
+	delete modifiedExtractedData.layout;
+	delete modifiedExtractedData.content;
+	const layouts = globSync(`${projectRoot}/src/layouts/!(main|root).?(pug|jade)`);
+	const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
+	if (template.length) {
+		templateDependenciesEngine(template[0], templateWithData);
+		const fn = pugCompileFile(template[0]);
+		const initialLocals = {
+			renderBlock: renderBlockEngine,
+			file: modifiedExtractedData,
+			content: (function () {
+				const fn = pugCompile(`${bemto}\n${extractedData.content}`);
+				const initialLocals = { renderBlock: renderBlockEngine };
+				const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalData());
+				return fn(locals);
+			})()
+		};
+		const locals = Object.assign(initialLocals, getGlobalData());
+		return {
+			filename: `${pathBasename(templateWithData, pathExtname(templateWithData))}.html`,
+			content: pretty(
+				fn(locals),
+				{
+					ocd: true,
+					indent_char: '\t',
+					indent_size: 1
+				}
+			)
+		};
+	}
+	return {};
 }
 
 function removeFiles(files) {
@@ -107,26 +133,28 @@ function removeFiles(files) {
 		files.forEach(function (item) {
 			if (fsExistsSync(item)) {
 				fsUnlinkSync(item);
-				console.log(`Delete old: ${shortenAbsolutePath(item)}`);
+				console.log(`delete old: ${shortenAbsolutePath(item)}`);
 			}
 		});
 	}
 }
 
-function renderTemplates(files) {
-	files.forEach(function (item) {
+function renderTemplate(templateData) {
+	if (Object.keys(templateData).length !== 0) {
 		const timeNow = Date.now() / 1000;
 		const timeThen = timeNow - 10;
-		const path = pathJoin(projectRoot, 'src', 'pages', item.filename);
-		fsWriteFileSync(path, item.content, 'utf-8');
+		const path = pathJoin(projectRoot, 'src', 'pages', templateData.filename);
+		fsWriteFileSync(path, templateData.content, 'utf-8');
 		fsUtimes(path, timeThen, timeThen);
-		console.log(`Create: ${shortenAbsolutePath(path)}`);
-	});
+		console.log(`create: ${shortenAbsolutePath(path)}`);
+	}
 }
 
 function initHtmlWebpackPlugin() {
 	removeFiles(globSync(`${projectRoot}/src/pages/*.html`));
-	renderTemplates(compileTemplates());
+	globSync(`${projectRoot}/src/*.?(pug|jade)`).forEach(function (item) {
+		renderTemplate(compileTemplate(item));
+	});
 	return globSync(`${projectRoot}/src/pages/*.html`).map(function (item) {
 		return new HtmlWebpackPlugin({
 			filename: pathBasename(item),
@@ -143,10 +171,12 @@ function initHtmlWebpackPlugin() {
 
 module.exports = {
 	projectRoot,
-	templateInfo,
+	templateDependencies,
 	readFile,
+	shortenAbsolutePath,
+	getTemplateBranch,
+	renderTemplate,
+	compileTemplate,
 	getModifiedNib,
-	// compileTemplates,
-	// renderTemplates,
 	initHtmlWebpackPlugin
 };
