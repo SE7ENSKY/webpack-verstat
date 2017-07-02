@@ -1,23 +1,31 @@
-const pathResolve = require('path').resolve;
-const pathExtname = require('path').extname;
-const pathBasename = require('path').basename;
-const pathDirname = require('path').dirname;
-const pathSep = require('path').sep;
-const pathIsAbsolute = require('path').isAbsolute;
-const pathJoin = require('path').join;
-const yamlParse = require('js-yaml').safeLoad;
+const supportsColor = require('supports-color');
+const chalk = require('chalk');
+const {
+	resolve,
+	extname,
+	basename,
+	dirname,
+	sep,
+	join,
+	isAbsolute
+} = require('path');
+const { safeLoad } = require('js-yaml');
 const pretty = require('pretty');
-const verstatLoadFront = require('verstat-front-matter').loadFront;
-const fsReadFileSync = require('fs').readFileSync;
-const fsWriteFileSync = require('fs').writeFileSync;
-const fsExistsSync = require('fs').existsSync;
-const fsUnlinkSync = require('fs').unlinkSync;
-const fsUtimes = require('fs').utimesSync;
-const globSync = require('glob').sync;
-const pugCompile = require('pug').compile;
-const pugCompileFile = require('pug').compileFile;
+const { loadFront } = require('verstat-front-matter');
+const {
+	readFileSync,
+	writeFileSync,
+	existsSync,
+	unlinkSync,
+	utimesSync
+} = require('fs');
+const { sync } = require('glob');
+const {
+	compile,
+	compileFile
+} = require('pug');
 const bemto = require('verstat-bemto/index-tabs');
-const projectRoot = pathResolve(__dirname, '../');
+const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 
@@ -25,31 +33,40 @@ const templateDependencies = new Map();
 let templateDependenciesKey;
 
 function shortenAbsolutePath(absolutePath) {
-	if (pathIsAbsolute(absolutePath)) {
-		const rootPathParts = projectRoot.split(pathSep);
+	if (isAbsolute(absolutePath)) {
+		const rootPathParts = projectRoot.split(sep);
 		return `${rootPathParts[rootPathParts.length - 1]}${absolutePath.replace(projectRoot, '')}`;
 	}
 	return absolutePath;
 }
 
+function boldTerminalString(str) {
+	if (typeof str === 'string' || str instanceof String) {
+		if (supportsColor) return chalk.bold(str);
+		return str;
+	}
+	return '';
+}
+
 function readFile(fileName) {
-	return fsReadFileSync(fileName, { encoding: 'utf8' });
+	return readFileSync(fileName, { encoding: 'utf8' });
 }
 
 function getModifiedNib(path) {
-	const dirPath = pathDirname(path);
-	if (readFile(path).indexOf('path: fallback') !== -1) return pathJoin(dirPath, 'nib-mod-fallback.styl');
-	return pathJoin(dirPath, 'nib-mod.styl');
+	const dirPath = dirname(path);
+	if (readFile(path).indexOf('path: fallback') !== -1) return join(dirPath, 'nib-mod-fallback.styl');
+	return join(dirPath, 'nib-mod.styl');
 }
 
 function compileBlock(mod, block) {
-	const blocks = globSync(`${projectRoot}/src/blocks/**/*.?(pug|jade)`);
+	const blocks = sync(`${projectRoot}/src/blocks/**/*.?(pug|jade)`);
 	const index = blocks.findIndex(item => item.indexOf(block) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		templateDependencies.get(templateDependenciesKey).blocks.push(blockPath);
-		return pugCompile(`${mod}\n${readFile(blockPath)}`);
+		return compile(`${mod}\n${readFile(blockPath)}`);
 	}
+	return compile(`div [block ${block} not found]`);
 }
 
 function renderBlockEngine(blockName, data) {
@@ -58,17 +75,17 @@ function renderBlockEngine(blockName, data) {
 }
 
 function getGlobalData() {
-	const data = globSync(`${projectRoot}/src/data/*.yml`).map((file) => {
+	const data = sync(`${projectRoot}/src/data/*.yml`).map((file) => {
 		const obj = {};
-		obj[pathBasename(file, '.yml')] = yamlParse(readFile(file));
+		obj[basename(file, '.yml')] = safeLoad(readFile(file));
 		return obj;
 	});
 	return data.length ? Object.assign({}, ...data) : {};
 }
 
 function templateDependenciesEngine(template, data) {
-	const fileExt = pathExtname(data);
-	const key = `${pathBasename(data, fileExt)}${fileExt}`;
+	const fileExt = extname(data);
+	const key = `${basename(data, fileExt)}${fileExt}`;
 	templateDependenciesKey = key;
 	templateDependencies.set(
 		key,
@@ -80,11 +97,13 @@ function templateDependenciesEngine(template, data) {
 	);
 }
 
+// TODO templateDependencies update
 function getTemplateBranch(templateWithData, template, block) {
 	const branch = [];
 	if (templateDependencies.size) {
 		for (const [key, value] of templateDependencies) {
-			if (value.file === templateWithData || value.layout === template || value.blocks.indexOf(block) !== -1) {
+			const { file, layout, blocks } = value;
+			if (file === templateWithData || layout === template || blocks.indexOf(block) !== -1) {
 				branch.push(value.file);
 			}
 		}
@@ -93,20 +112,20 @@ function getTemplateBranch(templateWithData, template, block) {
 }
 
 function compileTemplate(templateWithData) {
-	const extractedData = verstatLoadFront(templateWithData, '\/\/---', 'content');
+	const extractedData = loadFront(templateWithData, '\/\/---', 'content');
 	const modifiedExtractedData = Object.assign({}, extractedData);
 	delete modifiedExtractedData.layout;
 	delete modifiedExtractedData.content;
-	const layouts = globSync(`${projectRoot}/src/layouts/!(main|root).?(pug|jade)`);
+	const layouts = sync(`${projectRoot}/src/layouts/!(main|root).?(pug|jade)`);
 	const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
 	if (template.length) {
 		templateDependenciesEngine(template[0], templateWithData);
-		const fn = pugCompileFile(template[0]);
+		const fn = compileFile(template[0]);
 		const initialLocals = {
 			renderBlock: renderBlockEngine,
 			file: modifiedExtractedData,
 			content: (function () {
-				const fn = pugCompile(`${bemto}\n${extractedData.content}`);
+				const fn = compile(`${bemto}\n${extractedData.content}`);
 				const initialLocals = { renderBlock: renderBlockEngine };
 				const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalData());
 				return fn(locals);
@@ -114,7 +133,7 @@ function compileTemplate(templateWithData) {
 		};
 		const locals = Object.assign(initialLocals, getGlobalData());
 		return {
-			filename: `${pathBasename(templateWithData, pathExtname(templateWithData))}.html`,
+			filename: `${basename(templateWithData, extname(templateWithData))}.html`,
 			content: pretty(
 				fn(locals),
 				{
@@ -131,33 +150,44 @@ function compileTemplate(templateWithData) {
 function removeFiles(files) {
 	if (files.length) {
 		files.forEach(function (item) {
-			if (fsExistsSync(item)) {
-				fsUnlinkSync(item);
-				console.log(`delete old: ${shortenAbsolutePath(item)}`);
+			if (existsSync(item)) {
+				unlinkSync(item);
+				console.log(boldTerminalString('unlink old:'), shortenAbsolutePath(item));
 			}
 		});
 	}
 }
 
+function changeFileTimestamp(number, path) {
+	if (existsSync(path)) {
+		const modifier = parseInt(number);
+		if (modifier < 0) {
+			const timeThen = (Date.now() / 1000) - Math.abs(modifier);
+			utimesSync(path, timeThen, timeThen);
+		} else if (modifier > 0) {
+			const timeThen = (Date.now() / 1000) + Math.abs(modifier);
+			utimesSync(path, timeThen, timeThen);
+		}
+	}
+}
+
 function renderTemplate(templateData) {
 	if (Object.keys(templateData).length !== 0) {
-		const timeNow = Date.now() / 1000;
-		const timeThen = timeNow - 10;
-		const path = pathJoin(projectRoot, 'src', 'pages', templateData.filename);
-		fsWriteFileSync(path, templateData.content, 'utf-8');
-		fsUtimes(path, timeThen, timeThen);
-		console.log(`create: ${shortenAbsolutePath(path)}`);
+		const path = join(projectRoot, 'src', 'pages', templateData.filename);
+		writeFileSync(path, templateData.content, 'utf-8');
+		changeFileTimestamp(-10, path);
+		console.log(boldTerminalString('add:'), shortenAbsolutePath(path));
 	}
 }
 
 function initHtmlWebpackPlugin() {
-	removeFiles(globSync(`${projectRoot}/src/pages/*.html`));
-	globSync(`${projectRoot}/src/*.?(pug|jade)`).forEach(function (item) {
+	removeFiles(sync(`${projectRoot}/src/pages/*.html`));
+	sync(`${projectRoot}/src/*.?(pug|jade)`).forEach(function (item) {
 		renderTemplate(compileTemplate(item));
 	});
-	return globSync(`${projectRoot}/src/pages/*.html`).map(function (item) {
+	return sync(`${projectRoot}/src/pages/*.html`).map(function (item) {
 		return new HtmlWebpackPlugin({
-			filename: pathBasename(item),
+			filename: basename(item),
 			template: item,
 			cache: true,
 			hash: false,
@@ -173,6 +203,8 @@ module.exports = {
 	projectRoot,
 	templateDependencies,
 	readFile,
+	boldTerminalString,
+	changeFileTimestamp,
 	shortenAbsolutePath,
 	getTemplateBranch,
 	renderTemplate,

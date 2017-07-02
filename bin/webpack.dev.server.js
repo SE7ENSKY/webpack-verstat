@@ -3,43 +3,30 @@ require('console-stamp')(console, {
 	label: false
 });
 
-const pathJoin = require('path').join;
-const chokidarWatch = require('chokidar').watch;
-const globSync = require('glob').sync;
+const { join } = require('path');
+const { watch } = require('chokidar');
+const { sync } = require('glob');
 const webpack = require('webpack');
 const webpackDevServer = require('webpack-dev-server');
 const webpackDevConfig = require('../config/webpack.dev.config');
-const configUtils = require('../config/webpack.config.utils');
+const {
+	projectRoot,
+	templateDependencies,
+	boldTerminalString,
+	changeFileTimestamp,
+	shortenAbsolutePath,
+	getTemplateBranch,
+	renderTemplate,
+	compileTemplate
+} = require('../config/webpack.config.utils');
 
-// TODO watch 'config' folder
-
-
-const devServerConfig = {
-	contentBase: pathJoin(configUtils.projectRoot, 'dist'),
-	publicPath: webpackDevConfig.output.publicPath,
-	watchOptions: {
-		ignored: /node_modules/
-	},
-	historyApiFallback: {
-		disableDotRule: true
-	},
-	compress: false,
-	hot: true,
-	lazy: false,
-	inline: true,
-	host: 'localhost',
-	port: 8080,
-	stats: {
-		colors: true
-	}
-};
 
 const chokidarConfig = {
 	paths: {
-		globalData: `${configUtils.projectRoot}/src/data/*.yml`,
-		layoutsData: `${configUtils.projectRoot}/src/*.?(pug|jade)`,
-		layouts: `${configUtils.projectRoot}/src/layouts/*.?(pug|jade)`,
-		blocks: `${configUtils.projectRoot}/src/blocks/**/*.?(pug|jade)`
+		globalData: `${projectRoot}/src/data/*.yml`,
+		layoutsData: `${projectRoot}/src/*.?(pug|jade)`,
+		layouts: `${projectRoot}/src/layouts/*.?(pug|jade)`,
+		blocks: `${projectRoot}/src/blocks/**/*.?(pug|jade)`
 	},
 	options: {
 		ignoreInitial: true,
@@ -47,101 +34,120 @@ const chokidarConfig = {
 	}
 };
 
-let server = startDevServer(require('../config/webpack.dev.config'), devServerConfig);
-server.listen(devServerConfig.port);
+// TODO remove webpack-dev-server
+// TODO install: webpack-dev-middleware, webpack-hot-middleware, browser-sync
+const server = startDevServer(webpackDevConfig);
+server.listen(webpackDevConfig.devServer.port);
 
-function startDevServer(config, serverConfig) {
+function startDevServer(config) {
+	console.log(
+		boldTerminalString('listening:'),
+		`${config.devServer.https ? 'https' : 'http'}://${config.devServer.host}:${config.devServer.port}/`
+	);
 	const compiler = webpack(config);
-	return new webpackDevServer(compiler, serverConfig);
+	return new webpackDevServer(compiler, config.devServer);
 }
 
-function restartDevServer() {
-	console.log(`restarting development server: ${devServerConfig.host}:${devServerConfig.port}`);
-	server.close();
-	delete require.cache[require.resolve('../config/webpack.dev.config')];
-	server = startDevServer(require('../config/webpack.dev.config'), devServerConfig);
-	server.listen(devServerConfig.port);
+function restartDevServer(config) {
+	console.log(
+		boldTerminalString('closing:'),
+		`${config.devServer.https ? 'https' : 'http'}://${config.devServer.host}:${config.devServer.port}/`
+	);
+	changeFileTimestamp(1, join(projectRoot, 'bin', 'webpack.dev.server.js'));
+}
+
+// ONLY FOR TESTING!
+function testTemplateDependencies() {
+	for (const [key, value] of templateDependencies) {
+		const { file, layout, blocks } = value;
+		console.log('/--------------------------------/');
+		console.log('key:', key);
+		console.log('file:', file);
+		console.log('layout:', layout);
+		console.log('blocks:', blocks);
+		console.log('/--------------------------------/');
+	}
 }
 
 function handleChanges(templateWithData, template, block) {
 	if (!templateWithData && !template && !block) {
-		const branch = globSync(`${configUtils.projectRoot}/src/*.?(pug|jade)`);
+		const branch = sync(`${projectRoot}/src/*.?(pug|jade)`);
 		if (branch.length) {
-			console.log('recompiling all branches...');
-			branch.forEach(item => configUtils.renderTemplate(configUtils.compileTemplate(item)));
+			console.log(boldTerminalString('recompiling all branches...'));
+			branch.forEach(item => renderTemplate(compileTemplate(item)));
 		}
 	} else {
-		configUtils.getTemplateBranch(templateWithData, template, block).forEach(function (item) {
-			console.log(`recompile branch: ${configUtils.shortenAbsolutePath(item)}`);
-			configUtils.renderTemplate(configUtils.compileTemplate(item));
+		getTemplateBranch(templateWithData, template, block).forEach(function (item) {
+			console.log(boldTerminalString('recompile branch:'), shortenAbsolutePath(item));
+			renderTemplate(compileTemplate(item));
 		});
 	}
 }
 
-chokidarWatch(chokidarConfig.paths.globalData, chokidarConfig.options)
-	.on('change', function (path, stats) {
-		console.log(`change: ${configUtils.shortenAbsolutePath(path)}`);
+watch(chokidarConfig.paths.globalData, chokidarConfig.options)
+	.on('change', function (path) {
+		console.log(boldTerminalString('change:'), shortenAbsolutePath(path));
 		handleChanges();
+		testTemplateDependencies();
+	})
+	.on('add', function (path) {
+		console.log(boldTerminalString('add:'), shortenAbsolutePath(path));
+		restartDevServer();
+		testTemplateDependencies();
+	})
+	.on('unlink', function (path) {
+		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(path));
+		restartDevServer();
+		testTemplateDependencies();
 	});
-	// .on('add', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// })
-	// .on('unlink', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// });
 
-chokidarWatch(chokidarConfig.paths.layoutsData, chokidarConfig.options)
-	.on('change', function (path, stats) {
-		console.log(`change: ${configUtils.shortenAbsolutePath(path)}`);
+watch(chokidarConfig.paths.layoutsData, chokidarConfig.options)
+	.on('change', function (path) {
+		console.log(boldTerminalString('change:'), shortenAbsolutePath(path));
 		handleChanges(path, null, null);
+		testTemplateDependencies();
+	})
+	.on('add', function (path) {
+		console.log(boldTerminalString('add:'), shortenAbsolutePath(path));
+		restartDevServer(webpackDevConfig);
+		testTemplateDependencies();
+	})
+	.on('unlink', function (path) {
+		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(path));
+		restartDevServer(webpackDevConfig);
+		testTemplateDependencies();
 	});
-	// .on('add', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// })
-	// .on('unlink', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// });
 
-chokidarWatch(chokidarConfig.paths.layouts, chokidarConfig.options)
-	.on('change', function (path, stats) {
-		// configUtils.templateDependencies.forEach(function(value, key) {
-		// 	console.log("TEST DATA #1: " + key);
-		// 	console.log("TEST DATA #2: " + value.file);
-		// 	console.log("TEST DATA #3: " + value.layout);
-		// 	console.log("TEST DATA #4: " + value.blocks);
-		// });
-		// for (const [key, value] of configUtils.templateDependencies) {
-		// 	console.log("TEST DATA #1: " + key);
-		// 	console.log("TEST DATA #2: " + value.file);
-		// 	console.log("TEST DATA #3: " + value.layout);
-		// 	console.log("TEST DATA #4: " + value.blocks);
-		// }
-		console.log(`change: ${configUtils.shortenAbsolutePath(path)}`);
+watch(chokidarConfig.paths.layouts, chokidarConfig.options)
+	.on('change', function (path) {
+		console.log(boldTerminalString('change:'), shortenAbsolutePath(path));
 		handleChanges(null, path, null);
+		testTemplateDependencies();
+	})
+	.on('add', function (path) {
+		console.log(boldTerminalString('add:'), shortenAbsolutePath(path));
+		handleChanges(null, path, null);
+		testTemplateDependencies();
+	})
+	.on('unlink', function (path) {
+		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(path));
+		handleChanges(null, path, null);
+		testTemplateDependencies();
 	});
-	// .on('add', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// })
-	// .on('unlink', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// });
 
-chokidarWatch(chokidarConfig.paths.blocks, chokidarConfig.options)
-	.on('change', function (path, stats) {
-		console.log(`change: ${configUtils.shortenAbsolutePath(path)}`);
+watch(chokidarConfig.paths.blocks, chokidarConfig.options)
+	.on('change', function (path) {
+		console.log(boldTerminalString('change:'), shortenAbsolutePath(path));
 		handleChanges(null, null, path);
+		testTemplateDependencies();
+	})
+	.on('add', function (path) {
+		console.log(boldTerminalString('add:'), shortenAbsolutePath(path));
+		handleChanges(null, null, path);
+		testTemplateDependencies();
+	})
+	.on('unlink', function (path) {
+		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(path));
+		handleChanges(null, null, path);
+		testTemplateDependencies();
 	});
-	// .on('add', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// })
-	// .on('unlink', (path) => {
-	// 	handleChanges();
-	// 	restartDevServer();
-	// });

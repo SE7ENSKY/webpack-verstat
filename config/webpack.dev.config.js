@@ -1,20 +1,62 @@
-const webpackHotModuleReplacementPlugin = require('webpack').HotModuleReplacementPlugin;
-const webpackNamedModulesPlugin = require('webpack').NamedModulesPlugin;
-const webpackMerge = require('webpack-merge');
-const baseConfig = require('./webpack.base.config');
+const { join } = require('path');
+const nib = require('nib');
+const autoprefixer = require('autoprefixer');
+const {
+	HotModuleReplacementPlugin,
+	NamedModulesPlugin,
+	NoEmitOnErrorsPlugin,
+	ProvidePlugin,
+	LoaderOptionsPlugin,
+	WatchIgnorePlugin,
+	DefinePlugin
+} = require('webpack');
+// const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
+const {
+	projectRoot,
+	getModifiedNib,
+	initHtmlWebpackPlugin
+} = require('./webpack.config.utils');
 
 
+// TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
+// TODO happypack
 const devConfig = {
+	context: join(projectRoot, 'src'),
 	entry: [
 		'webpack-dev-server/client?http://localhost:8080',
 		'webpack/hot/dev-server',
 		'./assets/main.js'
 	],
 	output: {
+		path: join(projectRoot, 'dist'),
 		publicPath: '/',
 		filename: 'assets/[name].js'
 	},
+	devServer: {
+		contentBase: join(projectRoot, 'dist'),
+		publicPath: '/',
+		watchOptions: {
+			ignored: /node_modules/
+			// aggregateTimeout: 300, // watching files
+			// poll: 1000 // watching files
+		},
+		historyApiFallback: {
+			disableDotRule: true
+		},
+		compress: false,
+		hot: true,
+		lazy: false,
+		inline: true,
+		https: false,
+		host: 'localhost',
+		port: 8080,
+		stats: {
+			colors: true
+		}
+	},
 	devtool: 'cheap-module-eval-source-map',
+	target: 'web',
 	module: {
 		rules: [
 			{
@@ -90,13 +132,113 @@ const devConfig = {
 						}
 					}
 				]
+			},
+			{
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
+				use: {
+					loader: 'file-loader',
+					options: {
+						regExp: '\\b(assets.+)',
+						name: '[1]'
+					}
+				}
+			},
+			{
+				test: /\.txt$/,
+				use: 'raw-loader'
+			},
+			{
+				test: /\.json$/,
+				use: 'json-loader'
+			},
+			{
+				test: /\.yaml$/,
+				use: 'yaml-loader'
+			},
+			{
+				test: /\.md$/,
+				use: ['html-loader', 'markdown-loader']
+			},
+			{
+				test: /\.html$/,
+				use: 'html-loader'
+			},
+			{
+				test: /\.coffee$/,
+				use: 'coffee-loader'
+			},
+			{
+				test: /\.js$/,
+				exclude: /node_modules/,
+				use: {
+					loader: 'babel-loader',
+					options: {
+						cacheDirectory: true,
+						babelrc: false,
+						plugins: ['transform-runtime'],
+						presets: [
+							[
+								'env',
+								{
+									targets: {
+										browsers: [
+											'last 4 versions',
+											'ie >= 10'
+										]
+									},
+									modules: false,
+									loose: true,
+									useBuiltIns: true
+								}
+							]
+						]
+					}
+				}
 			}
 		]
 	},
 	plugins: [
-		new webpackHotModuleReplacementPlugin(),
-		new webpackNamedModulesPlugin()
+		new DefinePlugin({
+			'process.env': {
+				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
+			}
+		}),
+		...initHtmlWebpackPlugin(),
+		new NoEmitOnErrorsPlugin(),
+		new ProvidePlugin({
+			$: 'jquery',
+			jQuery: 'jquery'
+		}),
+		new HotModuleReplacementPlugin(),
+		new NamedModulesPlugin(),
+		// new CopyWebpackPlugin([
+		//	 { from: `${projectRoot}/src/assets/fonts`, to: `${projectRoot}/dist/assets/fonts` },
+		//	 { from: `${projectRoot}/src/assets/img`, to: `${projectRoot}/dist/assets/img` },
+		//	 { from: `${projectRoot}/src/assets/video`, to: `${projectRoot}/dist/assets/video` }
+		// ]),
+		new LoaderOptionsPlugin({
+			options: {
+				stylus: {
+					use: [nib()],
+					import: [getModifiedNib(require.resolve('verstat-nib'))],
+					preferPathResolver: 'webpack'
+				},
+				postcss: [
+					autoprefixer({
+						browsers: [
+							'last 4 versions',
+							'ie >= 10'
+						]
+					})
+				]
+			}
+		}),
+		new WatchIgnorePlugin([join(projectRoot, 'node_modules')]),
+		new CircularDependencyPlugin({
+			exclude: /node_modules/,
+			failOnError: true
+		})
 	]
 };
 
-module.exports = webpackMerge(baseConfig, devConfig);
+module.exports = devConfig;

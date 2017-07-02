@@ -1,13 +1,17 @@
-const pathJoin = require('path').join;
+const { join } = require('path');
 const webpackMerge = require('webpack-merge');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
-const webpackUglifyJsPlugin = require('webpack').optimize.UglifyJsPlugin;
+const {
+	optimize: {
+		UglifyJsPlugin,
+		CommonsChunkPlugin
+	}
+} = require('webpack');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-// const webpackCommonsChunkPlugin = require('webpack').optimize.CommonsChunkPlugin;
 const baseConfig = require('./webpack.base.config');
-const configUtils = require('./webpack.config.utils');
+const { projectRoot } = require('./webpack.config.utils');
 
 
 const prodConfig = {
@@ -18,7 +22,7 @@ const prodConfig = {
 		// chunkFilename: '[name].min.js'
 	},
 	devtool: 'source-map',
-	watch: true,
+	watch: false,
 	module: {
 		rules: [
 			{
@@ -145,7 +149,7 @@ const prodConfig = {
 			filename: 'assets/[name].min.css',
 			allChunks: true
 		}),
-		new webpackUglifyJsPlugin({
+		new UglifyJsPlugin({
 			sourceMap: true,
 			mangle: {
 				screw_ie8: true
@@ -158,14 +162,14 @@ const prodConfig = {
 		new CleanWebpackPlugin(
 			['dist/*'],
 			{
-				root: configUtils.projectRoot,
+				root: projectRoot,
 				verbose: true,
 				dry: false,
 				watch: false,
 				exclude: ['letters']
 			}
 		),
-		// new webpackCommonsChunkPlugin({
+		// new CommonsChunkPlugin({
 		//	 name: 'vendor',
 		//	 children: true,
 		//	 minChunks: 2,
@@ -182,7 +186,7 @@ const prodConfig = {
 			host: 'localhost',
 			port: 8080,
 			server: {
-				baseDir: pathJoin(configUtils.projectRoot, 'dist'),
+				baseDir: join(projectRoot, 'dist'),
 				serveStaticOptions: {
 					extensions: ['html']
 				}

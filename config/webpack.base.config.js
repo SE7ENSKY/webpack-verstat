@@ -1,26 +1,28 @@
-const pathJoin = require('path').join;
+const { join } = require('path');
 const nib = require('nib');
 const autoprefixer = require('autoprefixer');
-const webpackNoEmitOnErrorsPlugin = require('webpack').NoEmitOnErrorsPlugin;
-const webpackProvidePlugin = require('webpack').ProvidePlugin;
-const webpackLoaderOptionsPlugin = require('webpack').LoaderOptionsPlugin;
-const webpackWatchIgnorePlugin = require('webpack').WatchIgnorePlugin;
-const webpackDefinePlugin = require('webpack').DefinePlugin;
+const {
+	NoEmitOnErrorsPlugin,
+	ProvidePlugin,
+	LoaderOptionsPlugin,
+	WatchIgnorePlugin,
+	DefinePlugin
+} = require('webpack');
 // const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
-const configUtils = require('./webpack.config.utils');
+const {
+	projectRoot,
+	getModifiedNib,
+	initHtmlWebpackPlugin
+} = require('./webpack.config.utils');
 
 
 const baseConfig = {
-	context: pathJoin(configUtils.projectRoot, 'src'),
+	context: join(projectRoot, 'src'),
 	output: {
-		path: pathJoin(configUtils.projectRoot, 'dist')
+		path: join(projectRoot, 'dist')
 	},
 	target: 'web',
-	// externals: {},
-	// resolveLoader: {
-	// 	modules: ['node_modules', 'custom-loaders']
-	// },
 	module: {
 		rules: [
 			{
@@ -88,14 +90,14 @@ const baseConfig = {
 		]
 	},
 	plugins: [
-		new webpackDefinePlugin({
+		new DefinePlugin({
 			'process.env': {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
 		}),
-		...configUtils.initHtmlWebpackPlugin(),
-		new webpackNoEmitOnErrorsPlugin(),
-		new webpackProvidePlugin({
+		...initHtmlWebpackPlugin(),
+		new NoEmitOnErrorsPlugin(),
+		new ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery'
 		}),
@@ -104,11 +106,11 @@ const baseConfig = {
 		//	 { from: `${projectRoot}/src/assets/img`, to: `${projectRoot}/dist/assets/img` },
 		//	 { from: `${projectRoot}/src/assets/video`, to: `${projectRoot}/dist/assets/video` }
 		// ]),
-		new webpackLoaderOptionsPlugin({
+		new LoaderOptionsPlugin({
 			options: {
 				stylus: {
 					use: [nib()],
-					import: [configUtils.getModifiedNib(require.resolve('verstat-nib'))],
+					import: [getModifiedNib(require.resolve('verstat-nib'))],
 					preferPathResolver: 'webpack'
 				},
 				postcss: [
@@ -121,7 +123,7 @@ const baseConfig = {
 				]
 			}
 		}),
-		new webpackWatchIgnorePlugin([pathJoin(configUtils.projectRoot, 'node_modules')]),
+		new WatchIgnorePlugin([join(projectRoot, 'node_modules')]),
 		new CircularDependencyPlugin({
 			exclude: /node_modules/,
 			failOnError: true
