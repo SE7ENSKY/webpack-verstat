@@ -3,7 +3,6 @@ const nib = require('nib');
 const autoprefixer = require('autoprefixer');
 const {
 	HotModuleReplacementPlugin,
-	NamedModulesPlugin,
 	NoEmitOnErrorsPlugin,
 	ProvidePlugin,
 	LoaderOptionsPlugin,
@@ -16,44 +15,19 @@ const {
 	projectRoot,
 	getModifiedNib,
 	initHtmlWebpackPlugin
-} = require('./webpack.config.utils');
+} = require('../bin/utils');
 
-
-// TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
 // TODO happypack
+
 const devConfig = {
 	context: join(projectRoot, 'src'),
-	entry: [
-		'webpack-dev-server/client?http://localhost:8080',
-		'webpack/hot/dev-server',
-		'./assets/main.js'
-	],
+	entry: {
+		main: ['./assets/main.js', 'webpack-hot-middleware/client']
+	},
 	output: {
 		path: join(projectRoot, 'dist'),
 		publicPath: '/',
 		filename: 'assets/[name].js'
-	},
-	devServer: {
-		contentBase: join(projectRoot, 'dist'),
-		publicPath: '/',
-		watchOptions: {
-			ignored: /node_modules/
-			// aggregateTimeout: 300, // watching files
-			// poll: 1000 // watching files
-		},
-		historyApiFallback: {
-			disableDotRule: true
-		},
-		compress: false,
-		hot: true,
-		lazy: false,
-		inline: true,
-		https: false,
-		host: 'localhost',
-		port: 8080,
-		stats: {
-			colors: true
-		}
 	},
 	devtool: 'cheap-module-eval-source-map',
 	target: 'web',
@@ -210,7 +184,6 @@ const devConfig = {
 			jQuery: 'jquery'
 		}),
 		new HotModuleReplacementPlugin(),
-		new NamedModulesPlugin(),
 		// new CopyWebpackPlugin([
 		//	 { from: `${projectRoot}/src/assets/fonts`, to: `${projectRoot}/dist/assets/fonts` },
 		//	 { from: `${projectRoot}/src/assets/img`, to: `${projectRoot}/dist/assets/img` },

@@ -28,6 +28,13 @@ const bemto = require('verstat-bemto/index-tabs');
 const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+// TODO sitegrid [06.07.2017]
+// TODO readme: project structure, instructions
+// TODO letters: html/css, pug/stylus/sass/less, mjml
+// TODO markdown
+// TODO server errors
+// TODO web workers ?
+// TODO service worker ?
 
 const templateDependencies = new Map();
 let templateDependenciesKey;
@@ -54,7 +61,9 @@ function readFile(fileName) {
 
 function getModifiedNib(path) {
 	const dirPath = dirname(path);
-	if (readFile(path).indexOf('path: fallback') !== -1) return join(dirPath, 'nib-mod-fallback.styl');
+	if (readFile(path).indexOf('path: fallback') !== -1) {
+		return join(dirPath, 'nib-mod-fallback.styl');
+	}
 	return join(dirPath, 'nib-mod.styl');
 }
 
@@ -63,15 +72,18 @@ function compileBlock(mod, block) {
 	const index = blocks.findIndex(item => item.indexOf(block) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
-		templateDependencies.get(templateDependenciesKey).blocks.push(blockPath);
+		templateDependencies.get(templateDependenciesKey).blocks.set(block, blockPath);
 		return compile(`${mod}\n${readFile(blockPath)}`);
 	}
+	templateDependencies.get(templateDependenciesKey).blocks.set(block, null);
 	return compile(`div [block ${block} not found]`);
 }
 
 function renderBlockEngine(blockName, data) {
-	data.renderBlock = function (blockName, data) { return compileBlock(bemto, blockName)(data); };
-	return compileBlock(bemto, blockName)(data);
+	data.renderBlock = function (blockName, data) {
+		return compileBlock(bemto, blockName[0])(data);
+	};
+	return compileBlock(bemto, blockName[0])(data);
 }
 
 function getGlobalData() {
@@ -92,19 +104,35 @@ function templateDependenciesEngine(template, data) {
 		{
 			file: data,
 			layout: template,
-			blocks: []
+			blocks: new Map()
 		}
 	);
 }
 
-// TODO templateDependencies update
+function addBlockToTemplateBranch(block) {
+	const blockName = basename(block, extname(block));
+	for (const [key, value] of templateDependencies) {
+		for (const [key2, value2] of value.blocks) {
+			if (key2 === blockName && value2 === null) {
+				value.blocks.set(blockName, block);
+			}
+		}
+	}
+}
+
 function getTemplateBranch(templateWithData, template, block) {
 	const branch = [];
 	if (templateDependencies.size) {
 		for (const [key, value] of templateDependencies) {
 			const { file, layout, blocks } = value;
-			if (file === templateWithData || layout === template || blocks.indexOf(block) !== -1) {
+			if (file === templateWithData || layout === template) {
 				branch.push(value.file);
+			} else if (blocks.size) {
+				for (const [key2, value2] of blocks) {
+					if (value2 === block) {
+						branch.push(value.file);
+					}
+				}
 			}
 		}
 	}
@@ -204,6 +232,7 @@ module.exports = {
 	templateDependencies,
 	readFile,
 	boldTerminalString,
+	addBlockToTemplateBranch,
 	changeFileTimestamp,
 	shortenAbsolutePath,
 	getTemplateBranch,

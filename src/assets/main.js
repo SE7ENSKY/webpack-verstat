@@ -1,6 +1,13 @@
 import './styles/main.styl';
 
+
 if (module.hot) {
+	const originalLog = console.log;
+	console.log = function () {
+		if (arguments[0].indexOf('[HMR]') === -1) {
+			return originalLog.apply(console, arguments);
+		}
+	};
 	module.hot.accept();
 }
 

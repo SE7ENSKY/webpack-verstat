@@ -6,6 +6,8 @@ require('console-stamp')(console, {
 const webpack = require('webpack');
 const webpackProdConfig = require('../config/webpack.prod.config');
 
+// TODO production
+// TODO npm run build
 
 webpack(webpackProdConfig, (err, stats) => {
 	if (err) {
