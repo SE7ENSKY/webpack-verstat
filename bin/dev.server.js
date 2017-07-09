@@ -52,7 +52,10 @@ const compiler = webpack(webpackDevConfig);
 const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 // webpackDevMiddlewareInstance.waitUntilValid(() => {
-// 	console.log('DATA:', compiler.outputFileSystem.readdirSync(`${webpackDevConfig.output.path}/assets/img/`));
+// 	console.log(
+// 		'DATA:',
+// 		compiler.outputFileSystem.readdirSync(`${webpackDevConfig.output.path}/assets/img/`)
+// 	);
 // });
 
 browserSync.init({

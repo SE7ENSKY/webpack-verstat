@@ -3,13 +3,35 @@ require('console-stamp')(console, {
 	label: false
 });
 
+const { join } = require('path');
 const webpack = require('webpack');
 const webpackProdConfig = require('../config/webpack.prod.config');
+const browserSync = require('browser-sync').create();
+const { projectRoot } = require('./utils');
 
-// TODO production
-// TODO npm run build
 
-webpack(webpackProdConfig, (err, stats) => {
+const browserSyncConfig = {
+	ui: false,
+	open: false,
+	notify: false,
+	reloadOnRestart: true,
+	watchOptions: {
+		ignoreInitial: true,
+		awaitWriteFinish: true
+	},
+	host: 'localhost',
+	port: 3000,
+	server: {
+		baseDir: join(projectRoot, 'dist')
+		// serveStaticOptions: {
+		// 	extensions: ['html']
+		// }
+	}
+};
+
+const compiler = webpack(webpackProdConfig);
+
+const callback = (err, stats) => {
 	if (err) {
 		console.error(err.stack || err);
 		if (err.details) {
@@ -25,4 +47,7 @@ webpack(webpackProdConfig, (err, stats) => {
 		console.warn(info.warnings);
 	}
 	console.log(stats.toString('normal'));
-});
+	browserSync.init(browserSyncConfig);
+};
+
+compiler.run(callback);

@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Frontend project for Verstat Template",
   "scripts": {
-    "build": "",
+    "build": "NODE_ENV=production webpack --progress --colors --config config/webpack.prod.config.js",
     "prod": "NODE_ENV=production nodemon -e js --watch config/webpack.prod.config.js --watch bin/prod.server.js --watch bin/utils.js bin/prod.server.js",
     "dev": "NODE_ENV=development nodemon -e js --watch config/webpack.dev.config.js --watch bin/dev.server.js --watch bin/utils.js bin/dev.server.js"
   },
@@ -18,7 +18,6 @@
     "babel-preset-env": "^1.5.2",
     "beautify-html-plugin": "^1.0.0",
     "browser-sync": "^2.18.12",
-    "browser-sync-webpack-plugin": "^1.1.4",
     "chalk": "^2.0.1",
     "chokidar": "^1.7.0",
     "circular-dependency-plugin": "^3.0.0",
@@ -58,6 +57,7 @@
     "raw-loader": "^0.5.1",
     "resolve-url-loader": "^2.0.3",
     "sass-loader": "^6.0.3",
+    "script-ext-html-webpack-plugin": "^1.8.3",
     "style-loader": "^0.17.0",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.1",
