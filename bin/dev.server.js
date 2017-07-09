@@ -5,6 +5,7 @@ require('console-stamp')(console, {
 
 const { join } = require('path');
 const { sync } = require('glob');
+const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
@@ -12,7 +13,6 @@ const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../config/webpack.dev.config');
 const {
 	projectRoot,
-	templateDependencies,
 	boldTerminalString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
@@ -47,9 +47,14 @@ const devServerConfig = {
 	}
 };
 
+const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
+compiler.outputFileSystem = memoryFS;
 const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
+webpackDevMiddlewareInstance.waitUntilValid(() => {
+	console.log('DATA:', compiler.outputFileSystem.readdirSync(`${webpackDevConfig.output.path}/assets/img/`));
+});
 
 browserSync.init({
 	ui: false,
@@ -113,10 +118,10 @@ function handleGlobalData(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 	} else if (event === 'add') {
 		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'webpack.dev.server.js'));
+		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
 	} else if (event === 'unlink') {
 		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'webpack.dev.server.js'));
+		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
 	}
 }
 
@@ -127,10 +132,10 @@ function handleTemplateWithData(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 	} else if (event === 'add') {
 		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'webpack.dev.server.js'));
+		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
 	} else if (event === 'unlink') {
 		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'webpack.dev.server.js'));
+		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
 	}
 }
 

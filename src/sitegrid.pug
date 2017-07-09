@@ -1,0 +1,52 @@
+mixin line(item)
+	if item
+		tr
+			td.title
+				span= item.title
+			td.url: a(href=item.url)= item.url
+			td.layout
+				span= item.layout
+
+doctype html
+html
+	head
+		meta(charset="UTF-8")
+		meta(content="user-scalable=no, width=device-width", name="viewport")
+		title Site Grid
+		link(href='http://fonts.googleapis.com/css?family=PT+Sans:400,700,400italic,700italic&subset=latin,cyrillic', rel='stylesheet', type='text/css')
+		style
+			:stylus
+				body
+					font-size 15px
+					line-height 1.5
+					font-family "PT Sans", sans-serif
+				table
+					width 100%
+				table, td, th
+					border 0 none
+					border-spacing 0
+				thead tr
+					background #eee
+				tbody tr:hover
+					background #f5f5f5
+				td, th
+					padding 3px 5px
+				th
+					text-align left
+				td
+					&.title
+						width 30%
+					&.category
+					&.template span
+						white-space nowrap
+	body
+		table
+			thead
+				tr
+					th.title title
+					th.url url
+					th.layout layout
+			tbody
+				if siteGrid
+					each item in siteGrid
+						+line(item)

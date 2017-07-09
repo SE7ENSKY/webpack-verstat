@@ -18,6 +18,7 @@ const {
 } = require('../bin/utils');
 
 // TODO happypack
+// TODO vendor assets: img/css/js
 
 const devConfig = {
 	context: join(projectRoot, 'src'),
@@ -25,12 +26,15 @@ const devConfig = {
 		main: ['./assets/main.js', 'webpack-hot-middleware/client']
 	},
 	output: {
-		path: join(projectRoot, 'dist'),
+		path: '/',
 		publicPath: '/',
 		filename: 'assets/[name].js'
 	},
 	devtool: 'cheap-module-eval-source-map',
 	target: 'web',
+	// resolveLoader: {
+	// 	modules: ['node_modules', 'custom-loaders']
+	// },
 	module: {
 		rules: [
 			{
@@ -135,7 +139,27 @@ const devConfig = {
 			},
 			{
 				test: /\.html$/,
-				use: 'html-loader'
+				use: [
+					{
+						loader: 'html-loader',
+						options: {
+							root: join(projectRoot, 'src'),
+							attrs: [
+								'img:src',
+								'source:srcset',
+								'img:data-src',
+								'img:data-srcset'
+							]
+						}
+					}
+					// under construction
+					// {
+					// 	loader: 'resolve-inline-css-loader',
+					// 	options: {
+					// 		root: join(projectRoot, 'src')
+					// 	}
+					// }
+				]
 			},
 			{
 				test: /\.coffee$/,

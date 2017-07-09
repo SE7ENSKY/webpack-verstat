@@ -276,7 +276,7 @@ babel-code-frame@^6.11.0, babel-code-frame@^6.16.0, babel-code-frame@^6.22.0:
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
-babel-core@^6.24.1:
+babel-core@^6.1.18, babel-core@^6.24.1:
   version "6.25.0"
   resolved "https://registry.yarnpkg.com/babel-core/-/babel-core-6.25.0.tgz#7dd42b0463c742e9d5296deb3ec67a9322dad729"
   dependencies:
@@ -1192,7 +1192,7 @@ clone@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/clone/-/clone-1.0.2.tgz#260b7a99ebb1edfe247538175f783243cb19d149"
 
-clone@^2.1.1:
+clone@^2.0.0, clone@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/clone/-/clone-2.1.1.tgz#d217d1e961118e3ac9a4b8bba3285553bf647cdb"
 
@@ -1219,6 +1219,10 @@ coffee-loader@^0.7.3:
 coffee-script@^1.12.5:
   version "1.12.6"
   resolved "https://registry.yarnpkg.com/coffee-script/-/coffee-script-1.12.6.tgz#285a3f7115689065064d6bf9ef4572db66695cbf"
+
+coffee-script@~1.10.0:
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/coffee-script/-/coffee-script-1.10.0.tgz#12938bcf9be1948fa006f92e0c4c9e81705108c0"
 
 color-convert@^1.0.0, color-convert@^1.3.0:
   version "1.9.0"
@@ -2199,6 +2203,12 @@ extglob@^0.3.1:
   resolved "https://registry.yarnpkg.com/extglob/-/extglob-0.3.2.tgz#2e18ff3d2f49ab2765cec9023f011daa8d8349a1"
   dependencies:
     is-extglob "^1.0.0"
+
+extract-loader@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/extract-loader/-/extract-loader-0.1.0.tgz#a1c146915241cc486d5292263c7555d5aa19766e"
+  dependencies:
+    loader-utils "^0.2.16"
 
 extract-text-webpack-plugin@^2.1.0:
   version "2.1.2"
@@ -3194,6 +3204,55 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.3.6"
 
+jstransformer-babel@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/jstransformer-babel/-/jstransformer-babel-2.1.0.tgz#bf5bc067df50d960a05668a4bcfb4e7091824a61"
+  dependencies:
+    babel-core "^6.1.18"
+
+jstransformer-coffee-script@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/jstransformer-coffee-script/-/jstransformer-coffee-script-1.1.0.tgz#d191d0861913d8f6b25fdc41215726d5064f62a9"
+  dependencies:
+    coffee-script "~1.10.0"
+    merge "^1.2.0"
+
+jstransformer-less@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/jstransformer-less/-/jstransformer-less-2.2.0.tgz#5b229c8fdbacc216803b31a4a1757cd8e59224d4"
+  dependencies:
+    less "^2.3.1"
+    less-plugin-inline-urls "^1.1.0"
+    less-plugin-npm-import "^2.0.0"
+
+jstransformer-markdown-it@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/jstransformer-markdown-it/-/jstransformer-markdown-it-2.0.0.tgz#8b44aedbc9465dc935d280be90339b671c16ceb8"
+  dependencies:
+    markdown-it "^8.0.0"
+
+jstransformer-sass@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/jstransformer-sass/-/jstransformer-sass-0.1.1.tgz#db22bbee864548060406b75ae819901912bc55af"
+  dependencies:
+    jstransformer-scss "^0.1.3"
+
+jstransformer-scss@^0.1.3, jstransformer-scss@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/jstransformer-scss/-/jstransformer-scss-0.1.4.tgz#d7e0a7ae29342f8c04fe169a52851b5adac60e2c"
+  dependencies:
+    extend-shallow "^2.0.1"
+    node-sass "^4.0.0"
+    promise "^7.1.1"
+
+jstransformer-stylus@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/jstransformer-stylus/-/jstransformer-stylus-1.3.0.tgz#0efbd4655aa4c34d6821a4708ca8e12bdbe965e1"
+  dependencies:
+    clone "^2.0.0"
+    promise "^7.0.3"
+    stylus "0.x"
+
 jstransformer@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/jstransformer/-/jstransformer-1.0.0.tgz#ed8bf0921e2f3f1ed4d5c1a44f68709ed24722c3"
@@ -3253,7 +3312,18 @@ less-loader@^4.0.3:
     loader-utils "^1.1.0"
     pify "^2.3.0"
 
-less@^2.7.2:
+less-plugin-inline-urls@^1.1.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/less-plugin-inline-urls/-/less-plugin-inline-urls-1.2.0.tgz#5ddab07a0c2571f1a2855cf929ddc9efc1e38acc"
+
+less-plugin-npm-import@^2.0.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/less-plugin-npm-import/-/less-plugin-npm-import-2.1.0.tgz#823e6986c93318a98171ca858848b6bead55bf3e"
+  dependencies:
+    promise "~7.0.1"
+    resolve "~1.1.6"
+
+less@^2.3.1, less@^2.7.2:
   version "2.7.2"
   resolved "https://registry.yarnpkg.com/less/-/less-2.7.2.tgz#368d6cc73e1fb03981183280918743c5dcf9b3df"
   optionalDependencies:
@@ -3276,6 +3346,12 @@ levn@^0.3.0, levn@~0.3.0:
 limiter@^1.0.5:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/limiter/-/limiter-1.1.2.tgz#229d8055891c8b11af9e0ee5200e8e09bb3dcbeb"
+
+linkify-it@^2.0.0:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/linkify-it/-/linkify-it-2.0.3.tgz#d94a4648f9b1c179d64fa97291268bdb6ce9434f"
+  dependencies:
+    uc.micro "^1.0.1"
 
 load-json-file@^1.0.0:
   version "1.1.0"
@@ -3512,6 +3588,16 @@ map-stream@~0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/map-stream/-/map-stream-0.1.0.tgz#e56aa94c4c8055a16404a0674b78f215f7c8e194"
 
+markdown-it@^8.0.0:
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/markdown-it/-/markdown-it-8.3.1.tgz#2f4b622948ccdc193d66f3ca2d43125ac4ac7323"
+  dependencies:
+    argparse "^1.0.7"
+    entities "~1.1.1"
+    linkify-it "^2.0.0"
+    mdurl "^1.0.1"
+    uc.micro "^1.0.3"
+
 markdown-loader@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/markdown-loader/-/markdown-loader-2.0.1.tgz#eed8bead82978bacf17b76a11c5593a013e2d976"
@@ -3527,7 +3613,11 @@ math-expression-evaluator@^1.2.14:
   version "1.2.17"
   resolved "https://registry.yarnpkg.com/math-expression-evaluator/-/math-expression-evaluator-1.2.17.tgz#de819fdbcd84dccd8fae59c6aeb79615b9d266ac"
 
-memory-fs@^0.4.0, memory-fs@~0.4.1:
+mdurl@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/mdurl/-/mdurl-1.0.1.tgz#fe85b2ec75a59037f2adfec100fd6c601761152e"
+
+memory-fs@^0.4.0, memory-fs@^0.4.1, memory-fs@~0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/memory-fs/-/memory-fs-0.4.1.tgz#3a9a20b8462523e447cfbc7e8bb80ed667bfc552"
   dependencies:
@@ -3765,7 +3855,7 @@ node-pre-gyp@^0.6.36:
     tar "^2.2.1"
     tar-pack "^3.4.0"
 
-node-sass@^4.5.2:
+node-sass@^4.0.0, node-sass@^4.5.2:
   version "4.5.3"
   resolved "https://registry.yarnpkg.com/node-sass/-/node-sass-4.5.3.tgz#d09c9d1179641239d1b97ffc6231fdcec53e1568"
   dependencies:
@@ -4481,9 +4571,15 @@ progress@^1.1.8:
   version "1.1.8"
   resolved "https://registry.yarnpkg.com/progress/-/progress-1.1.8.tgz#e260c78f6161cdd9b0e56cc3e0a85de17c7a57be"
 
-promise@^7.0.1, promise@^7.1.1:
+promise@^7.0.1, promise@^7.0.3, promise@^7.1.1:
   version "7.3.1"
   resolved "https://registry.yarnpkg.com/promise/-/promise-7.3.1.tgz#064b72602b18f90f29192b8b1bc418ffd1ebd3bf"
+  dependencies:
+    asap "~2.0.3"
+
+promise@~7.0.1:
+  version "7.0.4"
+  resolved "https://registry.yarnpkg.com/promise/-/promise-7.0.4.tgz#363e84a4c36c8356b890fed62c91ce85d02ed539"
   dependencies:
     asap "~2.0.3"
 
@@ -4996,6 +5092,10 @@ resolve@^1.1.6, resolve@^1.2.0:
   dependencies:
     path-parse "^1.0.5"
 
+resolve@~1.1.6:
+  version "1.1.7"
+  resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.1.7.tgz#203114d82ad2c5ed9e8e0411b3932875e889e97b"
+
 resp-modifier@6.0.2:
   version "6.0.2"
   resolved "https://registry.yarnpkg.com/resp-modifier/-/resp-modifier-6.0.2.tgz#b124de5c4fbafcba541f48ffa73970f4aa456b4f"
@@ -5494,7 +5594,7 @@ stylus-loader@^3.0.1:
     lodash.clonedeep "^4.5.0"
     when "~3.6.x"
 
-stylus@0.54.5, stylus@^0.54.5:
+stylus@0.54.5, stylus@0.x, stylus@^0.54.5:
   version "0.54.5"
   resolved "https://registry.yarnpkg.com/stylus/-/stylus-0.54.5.tgz#42b9560931ca7090ce8515a798ba9e6aa3d6dc79"
   dependencies:
@@ -5669,6 +5769,10 @@ typedarray@^0.0.6:
 ua-parser-js@0.7.12:
   version "0.7.12"
   resolved "https://registry.yarnpkg.com/ua-parser-js/-/ua-parser-js-0.7.12.tgz#04c81a99bdd5dc52263ea29d24c6bf8d4818a4bb"
+
+uc.micro@^1.0.1, uc.micro@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/uc.micro/-/uc.micro-1.0.3.tgz#7ed50d5e0f9a9fb0a573379259f2a77458d50192"
 
 uglify-js@3.0.x, uglify-js@^3.0.3:
   version "3.0.23"
@@ -5868,12 +5972,6 @@ webpack-hot-middleware@^2.18.0:
     path-browserify "0.0.0"
     querystring "^0.2.0"
     strip-ansi "^3.0.0"
-
-webpack-merge@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/webpack-merge/-/webpack-merge-4.1.0.tgz#6ad72223b3e0b837e531e4597c199f909361511e"
-  dependencies:
-    lodash "^4.17.4"
 
 webpack-sources@^0.2.3:
   version "0.2.3"

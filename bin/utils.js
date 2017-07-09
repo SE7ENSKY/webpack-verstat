@@ -28,16 +28,18 @@ const bemto = require('verstat-bemto/index-tabs');
 const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO sitegrid [06.07.2017]
 // TODO readme: project structure, instructions
-// TODO letters: html/css, pug/stylus/sass/less, mjml
-// TODO markdown
-// TODO server errors
+// TODO letters: html/css, pug/stylus, mjml
+// TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
+// TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
+// TODO server errors/adjacent folders
+// TODO migration to webpack 3
 // TODO web workers ?
 // TODO service worker ?
 
-const templateDependencies = new Map();
-let templateDependenciesKey;
+const TEMPLATE_DEPENDENCIES = new Map();
+let TEMPLATE_DEPENDENCIES_KEY;
+const SITE_GRID = [];
 
 function shortenAbsolutePath(absolutePath) {
 	if (isAbsolute(absolutePath)) {
@@ -47,12 +49,22 @@ function shortenAbsolutePath(absolutePath) {
 	return absolutePath;
 }
 
+function prettifyHTML(str, options) {
+	if (typeof str === 'string' || str instanceof String) {
+		const defaultOptions = {
+			ocd: true,
+			indent_char: '\t',
+			indent_size: 1
+		};
+		return pretty(str, options ? Object.assign(defaultOptions, options) : defaultOptions);
+	}
+}
+
 function boldTerminalString(str) {
 	if (typeof str === 'string' || str instanceof String) {
 		if (supportsColor) return chalk.bold(str);
 		return str;
 	}
-	return '';
 }
 
 function readFile(fileName) {
@@ -67,15 +79,32 @@ function getModifiedNib(path) {
 	return join(dirPath, 'nib-mod.styl');
 }
 
+function siteGridEngine(title, url, layout) {
+	SITE_GRID.push({
+		title: title || null,
+		url: url.replace(`${projectRoot}/src`, '').replace(extname(url), '.html'),
+		layout: layout.replace(`${projectRoot}/src/`, '')
+	});
+}
+
+function compileSiteGrid(template) {
+	const fn = compileFile(template);
+	const locals = { siteGrid: SITE_GRID };
+	return {
+		filename: `${basename(template, extname(template))}.html`,
+		content: prettifyHTML(fn(locals))
+	};
+}
+
 function compileBlock(mod, block) {
 	const blocks = sync(`${projectRoot}/src/blocks/**/*.?(pug|jade)`);
 	const index = blocks.findIndex(item => item.indexOf(block) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
-		templateDependencies.get(templateDependenciesKey).blocks.set(block, blockPath);
+		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
 		return compile(`${mod}\n${readFile(blockPath)}`);
 	}
-	templateDependencies.get(templateDependenciesKey).blocks.set(block, null);
+	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return compile(`div [block ${block} not found]`);
 }
 
@@ -98,8 +127,8 @@ function getGlobalData() {
 function templateDependenciesEngine(template, data) {
 	const fileExt = extname(data);
 	const key = `${basename(data, fileExt)}${fileExt}`;
-	templateDependenciesKey = key;
-	templateDependencies.set(
+	TEMPLATE_DEPENDENCIES_KEY = key;
+	TEMPLATE_DEPENDENCIES.set(
 		key,
 		{
 			file: data,
@@ -111,7 +140,7 @@ function templateDependenciesEngine(template, data) {
 
 function addBlockToTemplateBranch(block) {
 	const blockName = basename(block, extname(block));
-	for (const [key, value] of templateDependencies) {
+	for (const [key, value] of TEMPLATE_DEPENDENCIES) {
 		for (const [key2, value2] of value.blocks) {
 			if (key2 === blockName && value2 === null) {
 				value.blocks.set(blockName, block);
@@ -122,8 +151,8 @@ function addBlockToTemplateBranch(block) {
 
 function getTemplateBranch(templateWithData, template, block) {
 	const branch = [];
-	if (templateDependencies.size) {
-		for (const [key, value] of templateDependencies) {
+	if (TEMPLATE_DEPENDENCIES.size) {
+		for (const [key, value] of TEMPLATE_DEPENDENCIES) {
 			const { file, layout, blocks } = value;
 			if (file === templateWithData || layout === template) {
 				branch.push(value.file);
@@ -144,9 +173,10 @@ function compileTemplate(templateWithData) {
 	const modifiedExtractedData = Object.assign({}, extractedData);
 	delete modifiedExtractedData.layout;
 	delete modifiedExtractedData.content;
-	const layouts = sync(`${projectRoot}/src/layouts/!(main|root).?(pug|jade)`);
+	const layouts = sync(`${projectRoot}/src/layouts/*.?(pug|jade)`);
 	const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
 	if (template.length) {
+		siteGridEngine(extractedData.title, templateWithData, extractedData.layout);
 		templateDependenciesEngine(template[0], templateWithData);
 		const fn = compileFile(template[0]);
 		const initialLocals = {
@@ -162,14 +192,7 @@ function compileTemplate(templateWithData) {
 		const locals = Object.assign(initialLocals, getGlobalData());
 		return {
 			filename: `${basename(templateWithData, extname(templateWithData))}.html`,
-			content: pretty(
-				fn(locals),
-				{
-					ocd: true,
-					indent_char: '\t',
-					indent_size: 1
-				}
-			)
+			content: prettifyHTML(fn(locals))
 		};
 	}
 	return {};
@@ -209,17 +232,31 @@ function renderTemplate(templateData) {
 }
 
 function initHtmlWebpackPlugin() {
-	removeFiles(sync(`${projectRoot}/src/pages/*.html`));
-	sync(`${projectRoot}/src/*.?(pug|jade)`).forEach(function (item) {
+	const pages = `${projectRoot}/src/pages/*.html`;
+	removeFiles(sync(pages));
+	sync(`${projectRoot}/src/!(sitegrid).?(pug|jade)`).forEach(function (item) {
 		renderTemplate(compileTemplate(item));
 	});
-	return sync(`${projectRoot}/src/pages/*.html`).map(function (item) {
+	sync(`${projectRoot}/src/sitegrid.?(pug|jade)`).forEach(function (item) {
+		renderTemplate(compileSiteGrid(item));
+	});
+	return sync(pages).map(function (item) {
+		const filename = basename(item);
+		let inject;
+		switch (filename) {
+			case 'styles.html':
+			case 'sitegrid.html':
+				inject = false;
+				break;
+			default:
+				inject = 'body';
+		}
 		return new HtmlWebpackPlugin({
-			filename: basename(item),
+			filename,
 			template: item,
 			cache: true,
 			hash: false,
-			inject: 'body',
+			inject,
 			minify: {
 				removeComments: true
 			}
@@ -229,7 +266,6 @@ function initHtmlWebpackPlugin() {
 
 module.exports = {
 	projectRoot,
-	templateDependencies,
 	readFile,
 	boldTerminalString,
 	addBlockToTemplateBranch,
