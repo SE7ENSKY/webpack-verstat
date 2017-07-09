@@ -5,7 +5,7 @@ require('console-stamp')(console, {
 
 const { join } = require('path');
 const { sync } = require('glob');
-const MemoryFileSystem = require('memory-fs');
+// const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
@@ -22,7 +22,6 @@ const {
 	compileTemplate
 } = require('./utils');
 
-// TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
 
 const devServerConfig = {
 	contentBase: join(projectRoot, 'dist'),
@@ -47,14 +46,14 @@ const devServerConfig = {
 	}
 };
 
-const memoryFS = new MemoryFileSystem();
+// const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
-compiler.outputFileSystem = memoryFS;
+// compiler.outputFileSystem = memoryFS;
 const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
-webpackDevMiddlewareInstance.waitUntilValid(() => {
-	console.log('DATA:', compiler.outputFileSystem.readdirSync(`${webpackDevConfig.output.path}/assets/img/`));
-});
+// webpackDevMiddlewareInstance.waitUntilValid(() => {
+// 	console.log('DATA:', compiler.outputFileSystem.readdirSync(`${webpackDevConfig.output.path}/assets/img/`));
+// });
 
 browserSync.init({
 	ui: false,

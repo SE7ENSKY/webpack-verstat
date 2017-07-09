@@ -29,10 +29,15 @@ const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO readme: project structure, instructions
+// TODO resolve inline styles in html
+// TODO autoprefix inline styles in html
+// TODO minimize webpack output
+// TODO happypack
 // TODO letters: html/css, pug/stylus, mjml
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
 // TODO server errors/adjacent folders
+// TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
 // TODO migration to webpack 3
 // TODO web workers ?
 // TODO service worker ?
@@ -40,6 +45,21 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TEMPLATE_DEPENDENCIES = new Map();
 let TEMPLATE_DEPENDENCIES_KEY;
 const SITE_GRID = [];
+
+function generateEntry(server) {
+	const entry = sync(`${projectRoot}/src/assets/*.js`);
+	if (entry.length) {
+		const obj = {};
+		const file = entry[0];
+		const objProp = basename(file, '.js');
+		obj[objProp] = [file.replace(`${projectRoot}/src`, '.')];
+		if (typeof server === 'string' || server instanceof String) {
+			obj[objProp].push(server);
+		}
+		return obj;
+	}
+	return null;
+}
 
 function shortenAbsolutePath(absolutePath) {
 	if (isAbsolute(absolutePath)) {
@@ -267,6 +287,7 @@ function initHtmlWebpackPlugin() {
 module.exports = {
 	projectRoot,
 	readFile,
+	generateEntry,
 	boldTerminalString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,

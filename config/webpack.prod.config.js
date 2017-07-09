@@ -169,12 +169,10 @@ const prodConfig = {
 				exclude: ['letters']
 			}
 		),
-		// new CommonsChunkPlugin({
-		//	 name: 'vendor',
-		//	 children: true,
-		//	 minChunks: 2,
-		//	 async: true
-		// }),
+		new CommonsChunkPlugin({
+			name: 'vendor',
+			minChunks: ({ resource }) => /node_modules/.test(resource)
+		}),
 		new BrowserSyncPlugin({
 			ui: false, // ?
 			open: false,

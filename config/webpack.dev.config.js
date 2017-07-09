@@ -13,18 +13,15 @@ const {
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const {
 	projectRoot,
+	generateEntry,
 	getModifiedNib,
 	initHtmlWebpackPlugin
 } = require('../bin/utils');
 
-// TODO happypack
-// TODO vendor assets: img/css/js
 
 const devConfig = {
 	context: join(projectRoot, 'src'),
-	entry: {
-		main: ['./assets/main.js', 'webpack-hot-middleware/client']
-	},
+	entry: generateEntry('webpack-hot-middleware/client'),
 	output: {
 		path: '/',
 		publicPath: '/',
@@ -152,7 +149,7 @@ const devConfig = {
 							]
 						}
 					}
-					// under construction
+					// under construction!
 					// {
 					// 	loader: 'resolve-inline-css-loader',
 					// 	options: {

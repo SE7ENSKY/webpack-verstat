@@ -4,8 +4,8 @@
   "description": "Frontend project for Verstat Template",
   "scripts": {
     "build": "",
-    "prod": "NODE_ENV=production nodemon -e js --watch config --watch bin bin/prod.server.js",
-    "dev": "NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js"
+    "prod": "NODE_ENV=production nodemon -e js --watch config/webpack.prod.config.js --watch bin/prod.server.js --watch bin/utils.js bin/prod.server.js",
+    "dev": "NODE_ENV=development nodemon -e js --watch config/webpack.dev.config.js --watch bin/dev.server.js --watch bin/utils.js bin/dev.server.js"
   },
   "author": "se7ensky",
   "license": "ISC",
@@ -75,7 +75,6 @@
   "dependencies": {
     "fastclick": "^1.0.6",
     "gsap": "^1.19.1",
-    "immutable": "^3.8.1",
     "jquery": "^3.2.1",
     "lodash": "^4.17.4",
     "normalize.css": "^6.0.0"
