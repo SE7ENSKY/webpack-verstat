@@ -20,6 +20,7 @@ const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const {
 	projectRoot,
 	generateEntry,
+	gererateVendor,
 	getModifiedNib,
 	initHtmlWebpackPlugin
 } = require('../bin/utils');
@@ -283,7 +284,7 @@ const prodConfig = {
 			}
 		),
 		new CommonsChunkPlugin({
-			name: 'vendor',
+			name: gererateVendor(),
 			minChunks: ({ resource }) => (/node_modules/.test(resource)) || (/vendor/.test(resource))
 		}),
 		// new CopyWebpackPlugin([

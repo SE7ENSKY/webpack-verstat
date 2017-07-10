@@ -28,7 +28,6 @@ const bemto = require('verstat-bemto/index-tabs');
 const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO readme: project structure, instructions
 // TODO resolve inline styles in html
 // TODO autoprefix inline styles in html
 // TODO minimize webpack output
@@ -59,6 +58,12 @@ function generateEntry(server) {
 		return obj;
 	}
 	return null;
+}
+
+function gererateVendor() {
+	const vendor = sync(`${projectRoot}/src/assets/*.js`);
+	if (vendor.length) return `${basename(vendor[0], '.js')}.vendor`;
+	return 'vendor';
 }
 
 function shortenAbsolutePath(absolutePath) {
@@ -288,6 +293,7 @@ module.exports = {
 	projectRoot,
 	readFile,
 	generateEntry,
+	gererateVendor,
 	boldTerminalString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
