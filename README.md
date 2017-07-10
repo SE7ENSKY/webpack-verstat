@@ -64,7 +64,7 @@ verstat // project name
 │   │   ├── scripts
 │   │   ├── styles
 │   │   ├── video
-│   │   └──  project-name.js // webpack entry, imports
+│   │   └── project-name.js // webpack entry, imports
 │   ├── blocks
 │   ├── data
 │   ├── globals
