@@ -23,9 +23,6 @@ const browserSyncConfig = {
 	port: 3000,
 	server: {
 		baseDir: join(projectRoot, 'dist')
-		// serveStaticOptions: {
-		// 	extensions: ['html']
-		// }
 	}
 };
 

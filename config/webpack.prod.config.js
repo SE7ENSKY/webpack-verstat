@@ -1,6 +1,14 @@
+if (process.env.TIMESTAMP) {
+	require('console-stamp')(console, {
+		pattern: 'HH:MM:ss',
+		label: false
+	});
+}
+
 const { join } = require('path');
 const nib = require('nib');
-const autoprefixer = require('autoprefixer');
+const cssNext = require('postcss-cssnext');
+const cssMQPacker = require('css-mqpacker');
 const {
 	NoEmitOnErrorsPlugin,
 	ProvidePlugin,
@@ -16,7 +24,7 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
-// const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const {
 	projectRoot,
 	generateEntry,
@@ -26,6 +34,15 @@ const {
 } = require('../bin/utils');
 
 
+const cssMinimizeConfig = {
+	discardComments: {
+		removeAll: true
+	},
+	discardDuplicates: true
+};
+
+const cssMinimize = process.env.UGLIFY ? cssMinimizeConfig : false;
+
 const prodConfig = {
 	context: join(projectRoot, 'src'),
 	entry: generateEntry(),
@@ -34,27 +51,26 @@ const prodConfig = {
 		publicPath: '/',
 		filename: 'assets/[name].min.js'
 	},
-	devtool: 'source-map',
+	devtool: false,
 	target: 'web',
-	// resolveLoader: {
-	// 	modules: ['node_modules', 'custom-loaders']
-	// },
 	watch: false,
 	module: {
 		rules: [
 			{
-				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
-				use: {
-					loader: 'file-loader',
-					options: {
-						regExp: '\\b(assets.+)',
-						name: '[1]'
-					}
-				}
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg)$/,
+				include: [
+					join(projectRoot, 'node_modules'),
+					join(projectRoot, 'src', 'vendor')
+				],
+				use: 'url-loader'
 			},
 			{
-				test: /\.txt$/,
-				use: 'raw-loader'
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
+				exclude: [
+					join(projectRoot, 'node_modules'),
+					join(projectRoot, 'src', 'vendor')
+				],
+				loader: 'file-loader'
 			},
 			{
 				test: /\.json$/,
@@ -70,27 +86,7 @@ const prodConfig = {
 			},
 			{
 				test: /\.html$/,
-				use: [
-					{
-						loader: 'html-loader',
-						options: {
-							root: join(projectRoot, 'src'),
-							attrs: [
-								'img:src',
-								'source:srcset',
-								'img:data-src',
-								'img:data-srcset'
-							]
-						}
-					}
-					// under construction!
-					// {
-					// 	loader: 'resolve-inline-css-loader',
-					// 	options: {
-					// 		root: join(projectRoot, 'src')
-					// 	}
-					// }
-				]
+				use: 'html-loader'
 			},
 			{
 				test: /\.coffee$/,
@@ -131,18 +127,7 @@ const prodConfig = {
 						{
 							loader: 'css-loader',
 							options: {
-								minimize: {
-									discardComments: {
-										removeAll: true
-									},
-									discardDuplicates: true
-								}
-							}
-						},
-						{
-							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
+								minimize: cssMinimize
 							}
 						},
 						'postcss-loader'
@@ -157,27 +142,11 @@ const prodConfig = {
 						{
 							loader: 'css-loader',
 							options: {
-								minimize: {
-									discardComments: {
-										removeAll: true
-									},
-									discardDuplicates: true
-								}
+								minimize: cssMinimize
 							}
 						},
 						'postcss-loader',
-						{
-							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
-						},
-						{
-							loader: 'sass-loader',
-							options: {
-								sourceMap: true
-							}
-						}
+						'sass-loader'
 					],
 					fallback: ['style-loader']
 				})
@@ -189,27 +158,11 @@ const prodConfig = {
 						{
 							loader: 'css-loader',
 							options: {
-								minimize: {
-									discardComments: {
-										removeAll: true
-									},
-									discardDuplicates: true
-								}
+								minimize: cssMinimize
 							}
 						},
 						'postcss-loader',
-						{
-							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
-						},
-						{
-							loader: 'less-loader',
-							options: {
-								sourceMap: true
-							}
-						}
+						'less-loader'
 					],
 					fallback: ['style-loader']
 				})
@@ -221,21 +174,10 @@ const prodConfig = {
 						{
 							loader: 'css-loader',
 							options: {
-								minimize: {
-									discardComments: {
-										removeAll: true
-									},
-									discardDuplicates: true
-								}
+								minimize: cssMinimize
 							}
 						},
 						'postcss-loader',
-						{
-							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
-						},
 						'stylus-loader'
 					],
 					fallback: ['style-loader']
@@ -246,23 +188,12 @@ const prodConfig = {
 	plugins: [
 		new DefinePlugin({
 			'process.env': {
-				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
+				NODE_ENV: process.env.NODE_ENV
 			}
 		}),
 		new ExtractTextPlugin({
 			filename: 'assets/[name].min.css',
 			allChunks: true
-		}),
-		new UglifyJsPlugin({
-			sourceMap: true,
-			mangle: {
-				screw_ie8: true
-			},
-			comments: false,
-			compress: {
-				screw_ie8: true,
-				warnings: false
-			}
 		}),
 		...initHtmlWebpackPlugin(),
 		new ScriptExtHtmlWebpackPlugin({
@@ -274,24 +205,32 @@ const prodConfig = {
 			jQuery: 'jquery'
 		}),
 		new CleanWebpackPlugin(
-			['dist/*'],
+			['dist'],
 			{
 				root: projectRoot,
-				verbose: true,
+				verbose: false,
 				dry: false,
-				watch: false,
-				exclude: ['letters']
+				watch: false
 			}
 		),
 		new CommonsChunkPlugin({
 			name: gererateVendor(),
 			minChunks: ({ resource }) => (/node_modules/.test(resource)) || (/vendor/.test(resource))
 		}),
-		// new CopyWebpackPlugin([
-		//	 { from: `${projectRoot}/src/assets/fonts`, to: `${projectRoot}/dist/assets/fonts` },
-		//	 { from: `${projectRoot}/src/assets/img`, to: `${projectRoot}/dist/assets/img` },
-		//	 { from: `${projectRoot}/src/assets/video`, to: `${projectRoot}/dist/assets/video` }
-		// ]),
+		new CopyWebpackPlugin([
+			{
+				from: join(projectRoot, 'src', 'assets', 'fonts'),
+				to: join(projectRoot, 'dist', 'assets', 'fonts')
+			},
+			{
+				from: join(projectRoot, 'src', 'assets', 'img'),
+				to: join(projectRoot, 'dist', 'assets', 'img')
+			},
+			{
+				from: join(projectRoot, 'src', 'assets', 'video'),
+				to: join(projectRoot, 'src', 'assets', 'video')
+			}
+		]),
 		new LoaderOptionsPlugin({
 			options: {
 				stylus: {
@@ -300,12 +239,15 @@ const prodConfig = {
 					preferPathResolver: 'webpack'
 				},
 				postcss: [
-					autoprefixer({
-						browsers: [
-							'last 4 versions',
-							'ie >= 10'
-						]
-					})
+					cssNext({
+						autoprefixer: {
+							browsers: [
+								'last 4 versions',
+								'ie >= 10'
+							]
+						}
+					}),
+					cssMQPacker()
 				]
 			}
 		}),
@@ -313,5 +255,19 @@ const prodConfig = {
 		new BeautifyHtmlPlugin({ ocd: true })
 	]
 };
+
+if (process.env.UGLIFY) {
+	prodConfig.plugins.push(new UglifyJsPlugin({
+		sourceMap: true,
+		mangle: {
+			screw_ie8: true
+		},
+		comments: false,
+		compress: {
+			screw_ie8: true,
+			warnings: false
+		}
+	}));
+}
 
 module.exports = prodConfig;

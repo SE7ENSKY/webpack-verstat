@@ -1,6 +1,7 @@
 const { join } = require('path');
 const nib = require('nib');
-const autoprefixer = require('autoprefixer');
+const cssNext = require('postcss-cssnext');
+const cssMQPacker = require('css-mqpacker');
 const {
 	HotModuleReplacementPlugin,
 	NoEmitOnErrorsPlugin,
@@ -9,8 +10,8 @@ const {
 	WatchIgnorePlugin,
 	DefinePlugin
 } = require('webpack');
-// const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const {
 	projectRoot,
 	generateEntry,
@@ -29,9 +30,6 @@ const devConfig = {
 	},
 	devtool: 'cheap-module-eval-source-map',
 	target: 'web',
-	// resolveLoader: {
-	// 	modules: ['node_modules', 'custom-loaders']
-	// },
 	module: {
 		rules: [
 			{
@@ -39,12 +37,6 @@ const devConfig = {
 				use: [
 					'style-loader',
 					'css-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
-					},
 					'postcss-loader'
 				]
 			},
@@ -54,18 +46,7 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
-					},
-					{
-						loader: 'sass-loader',
-						options: {
-							sourceMap: true
-						}
-					}
+					'sass-loader'
 				]
 			},
 			{
@@ -74,18 +55,7 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
-					},
-					{
-						loader: 'less-loader',
-						options: {
-							sourceMap: true
-						}
-					}
+					'less-loader'
 				]
 			},
 			{
@@ -94,33 +64,24 @@ const devConfig = {
 					'style-loader',
 					'css-loader',
 					'postcss-loader',
-					{
-						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
-					},
-					{
-						loader: 'stylus-loader',
-						options: {
-							sourceMap: true
-						}
-					}
+					'stylus-loader'
 				]
 			},
 			{
-				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
-				use: {
-					loader: 'file-loader',
-					options: {
-						regExp: '\\b(assets.+)',
-						name: '[1]'
-					}
-				}
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg)$/,
+				include: [
+					join(projectRoot, 'node_modules'),
+					join(projectRoot, 'src', 'vendor')
+				],
+				use: 'url-loader'
 			},
 			{
-				test: /\.txt$/,
-				use: 'raw-loader'
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
+				exclude: [
+					join(projectRoot, 'node_modules'),
+					join(projectRoot, 'src', 'vendor')
+				],
+				loader: 'file-loader'
 			},
 			{
 				test: /\.json$/,
@@ -136,27 +97,7 @@ const devConfig = {
 			},
 			{
 				test: /\.html$/,
-				use: [
-					{
-						loader: 'html-loader',
-						options: {
-							root: join(projectRoot, 'src'),
-							attrs: [
-								'img:src',
-								'source:srcset',
-								'img:data-src',
-								'img:data-srcset'
-							]
-						}
-					}
-					// under construction!
-					// {
-					// 	loader: 'resolve-inline-css-loader',
-					// 	options: {
-					// 		root: join(projectRoot, 'src')
-					// 	}
-					// }
-				]
+				use: 'html-loader'
 			},
 			{
 				test: /\.coffee$/,
@@ -195,7 +136,7 @@ const devConfig = {
 	plugins: [
 		new DefinePlugin({
 			'process.env': {
-				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
+				NODE_ENV: process.env.NODE_ENV
 			}
 		}),
 		...initHtmlWebpackPlugin(),
@@ -205,11 +146,20 @@ const devConfig = {
 			jQuery: 'jquery'
 		}),
 		new HotModuleReplacementPlugin(),
-		// new CopyWebpackPlugin([
-		//	 { from: `${projectRoot}/src/assets/fonts`, to: `${projectRoot}/dist/assets/fonts` },
-		//	 { from: `${projectRoot}/src/assets/img`, to: `${projectRoot}/dist/assets/img` },
-		//	 { from: `${projectRoot}/src/assets/video`, to: `${projectRoot}/dist/assets/video` }
-		// ]),
+		new CopyWebpackPlugin([
+			{
+				from: join(projectRoot, 'src', 'assets', 'fonts'),
+				to: join(projectRoot, 'dist', 'assets', 'fonts')
+			},
+			{
+				from: join(projectRoot, 'src', 'assets', 'img'),
+				to: join(projectRoot, 'dist', 'assets', 'img')
+			},
+			{
+				from: join(projectRoot, 'src', 'assets', 'video'),
+				to: join(projectRoot, 'src', 'assets', 'video')
+			}
+		]),
 		new LoaderOptionsPlugin({
 			options: {
 				stylus: {
@@ -218,12 +168,15 @@ const devConfig = {
 					preferPathResolver: 'webpack'
 				},
 				postcss: [
-					autoprefixer({
-						browsers: [
-							'last 4 versions',
-							'ie >= 10'
-						]
-					})
+					cssNext({
+						autoprefixer: {
+							browsers: [
+								'last 4 versions',
+								'ie >= 10'
+							]
+						}
+					}),
+					cssMQPacker()
 				]
 			}
 		}),

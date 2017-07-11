@@ -28,10 +28,11 @@ const bemto = require('verstat-bemto/index-tabs');
 const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO resolve inline styles in html
 // TODO autoprefix inline styles in html
 // TODO minimize webpack output
+// TODO standalone markdown
 // TODO happypack
+// TODO update readme.md
 // TODO letters: html/css, pug/stylus, mjml
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
