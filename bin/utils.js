@@ -28,6 +28,7 @@ const bemto = require('verstat-bemto/index-tabs');
 const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+// TODO global css-mqpacker
 // TODO autoprefix inline styles in html
 // TODO minimize webpack output
 // TODO standalone markdown
@@ -38,7 +39,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
 // TODO server errors/adjacent folders
 // TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
-// TODO migration to webpack 3
 // TODO web workers ?
 // TODO service worker ?
 

@@ -1,7 +1,6 @@
 const { join } = require('path');
 const nib = require('nib');
 const cssNext = require('postcss-cssnext');
-const cssMQPacker = require('css-mqpacker');
 const {
 	HotModuleReplacementPlugin,
 	NoEmitOnErrorsPlugin,
@@ -148,16 +147,16 @@ const devConfig = {
 		new HotModuleReplacementPlugin(),
 		new CopyWebpackPlugin([
 			{
-				from: join(projectRoot, 'src', 'assets', 'fonts'),
-				to: join(projectRoot, 'dist', 'assets', 'fonts')
+				from: join('assets', 'fonts'),
+				to: join('assets', 'fonts')
 			},
 			{
-				from: join(projectRoot, 'src', 'assets', 'img'),
-				to: join(projectRoot, 'dist', 'assets', 'img')
+				from: join('assets', 'img'),
+				to: join('assets', 'img')
 			},
 			{
-				from: join(projectRoot, 'src', 'assets', 'video'),
-				to: join(projectRoot, 'src', 'assets', 'video')
+				from: join('assets', 'video'),
+				to: join('assets', 'video')
 			}
 		]),
 		new LoaderOptionsPlugin({
@@ -175,8 +174,7 @@ const devConfig = {
 								'ie >= 10'
 							]
 						}
-					}),
-					cssMQPacker()
+					})
 				]
 			}
 		}),
