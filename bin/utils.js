@@ -28,8 +28,8 @@ const bemto = require('verstat-bemto/index-tabs');
 const projectRoot = resolve(__dirname, '../');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO global css-mqpacker
-// TODO autoprefix inline styles in html
+
+// TODO [!] autoprefix inline styles in html
 // TODO minimize webpack output
 // TODO standalone markdown
 // TODO happypack

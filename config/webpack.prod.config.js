@@ -8,6 +8,9 @@ if (process.env.TIMESTAMP) {
 const { join } = require('path');
 const nib = require('nib');
 const cssNext = require('postcss-cssnext');
+const cssMQpacker = require('css-mqpacker');
+const perfectionist = require('perfectionist');
+const cssnano = require('cssnano');
 const {
 	NoEmitOnErrorsPlugin,
 	ProvidePlugin,
@@ -24,6 +27,7 @@ const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const {
 	projectRoot,
 	generateEntry,
@@ -33,14 +37,81 @@ const {
 } = require('../bin/utils');
 
 
-const cssMinimizeConfig = {
+const cssNanoMinimizeConfig = {
 	discardComments: {
 		removeAll: true
 	},
-	discardDuplicates: true
+	normalizeWhitespace: true
 };
 
-const cssMinimize = process.env.UGLIFY ? cssMinimizeConfig : false;
+const cssNanoBaseConfig = {
+	autoprefixer: false,
+	rawCache: true,
+	calc: false,
+	colormin: false,
+	convertValues: false,
+	discardComments: false,
+	discardDuplicates: true,
+	discardEmpty: true,
+	discardOverridden: false,
+	discardUnused: false,
+	mergeIdents: false,
+	mergeLonghand: false,
+	mergeRules: true,
+	minifyFontValues: {
+		removeAfterKeyword: false,
+		removeDuplicates: true,
+		removeQuotes: false
+	},
+	minifyGradients: false,
+	minifyParams: false,
+	minifySelectors: false,
+	normalizeCharset: false,
+	normalizeDisplayValues: false,
+	normalizePositions: false,
+	normalizeRepeatStyle: false,
+	normalizeString: false,
+	normalizeTimingFunctions: false,
+	normalizeUnicode: false,
+	normalizeUrl: false,
+	normalizeWhitespace: false,
+	orderedValues: true,
+	reduceIdents: false,
+	reduceInitial: false,
+	reduceTransforms: false,
+	svgo: false,
+	uniqueSelectors: true,
+	zindex: false
+};
+
+const perfectionistConfig = {
+	cascade: true,
+	colorCase: 'lower',
+	colorShorthand: false,
+	format: 'expanded',
+	indentChar: ' ',
+	indentSize: 2,
+	trimLeadingZero: false,
+	trimTrailingZeros: true,
+	maxAtRuleLength: false,
+	maxSelectorLength: 1,
+	maxValueLength: false,
+	sourcemap: false,
+	zeroLengthNoUnit: true
+};
+
+const stylesPostprocessorConfig = {
+	root: projectRoot,
+	output: join(projectRoot, 'dist'),
+	plugins: [
+		cssMQpacker(),
+		cssnano(Object.assign(cssNanoBaseConfig, process.env.UGLIFY ? cssNanoMinimizeConfig : {}))
+	]
+};
+
+if (!process.env.UGLIFY) {
+	stylesPostprocessorConfig.plugins.push(perfectionist(perfectionistConfig));
+}
 
 const prodConfig = {
 	context: join(projectRoot, 'src'),
@@ -48,7 +119,7 @@ const prodConfig = {
 	output: {
 		path: join(projectRoot, 'dist'),
 		publicPath: '/',
-		filename: 'assets/[name].min.js'
+		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js`
 	},
 	devtool: false,
 	target: 'web',
@@ -123,12 +194,7 @@ const prodConfig = {
 				test: /\.css$/,
 				use: ExtractTextPlugin.extract({
 					use: [
-						{
-							loader: 'css-loader',
-							options: {
-								minimize: cssMinimize
-							}
-						},
+						'css-loader',
 						'postcss-loader'
 					],
 					fallback: ['style-loader']
@@ -138,12 +204,7 @@ const prodConfig = {
 				test: /\.(sass|scss)$/,
 				use: ExtractTextPlugin.extract({
 					use: [
-						{
-							loader: 'css-loader',
-							options: {
-								minimize: cssMinimize
-							}
-						},
+						'css-loader',
 						'postcss-loader',
 						'sass-loader'
 					],
@@ -154,12 +215,7 @@ const prodConfig = {
 				test: /\.less$/,
 				use: ExtractTextPlugin.extract({
 					use: [
-						{
-							loader: 'css-loader',
-							options: {
-								minimize: cssMinimize
-							}
-						},
+						'css-loader',
 						'postcss-loader',
 						'less-loader'
 					],
@@ -170,12 +226,7 @@ const prodConfig = {
 				test: /\.styl$/,
 				use: ExtractTextPlugin.extract({
 					use: [
-						{
-							loader: 'css-loader',
-							options: {
-								minimize: cssMinimize
-							}
-						},
+						'css-loader',
 						'postcss-loader',
 						'stylus-loader'
 					],
@@ -191,7 +242,7 @@ const prodConfig = {
 			}
 		}),
 		new ExtractTextPlugin({
-			filename: 'assets/[name].min.css',
+			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
 			allChunks: true
 		}),
 		...initHtmlWebpackPlugin(),
@@ -250,7 +301,8 @@ const prodConfig = {
 			}
 		}),
 		new WatchIgnorePlugin([join(projectRoot, 'node_modules')]),
-		new BeautifyHtmlPlugin({ ocd: true })
+		new BeautifyHtmlPlugin({ ocd: true }),
+		new StylesPostprocessorPlugin(stylesPostprocessorConfig)
 	]
 };
 
