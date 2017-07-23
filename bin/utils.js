@@ -1,5 +1,7 @@
 const supportsColor = require('supports-color');
 const chalk = require('chalk');
+const { mjml2html } = require('mjml');
+const stylus = require('stylus');
 const {
 	resolve,
 	extname,
@@ -32,15 +34,14 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO cross-platform paths
+// TODO adjacent sitegrid bug
+// TODO browsersync adjacent files
 // TODO throttle/debounce webpack, browsersync, templates
 // TODO minimize webpack output
-// TODO [!] standalone markdown
 // TODO happypack
 // TODO update readme.md
-// TODO [!] letters: html/css, pug/stylus, mjml
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
-// TODO [!] server errors/adjacent folders
 // TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
 // TODO smartcache
 // TODO web workers ?
@@ -244,7 +245,6 @@ function getModifiedNib(path) {
 }
 
 function handleAdjacentFile(file, fileContent, fileSystem, compiler, command, mode) {
-	// FIXME redundancy
 	if (mode === 'init') {
 		if (fileSystem) {
 			compiler.plugin('after-emit', function (compilation, callback) {
@@ -262,46 +262,76 @@ function handleAdjacentFile(file, fileContent, fileSystem, compiler, command, mo
 function handleAdjacentAsset(path, fileSystem, compiler, command, mode) {
 	switch (command) {
 		case 'addDir':
-			if (fileSystem) {
-				compiler.plugin('after-emit', function (compilation, callback) {
+			if (mode === 'init') {
+				if (fileSystem) {
+					compiler.plugin('after-emit', function (compilation, callback) {
+						createDirectory(path, fileSystem);
+						callback();
+					});
+				} else {
 					createDirectory(path, fileSystem);
-					callback();
-				});
-			} else {
-				createDirectory(path);
+				}
+			} else if (mode === 'watch') {
+				createDirectory(path, fileSystem);
 			}
 			break;
 		case 'unlinkDir':
-			if (fileSystem) {
-				compiler.plugin('after-emit', function (compilation, callback) {
+			if (mode === 'init') {
+				if (fileSystem) {
+					compiler.plugin('after-emit', function (compilation, callback) {
+						fileSystem.rmdirSync(path);
+						callback();
+					});
+				} else {
+					rmdirSync(path);
+				}
+			} else if (mode === 'watch') {
+				if (fileSystem) {
 					fileSystem.rmdirSync(path);
-					callback();
-				});
-			} else {
-				rmdirSync(path);
+				} else {
+					rmdirSync(path);
+				}
 			}
 			break;
 		case 'unlink':
-			if (fileSystem) {
-				compiler.plugin('after-emit', function (compilation, callback) {
+			if (mode === 'init') {
+				if (fileSystem) {
+					compiler.plugin('after-emit', function (compilation, callback) {
+						fileSystem.unlinkSync(path);
+						console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+						callback();
+					});
+				} else {
+					unlinkSync(path);
+					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+				}
+			} else if (mode === 'watch') {
+				if (fileSystem) {
 					fileSystem.unlinkSync(path);
 					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-					callback();
-				});
-			} else {
-				unlinkSync(path);
-				console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+				} else {
+					unlinkSync(path);
+					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+				}
 			}
 			break;
 		case 'add':
 		case 'change':
-			if (fileSystem) {
-				compiler.plugin('after-emit', function (compilation, callback) {
+			if (mode === 'init') {
+				if (fileSystem) {
+					compiler.plugin('after-emit', function (compilation, callback) {
+						writeFileToDirectory(path, readFile(path), fileSystem, command);
+						callback();
+					});
+				} else {
 					writeFileToDirectory(path, readFile(path), fileSystem, command);
-					callback();
-				});
-			} else {
-				writeFileToDirectory(path, readFile(path), fileSystem, command);
+				}
+			} else if (mode === 'watch') {
+				if (fileSystem) {
+					writeFileToDirectory(path, readFile(path), fileSystem, command);
+				} else {
+					writeFileToDirectory(path, readFile(path), fileSystem, command);
+				}
 			}
 			break;
 	}
@@ -313,19 +343,51 @@ function handleAdjacentHTML(file, fileContent, fileSystem, compiler, command, mo
 		if (isString(fileContent)) {
 			content = fileContent;
 		} else {
-			content = readFile(file); // TODO autoprefixer inline css, uglify/prettify
+			content = readFile(file);
 		}
 		if (content !== '') {
-			siteGridEngine(extractTitleFromHTML(content), file, file);
+			// content // TODO autoprefixer inline css, uglify/prettify
+			// process.env.UGLIFY
 			handleAdjacentFile(file, content, fileSystem, compiler, command, mode);
+			siteGridEngine(extractTitleFromHTML(content), file, file);
 		}
 	}
 }
 
-function handleAdjacentTemplate(file, fileSystem, compiler, command, mode) {}
-function handleAdjacentMJML(file, fileSystem, compiler, command, mode) {}
+function handleAdjacentTemplate(file, fileSystem, compiler, command, mode) {
+	const content = readFile(file);
+	if (content !== '') {
+		const fn = compile(file);
+		const locals = {};
+		handleAdjacentHTML(file.replace(extname(file), '.html'), fn(locals), fileSystem, compiler, command, mode);
+	}
+}
+
+function handleAdjacentMJML(file, fileSystem, compiler, command, mode) {
+	const content = readFile(file);
+	if (content !== '') {
+		const { error, html } = mjml2html(content);
+		if (!error) {
+			handleAdjacentHTML(file.replace(extname(file), '.html'), html, fileSystem, compiler, command, mode);
+		} else {
+			console.log(error);
+		}
+	}
+}
+
+// TODO standalone markdown
 function handleAdjacentMarkdown(file, fileSystem, compiler, command, mode) {}
-function handleAdjacentStylus(file, fileSystem, compiler, command, mode) {}
+
+function handleAdjacentStylus(file, fileSystem, compiler, command, mode) {
+	const content = readFile(file);
+	if (content !== '') {
+		stylus(content)
+			.render(function (err, css) {
+				if (err) throw err;
+				handleAdjacentCSS(file.replace(extname(file), '.css'), css, fileSystem, compiler, command, mode);
+			});
+	}
+}
 
 function handleAdjacentCSS(file, fileContent, fileSystem, compiler, command, mode) {
 	if (isString(file)) {
@@ -333,15 +395,17 @@ function handleAdjacentCSS(file, fileContent, fileSystem, compiler, command, mod
 		if (isString(fileContent)) {
 			content = fileContent;
 		} else {
-			content = readFile(file); // TODO autoprefixer inline css, uglify/prettify
+			content = readFile(file);
 		}
 		if (content !== '') {
+			// content // TODO autoprefixer inline css, uglify/prettify
+			// process.env.UGLIFY
 			handleAdjacentFile(file, content, fileSystem, compiler, command, mode);
 		}
 	}
 }
 
-function adjacentFoldersRouter(file, fileSystem, compiler, command, mode = 'watch') {
+function adjacentDirectoriesRouter(file, fileSystem, compiler, command, mode) {
 	switch (command) {
 		case 'add':
 		case 'change':
@@ -377,20 +441,30 @@ function adjacentFoldersRouter(file, fileSystem, compiler, command, mode = 'watc
 	}
 }
 
-function watchAdjacentFolders(warchPath) {
-	if (isString(warchPath)) {
-		watch // 'chokidar' { ignoreInitial: true, awaitWriteFinish: true }
+function watchadjacentDirectories(warchPath, fileSystem, compiler) {
+	if (Array.isArray(warchPath) && warchPath.length) {
+		watch(
+			warchPath,
+			{
+				ignoreInitial: true,
+				awaitWriteFinish: true,
+				usePolling: true
+			}
+		)
+		.on('add', path => adjacentDirectoriesRouter(path, fileSystem, compiler, 'add', 'watch'))
+		.on('change', path => adjacentDirectoriesRouter(path, fileSystem, compiler, 'change', 'watch'))
+		.on('unlink', path => adjacentDirectoriesRouter(path, fileSystem, compiler, 'unlink', 'watch'))
+		.on('addDir', path => adjacentDirectoriesRouter(path, fileSystem, compiler, 'addDir', 'watch'))
+		.on('unlinkDir', path => adjacentDirectoriesRouter(path, fileSystem, compiler, 'unlinkDir', 'watch'));
 	}
-	// adjacentFoldersRouter(file, fileSystem);
-	// siteGridEngine(title, url, layout)
 }
 
-function initAdjacentFolders(outputPath, outputFileSystem, compiler, ignoreFolders) {
+function initAdjacentDirectories(outputPath, outputFileSystem, compiler, ignoreFolders) {
 	if (isString(outputPath) && ignoreFolders.every(item => isString(item))) {
 		const folders = ignoreFolders.join().replace(/,/g, '|');
 		const files = sync(`${PROJECT_ROOT}/src/!(${folders})/**/*.*`);
-		files.forEach(file => adjacentFoldersRouter(file, outputFileSystem, compiler, 'add', 'init'));
-		// if (outputFileSystem) watchAdjacentFolders(files);
+		files.forEach(file => adjacentDirectoriesRouter(file, outputFileSystem, compiler, 'add', 'init'));
+		if (outputFileSystem) watchadjacentDirectories(files, outputFileSystem, compiler);
 	}
 }
 
@@ -562,7 +636,7 @@ function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler) {
 		renderTemplate(compileTemplate(item));
 	});
 
-	initAdjacentFolders(
+	initAdjacentDirectories(
 		outputPath,
 		outputFileSystem,
 		compiler,

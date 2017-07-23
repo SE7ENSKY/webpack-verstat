@@ -55,7 +55,6 @@ verstat // project name
 ├── config
 │   ├── webpack.dev.config.js
 │   └── webpack.prod.config.js
-├── custom-loaders // temporarily!
 ├── dist
 ├── src
 │   ├── assets
