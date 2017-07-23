@@ -10,7 +10,7 @@ const nib = require('nib');
 const cssNext = require('postcss-cssnext');
 const cssMQpacker = require('css-mqpacker');
 const perfectionist = require('perfectionist');
-const cssnano = require('cssnano');
+const cssNano = require('cssnano');
 const {
 	NoEmitOnErrorsPlugin,
 	ProvidePlugin,
@@ -29,7 +29,12 @@ const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const {
-	projectRoot,
+	PROJECT_ROOT,
+	PROD_OUTPUT,
+	SUPPORTED_BROWSERS_LIST,
+	CSS_NANO_BASE_CONFIG,
+	CSS_NANO_MINIMIZE_CONFIG,
+	PERFECTIONIST_CONFIG,
 	generateEntry,
 	gererateVendor,
 	getModifiedNib,
@@ -37,87 +42,31 @@ const {
 } = require('../bin/utils');
 
 
-const cssNanoMinimizeConfig = {
-	discardComments: {
-		removeAll: true
-	},
-	normalizeWhitespace: true
-};
-
-const cssNanoBaseConfig = {
-	autoprefixer: false,
-	rawCache: true,
-	calc: false,
-	colormin: false,
-	convertValues: false,
-	discardComments: false,
-	discardDuplicates: true,
-	discardEmpty: true,
-	discardOverridden: false,
-	discardUnused: false,
-	mergeIdents: false,
-	mergeLonghand: false,
-	mergeRules: true,
-	minifyFontValues: {
-		removeAfterKeyword: false,
-		removeDuplicates: true,
-		removeQuotes: false
-	},
-	minifyGradients: false,
-	minifyParams: false,
-	minifySelectors: false,
-	normalizeCharset: false,
-	normalizeDisplayValues: false,
-	normalizePositions: false,
-	normalizeRepeatStyle: false,
-	normalizeString: false,
-	normalizeTimingFunctions: false,
-	normalizeUnicode: false,
-	normalizeUrl: false,
-	normalizeWhitespace: false,
-	orderedValues: true,
-	reduceIdents: false,
-	reduceInitial: false,
-	reduceTransforms: false,
-	svgo: false,
-	uniqueSelectors: true,
-	zindex: false
-};
-
-const perfectionistConfig = {
-	cascade: true,
-	colorCase: 'lower',
-	colorShorthand: false,
-	format: 'expanded',
-	indentChar: ' ',
-	indentSize: 2,
-	trimLeadingZero: false,
-	trimTrailingZeros: true,
-	maxAtRuleLength: false,
-	maxSelectorLength: 1,
-	maxValueLength: false,
-	sourcemap: false,
-	zeroLengthNoUnit: true
-};
-
 const stylesPostprocessorConfig = {
-	root: projectRoot,
-	output: join(projectRoot, 'dist'),
+	root: PROJECT_ROOT,
+	output: PROD_OUTPUT,
 	plugins: [
 		cssMQpacker(),
-		cssnano(Object.assign(cssNanoBaseConfig, process.env.UGLIFY ? cssNanoMinimizeConfig : {}))
+		cssNano(Object.assign(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
 	]
 };
 
 if (!process.env.UGLIFY) {
-	stylesPostprocessorConfig.plugins.push(perfectionist(perfectionistConfig));
+	stylesPostprocessorConfig.plugins.push(perfectionist(PERFECTIONIST_CONFIG));
 }
 
+const fileLoaderExclude = [
+	join(PROJECT_ROOT, 'node_modules'),
+	join(PROJECT_ROOT, 'src', 'vendor')
+];
+
+const urlLoaderInclude = fileLoaderExclude;
+
 const prodConfig = {
-	context: join(projectRoot, 'src'),
+	context: join(PROJECT_ROOT, 'src'),
 	entry: generateEntry(),
 	output: {
-		path: join(projectRoot, 'dist'),
+		path: PROD_OUTPUT,
 		publicPath: '/',
 		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js`
 	},
@@ -128,18 +77,12 @@ const prodConfig = {
 		rules: [
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg)$/,
-				include: [
-					join(projectRoot, 'node_modules'),
-					join(projectRoot, 'src', 'vendor')
-				],
+				include: urlLoaderInclude,
 				use: 'url-loader'
 			},
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
-				exclude: [
-					join(projectRoot, 'node_modules'),
-					join(projectRoot, 'src', 'vendor')
-				],
+				exclude: fileLoaderExclude,
 				loader: 'file-loader'
 			},
 			{
@@ -176,10 +119,7 @@ const prodConfig = {
 								'env',
 								{
 									targets: {
-										browsers: [
-											'last 4 versions',
-											'ie >= 10'
-										]
+										browsers: SUPPORTED_BROWSERS_LIST
 									},
 									modules: false,
 									loose: true,
@@ -245,7 +185,7 @@ const prodConfig = {
 			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
 			allChunks: true
 		}),
-		...initHtmlWebpackPlugin(),
+		...initHtmlWebpackPlugin(PROD_OUTPUT),
 		new ScriptExtHtmlWebpackPlugin({
 			defaultAttribute: 'defer'
 		}),
@@ -257,7 +197,7 @@ const prodConfig = {
 		new CleanWebpackPlugin(
 			['dist'],
 			{
-				root: projectRoot,
+				root: PROJECT_ROOT,
 				verbose: false,
 				dry: false,
 				watch: false
@@ -291,16 +231,13 @@ const prodConfig = {
 				postcss: [
 					cssNext({
 						autoprefixer: {
-							browsers: [
-								'last 4 versions',
-								'ie >= 10'
-							]
+							browsers: SUPPORTED_BROWSERS_LIST
 						}
 					})
 				]
 			}
 		}),
-		new WatchIgnorePlugin([join(projectRoot, 'node_modules')]),
+		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig)
 	]

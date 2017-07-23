@@ -12,18 +12,27 @@ const {
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const {
-	projectRoot,
+	PROJECT_ROOT,
+	DEV_OUTPUT,
+	SUPPORTED_BROWSERS_LIST,
 	generateEntry,
-	getModifiedNib,
-	initHtmlWebpackPlugin
+	getModifiedNib
+	// initHtmlWebpackPlugin
 } = require('../bin/utils');
 
 
+const fileLoaderExclude = [
+	join(PROJECT_ROOT, 'node_modules'),
+	join(PROJECT_ROOT, 'src', 'vendor')
+];
+const urlLoaderInclude = fileLoaderExclude;
+
+
 const devConfig = {
-	context: join(projectRoot, 'src'),
+	context: join(PROJECT_ROOT, 'src'),
 	entry: generateEntry('webpack-hot-middleware/client'),
 	output: {
-		path: '/',
+		path: DEV_OUTPUT,
 		publicPath: '/',
 		filename: 'assets/[name].js'
 	},
@@ -68,18 +77,12 @@ const devConfig = {
 			},
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg)$/,
-				include: [
-					join(projectRoot, 'node_modules'),
-					join(projectRoot, 'src', 'vendor')
-				],
+				include: urlLoaderInclude,
 				use: 'url-loader'
 			},
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
-				exclude: [
-					join(projectRoot, 'node_modules'),
-					join(projectRoot, 'src', 'vendor')
-				],
+				exclude: fileLoaderExclude,
 				loader: 'file-loader'
 			},
 			{
@@ -116,10 +119,7 @@ const devConfig = {
 								'env',
 								{
 									targets: {
-										browsers: [
-											'last 4 versions',
-											'ie >= 10'
-										]
+										browsers: SUPPORTED_BROWSERS_LIST
 									},
 									modules: false,
 									loose: true,
@@ -138,7 +138,7 @@ const devConfig = {
 				NODE_ENV: process.env.NODE_ENV
 			}
 		}),
-		...initHtmlWebpackPlugin(),
+		// ...initHtmlWebpackPlugin(),
 		new NoEmitOnErrorsPlugin(),
 		new ProvidePlugin({
 			$: 'jquery',
@@ -169,16 +169,13 @@ const devConfig = {
 				postcss: [
 					cssNext({
 						autoprefixer: {
-							browsers: [
-								'last 4 versions',
-								'ie >= 10'
-							]
+							browsers: SUPPORTED_BROWSERS_LIST
 						}
 					})
 				]
 			}
 		}),
-		new WatchIgnorePlugin([join(projectRoot, 'node_modules')]),
+		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
 		new CircularDependencyPlugin({
 			exclude: /node_modules/,
 			failOnError: true

@@ -3,11 +3,9 @@ require('console-stamp')(console, {
 	label: false
 });
 
-const { join } = require('path');
 const webpack = require('webpack');
 const webpackProdConfig = require('../config/webpack.prod.config');
 const browserSync = require('browser-sync').create();
-const { projectRoot } = require('./utils');
 
 
 const browserSyncConfig = {
@@ -22,7 +20,7 @@ const browserSyncConfig = {
 	host: 'localhost',
 	port: 3000,
 	server: {
-		baseDir: join(projectRoot, 'dist')
+		baseDir: webpackProdConfig.output.path
 	}
 };
 

@@ -5,27 +5,29 @@ require('console-stamp')(console, {
 
 const { join } = require('path');
 const { sync } = require('glob');
-// const MemoryFileSystem = require('memory-fs');
+const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../config/webpack.dev.config');
 const {
-	projectRoot,
+	PROJECT_ROOT,
+	PROD_OUTPUT,
 	boldTerminalString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
 	shortenAbsolutePath,
 	getTemplateBranch,
 	renderTemplate,
-	compileTemplate
+	compileTemplate,
+	initHtmlWebpackPlugin
 } = require('./utils');
 
 
 const devServerConfig = {
-	contentBase: join(projectRoot, 'dist'),
-	publicPath: '/',
+	contentBase: PROD_OUTPUT,
+	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
 		ignored: /node_modules/
 		// aggregateTimeout: 300, // watching files
@@ -46,15 +48,16 @@ const devServerConfig = {
 	}
 };
 
-// const memoryFS = new MemoryFileSystem();
+const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
-// compiler.outputFileSystem = memoryFS;
+compiler.outputFileSystem = memoryFS;
+compiler.apply(...initHtmlWebpackPlugin(webpackDevConfig.output.path, compiler.outputFileSystem, compiler));
 const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 // webpackDevMiddlewareInstance.waitUntilValid(() => {
 // 	console.log(
 // 		'DATA:',
-// 		compiler.outputFileSystem.readdirSync(`${webpackDevConfig.output.path}/assets/img/`)
+// 		compiler.outputFileSystem.readdirSync('/assets/img/')
 // 	);
 // });
 
@@ -69,7 +72,7 @@ browserSync.init({
 	},
 	port: devServerConfig.port,
 	server: {
-		baseDir: join(projectRoot, 'dist'),
+		baseDir: PROD_OUTPUT,
 		// serveStaticOptions: {
 		// 	extensions: ['html']
 		// },
@@ -80,19 +83,19 @@ browserSync.init({
 	},
 	files: [
 		{
-			match: `${projectRoot}/src/data/*.yml`,
+			match: `${PROJECT_ROOT}/src/data/*.yml`,
 			fn: handleGlobalData
 		},
 		{
-			match: `${projectRoot}/src/*.?(pug|jade)`,
+			match: `${PROJECT_ROOT}/src/*.?(pug|jade)`,
 			fn: handleTemplateWithData
 		},
 		{
-			match: `${projectRoot}/src/layouts/*.?(pug|jade)`,
+			match: `${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`,
 			fn: handleTemplate
 		},
 		{
-			match: `${projectRoot}/src/blocks/**/*.?(pug|jade)`,
+			match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
 			fn: handleBlock
 		}
 	]
@@ -100,7 +103,7 @@ browserSync.init({
 
 function handleChanges(templateWithData, template, block) {
 	if (!templateWithData && !template && !block) {
-		const branch = sync(`${projectRoot}/src/*.?(pug|jade)`);
+		const branch = sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
 		if (branch.length) {
 			console.log(boldTerminalString('recompiling all branches...'));
 			branch.forEach(item => renderTemplate(compileTemplate(item)));
@@ -120,10 +123,10 @@ function handleGlobalData(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 	} else if (event === 'add') {
 		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
+		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 	} else if (event === 'unlink') {
 		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
+		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 	}
 }
 
@@ -134,10 +137,10 @@ function handleTemplateWithData(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 	} else if (event === 'add') {
 		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
+		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 	} else if (event === 'unlink') {
 		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(projectRoot, 'bin', 'dev.server.js'));
+		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 	}
 }
 
