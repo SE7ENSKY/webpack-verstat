@@ -42,7 +42,7 @@ const callback = (err, stats) => {
 		console.warn(info.warnings);
 	}
 	console.log(stats.toString('normal'));
-	browserSync.init(browserSyncConfig);
+	browserSync.init(browserSyncConfig); // done event
 };
 
 compiler.run(callback);

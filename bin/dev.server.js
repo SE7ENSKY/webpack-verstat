@@ -51,21 +51,16 @@ const devServerConfig = {
 const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
 compiler.outputFileSystem = memoryFS;
-compiler.apply(...initHtmlWebpackPlugin(webpackDevConfig.output.path, compiler.outputFileSystem, compiler));
+compiler.apply(...initHtmlWebpackPlugin(webpackDevConfig.output.path, compiler.outputFileSystem, compiler, browserSync));
 const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
-// webpackDevMiddlewareInstance.waitUntilValid(() => {
-// 	console.log(
-// 		'DATA:',
-// 		compiler.outputFileSystem.readdirSync('/assets/img/')
-// 	);
-// });
 
 browserSync.init({
 	ui: false,
 	open: false,
 	notify: false,
 	reloadOnRestart: true,
+	reloadDebounce: 300,
 	watchOptions: {
 		ignoreInitial: true,
 		awaitWriteFinish: true
