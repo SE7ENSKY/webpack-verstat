@@ -29,7 +29,7 @@ yarn dev
 npm run dev
 ```
 ```
-// only for production, read-only, testing
+// only for production, read-only, server
 // yarn
 yarn prod
 
@@ -43,6 +43,14 @@ yarn build
 
 // npm
 npm run build
+```
+```
+// only for production, read-only, uglified build
+// yarn
+yarn build:min
+
+// npm
+npm run build:min
 ```
 
 **Project structure**

@@ -17,7 +17,6 @@ const {
 	SUPPORTED_BROWSERS_LIST,
 	generateEntry,
 	getModifiedNib
-	// initHtmlWebpackPlugin
 } = require('../bin/utils');
 
 

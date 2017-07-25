@@ -30,12 +30,7 @@ const devServerConfig = {
 	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
 		ignored: /node_modules/
-		// aggregateTimeout: 300, // watching files
-		// poll: 1000 // watching files
 	},
-	// historyApiFallback: {
-	// 	disableDotRule: true
-	// },
 	compress: false,
 	hot: true,
 	lazy: false,
@@ -68,9 +63,6 @@ browserSync.init({
 	port: devServerConfig.port,
 	server: {
 		baseDir: PROD_OUTPUT,
-		// serveStaticOptions: {
-		// 	extensions: ['html']
-		// },
 		middleware: [
 			webpackDevMiddlewareInstance,
 			webpackHotMiddlewareInstance

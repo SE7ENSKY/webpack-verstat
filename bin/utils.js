@@ -34,16 +34,15 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO cross-platform paths
-// TODO adjacent sitegrid bug
-// TODO browsersync adjacent files
+// TODO smartcache
 // TODO throttle/debounce webpack, browsersync, templates
 // TODO minimize webpack output
 // TODO happypack
 // TODO update readme.md
+
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
 // TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
-// TODO smartcache
 // TODO web workers ?
 // TODO service worker ?
 
@@ -339,15 +338,9 @@ function handleAdjacentAsset(path, fileSystem, compiler, browserSync, command, m
 					if (browserSync) browserSync.reload();
 				}
 			} else if (mode === 'watch') {
-				if (fileSystem) {
-					writeFileToDirectory(path, readFile(path), fileSystem, command);
-					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-					if (browserSync) browserSync.reload();
-				} else {
-					writeFileToDirectory(path, readFile(path), fileSystem, command);
-					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-					if (browserSync) browserSync.reload();
-				}
+				writeFileToDirectory(path, readFile(path), fileSystem, command);
+				console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+				if (browserSync) browserSync.reload();
 			}
 			break;
 	}
@@ -366,6 +359,9 @@ function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync
 			// process.env.UGLIFY
 			handleAdjacentFile(file, content, fileSystem, compiler, command, mode);
 			siteGridEngine(extractTitleFromHTML(content), file, file);
+			sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`).forEach(function (item) {
+				renderTemplate(compileSiteGrid(item));
+			});
 			if (browserSync) browserSync.reload();
 		}
 	}
