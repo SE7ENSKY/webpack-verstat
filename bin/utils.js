@@ -35,13 +35,11 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO smartcache
-// TODO throttle/debounce webpack, browsersync, templates
 // TODO minimize webpack output
 // TODO happypack
 
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
-// TODO watching files on older versions of Windows, Ubuntu, Vagrant, and Docker
 // TODO web workers ?
 // TODO service worker ?
 
@@ -527,6 +525,8 @@ function watchadjacentDirectories(watchPath, ignorePaths, fileSystem, compiler, 
 				ignoreInitial: true,
 				awaitWriteFinish: true,
 				usePolling: true,
+				interval: 100,
+				binaryInterval: 300,
 				ignored: ignorePaths.map(item => join(PROJECT_ROOT, 'src', item))
 			}
 		)

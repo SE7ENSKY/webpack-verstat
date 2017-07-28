@@ -29,7 +29,9 @@ const devServerConfig = {
 	contentBase: PROD_OUTPUT,
 	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
-		ignored: /node_modules/
+		ignored: /node_modules/,
+		aggregateTimeout: 300,
+		poll: 1000
 	},
 	compress: false,
 	hot: true,
