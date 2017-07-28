@@ -49,9 +49,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // ---------- Constants ----------
 const PROJECT_ROOT = resolve(__dirname, '../');
-const PROD_OUTPUT = join(PROJECT_ROOT, 'dist');
+const OUTPUT_DIRECTORY = 'dist';
+const MEMORY_DIRECTORY = 'memory-fs';
+const PROD_OUTPUT = join(PROJECT_ROOT, OUTPUT_DIRECTORY);
 let ADJACENT_DIRECTORIES_MODE;
-const DEV_OUTPUT = '/';
+const DEV_OUTPUT = sep; // /
 const TEMPLATE_DEPENDENCIES = new Map();
 let TEMPLATE_DEPENDENCIES_KEY;
 const SITE_GRID = [];
@@ -131,7 +133,7 @@ function generateEntry(server) {
 		const obj = {};
 		const file = entry[0];
 		const objProp = basename(file, '.js');
-		obj[objProp] = [file.replace(`${PROJECT_ROOT}/src`, '.')];
+		obj[objProp] = [file.replace(join(PROJECT_ROOT, 'src'), '.')];
 		if (isString(server)) obj[objProp].push(server);
 		return obj;
 	}
@@ -206,7 +208,7 @@ function createDirectory(path, fileSystem) {
 						fileSystem.mkdirpSync(dirPath);
 						console.log(
 							boldTerminalString('addDir:'),
-							shortenAbsolutePath(join(PROJECT_ROOT, 'memory-fs', dirPath))
+							shortenAbsolutePath(join(PROJECT_ROOT, MEMORY_DIRECTORY, dirPath))
 						);
 					} else {
 						dirPath += `${sep}${filePathParts[index]}`;
@@ -222,7 +224,7 @@ function createDirectory(path, fileSystem) {
 						if (shortenPath.indexOf('pages') !== -1) {
 							console.log(boldTerminalString('addDir:'), shortenPath);
 						} else {
-							console.log(boldTerminalString('addDir:'), shortenPath.replace('src', 'dist'));
+							console.log(boldTerminalString('addDir:'), shortenPath.replace('src', OUTPUT_DIRECTORY));
 						}
 					} else {
 						dirPath += `${sep}${filePathParts[index]}`;
@@ -235,15 +237,21 @@ function createDirectory(path, fileSystem) {
 
 function writeFileToDirectory(file, fileContent, fileSystem, event) {
 	if (isString(file)) {
-		const filePath = file.replace(join(PROJECT_ROOT, 'src'), fileSystem ? '' : 'dist');
+		const filePath = file.replace(join(PROJECT_ROOT, 'src'), fileSystem ? '' : OUTPUT_DIRECTORY);
 		if (fileContent.length) {
 			createDirectory(filePath, fileSystem);
 			if (fileSystem) {
 				fileSystem.writeFileSync(filePath, fileContent);
-				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file).replace('src', 'memory-fs'));
+				console.log(
+					boldTerminalString(`${event}:`),
+					shortenAbsolutePath(file).replace('src', MEMORY_DIRECTORY)
+				);
 			} else {
 				writeFileSync(filePath, fileContent);
-				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file).replace('src', 'dist'));
+				console.log(
+					boldTerminalString(`${event}:`),
+					shortenAbsolutePath(file).replace('src', OUTPUT_DIRECTORY)
+				);
 			}
 		}
 	}
@@ -274,11 +282,11 @@ function handleAdjacentFile(file, fileContent, fileSystem, compiler, event, mode
 		} else {
 			const timerId = setTimeout(function waitForOutputDirectory() {
 				if (!existsSync(PROD_OUTPUT)) {
-					setTimeout(waitForOutputDirectory, 500);
+					setTimeout(waitForOutputDirectory, 100);
 				} else {
 					writeFileToDirectory(file, fileContent, fileSystem, event);
 				}
-			}, 500);
+			}, 100);
 		}
 		break;
 	case 'watch':
@@ -300,10 +308,16 @@ function handleAdjacentAsset(path, fileSystem, compiler, browserSync, event, mod
 		if (mode === 'watch') {
 			if (fileSystem) {
 				fileSystem.rmdirSync(path.replace(join(PROJECT_ROOT, 'src'), ''));
-				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'memory-fs'));
+				console.log(
+					boldTerminalString(`${event}:`),
+					shortenAbsolutePath(path).replace('src', MEMORY_DIRECTORY)
+				);
 			} else {
 				rmdirSync(path);
-				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+				console.log(
+					boldTerminalString(`${event}:`),
+					shortenAbsolutePath(path).replace('src', OUTPUT_DIRECTORY)
+				);
 			}
 			if (browserSync) browserSync.reload();
 		}
@@ -328,7 +342,10 @@ function handleAdjacentAsset(path, fileSystem, compiler, browserSync, event, mod
 				const modifiedPath = file.replace(join(PROJECT_ROOT, 'src'), '');
 				if (fileSystem.readdirSync(dirname(modifiedPath)).indexOf(basename(modifiedPath)) !== -1) {
 					fileSystem.unlinkSync(modifiedPath);
-					console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'memory-fs'));
+					console.log(
+						boldTerminalString(`${event}:`),
+						shortenAbsolutePath(path).replace('src', MEMORY_DIRECTORY)
+					);
 					if (extname(file) === '.html') {
 						removeSiteGridItem(path);
 						renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]), 'change');
@@ -336,10 +353,13 @@ function handleAdjacentAsset(path, fileSystem, compiler, browserSync, event, mod
 					if (browserSync) browserSync.reload();
 				}
 			} else {
-				const modifiedPath = file.replace('src', 'dist');
+				const modifiedPath = file.replace('src', OUTPUT_DIRECTORY);
 				if (existsSync(modifiedPath)) {
 					unlinkSync(modifiedPath);
-					console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+					console.log(
+						boldTerminalString(`${event}:`),
+						shortenAbsolutePath(path).replace('src', OUTPUT_DIRECTORY)
+					);
 					if (extname(file) === '.html') {
 						removeSiteGridItem(path);
 						renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]), 'change');
@@ -537,16 +557,17 @@ function initAdjacentDirectories(outputPath, outputFileSystem, compiler, browser
 }
 
 function siteGridEngine(title, url, layout) {
+	const path = join(PROJECT_ROOT, 'src');
 	SITE_GRID.push({
 		title: title || null,
-		url: url.replace(`${PROJECT_ROOT}/src`, '').replace(extname(url), '.html'),
-		layout: layout.replace(`${PROJECT_ROOT}/src/`, '')
+		url: url.replace(path, '').replace(extname(url), '.html'),
+		layout: layout.replace(join(path, sep), '')
 	});
 }
 
 function removeSiteGridItem(itemPath) {
 	if (isString(itemPath)) {
-		const item = itemPath.replace(`${PROJECT_ROOT}/src/`, '').replace(extname(itemPath), '');
+		const item = itemPath.replace(join(PROJECT_ROOT, 'src', sep), '').replace(extname(itemPath), '');
 		const itemIndex = SITE_GRID.findIndex(function (element) {
 			return element.layout.replace(extname(element.layout), '') === item;
 		});

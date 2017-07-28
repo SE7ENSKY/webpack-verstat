@@ -24,7 +24,6 @@ const {
 } = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
@@ -47,7 +46,12 @@ const stylesPostprocessorConfig = {
 	output: PROD_OUTPUT,
 	plugins: [
 		cssMQpacker(),
-		cssNano(Object.assign(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
+		cssNano(
+			Object.assign(
+				CSS_NANO_BASE_CONFIG,
+				process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}
+			)
+		)
 	]
 };
 

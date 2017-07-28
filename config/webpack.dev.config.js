@@ -137,7 +137,6 @@ const devConfig = {
 				NODE_ENV: process.env.NODE_ENV
 			}
 		}),
-		// ...initHtmlWebpackPlugin(),
 		new NoEmitOnErrorsPlugin(),
 		new ProvidePlugin({
 			$: 'jquery',
