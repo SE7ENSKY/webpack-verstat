@@ -95,8 +95,6 @@ browserSync.init({
 	]
 });
 
-// TODO refactor callbacks
-
 function handleChanges(templateWithData, template, block) {
 	if (!templateWithData && !template && !block) {
 		const branch = sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
@@ -113,62 +111,60 @@ function handleChanges(templateWithData, template, block) {
 }
 
 function handleGlobalData(event, file) {
-	if (event === 'change') {
-		console.log(boldTerminalString('change:'), shortenAbsolutePath(file));
+	switch (event) {
+	case 'change':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges();
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	} else if (event === 'add') {
-		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
+		break;
+	case 'add':
+	case 'unlink:':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-	} else if (event === 'unlink') {
-		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+		break;
 	}
 }
 
 function handleTemplateWithData(event, file) {
-	if (event === 'change') {
-		console.log(boldTerminalString('change:'), shortenAbsolutePath(file));
+	switch (event) {
+	case 'change':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges(file, null, null);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	} else if (event === 'add') {
-		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
+		break;
+	case 'add':
+	case 'unlink:':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-	} else if (event === 'unlink') {
-		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+		break;
 	}
 }
 
 function handleTemplate(event, file) {
-	if (event === 'change') {
-		console.log(boldTerminalString('change:'), shortenAbsolutePath(file));
+	switch (event) {
+	case 'change':
+	case 'add':
+	case 'unlink:':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges(null, file, null);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	} else if (event === 'add') {
-		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
-		handleChanges(null, file, null);
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	} else if (event === 'unlink') {
-		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
-		handleChanges(null, file, null);
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		break;
 	}
 }
 
 function handleBlock(event, file) {
-	if (event === 'change') {
-		console.log(boldTerminalString('change:'), shortenAbsolutePath(file));
-		handleChanges(null, null, file);
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	} else if (event === 'add') {
-		console.log(boldTerminalString('add:'), shortenAbsolutePath(file));
+	switch (event) {
+	case 'add':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		addBlockToTemplateBranch(file);
 		handleChanges(null, null, file);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	} else if (event === 'unlink') {
-		console.log(boldTerminalString('unlink:'), shortenAbsolutePath(file));
+		break;
+	case 'change':
+	case 'unlink:':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges(null, null, file);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		break;
 	}
 }

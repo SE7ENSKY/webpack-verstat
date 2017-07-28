@@ -21,7 +21,7 @@ npm i
 **Use**
 
 ```
-// only for development, read/write
+// only for development, read/write, server on localhost:8080
 // yarn
 yarn dev
 
@@ -29,7 +29,7 @@ yarn dev
 npm run dev
 ```
 ```
-// only for production, read-only, server
+// only for production, read-only, server on localhost:3000
 // yarn
 yarn prod
 

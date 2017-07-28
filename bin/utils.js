@@ -34,12 +34,10 @@ const {
 const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO cross-platform paths
 // TODO smartcache
 // TODO throttle/debounce webpack, browsersync, templates
 // TODO minimize webpack output
 // TODO happypack
-// TODO update readme.md
 
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
@@ -194,31 +192,31 @@ function createDirectory(path, fileSystem) {
 	if (isString(path)) {
 		let filePathParts;
 		const shortPath = path.replace(PROJECT_ROOT, '');
-		if (extname(shortPath) !== '') {
-			filePathParts = dirname(shortPath).split(sep).filter(item => item !== '');
+		if (extname(shortPath).length) {
+			filePathParts = dirname(shortPath).split(sep).filter(item => item.length);
 		} else {
-			filePathParts = shortPath.split(sep).filter(item => item !== '');
+			filePathParts = shortPath.split(sep).filter(item => item.length);
 		}
 		if (filePathParts.length) {
 			let dirPath = '';
 			if (fileSystem) {
 				filePathParts.forEach(function (item, index) {
 					if (fileSystem.readdirSync(index === 0 ? DEV_OUTPUT : dirPath).indexOf(filePathParts[index]) === -1) {
-						dirPath += `${sep}${filePathParts[index]}`;
+						dirPath += join(sep, filePathParts[index]);
 						fileSystem.mkdirpSync(dirPath);
 						console.log(
 							boldTerminalString('addDir:'),
 							shortenAbsolutePath(join(PROJECT_ROOT, MEMORY_DIRECTORY, dirPath))
 						);
 					} else {
-						dirPath += `${sep}${filePathParts[index]}`;
+						dirPath += join(sep, filePathParts[index]);
 					}
 				});
 			} else {
 				dirPath = PROJECT_ROOT;
 				filePathParts.forEach(function (item, index) {
 					if (readdirSync(dirPath).indexOf(filePathParts[index]) === -1) {
-						dirPath += `${sep}${filePathParts[index]}`;
+						dirPath += join(sep, filePathParts[index]);
 						mkdirSync(dirPath);
 						const shortenPath = shortenAbsolutePath(dirPath);
 						if (shortenPath.indexOf('pages') !== -1) {
@@ -227,7 +225,7 @@ function createDirectory(path, fileSystem) {
 							console.log(boldTerminalString('addDir:'), shortenPath.replace('src', OUTPUT_DIRECTORY));
 						}
 					} else {
-						dirPath += `${sep}${filePathParts[index]}`;
+						dirPath += join(sep, filePathParts[index]);
 					}
 				});
 			}
@@ -397,7 +395,7 @@ function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync
 		} else {
 			content = customReadFile(file);
 		}
-		if (content !== '') {
+		if (content.length) {
 			// content // TODO autoprefixer inline css, uglify/prettify
 			// process.env.UGLIFY
 			handleAdjacentFile(file, content, fileSystem, compiler, event, mode);
@@ -713,7 +711,7 @@ function renderTemplate(templateData, event = 'add') {
 }
 
 function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler, browserSync) {
-	if (!outputFileSystem && existsSync(PROD_OUTPUT)) {
+	if (existsSync(PROD_OUTPUT)) {
 		removeDirectory(PROD_OUTPUT);
 		console.log(boldTerminalString('unlinkDir:'), shortenAbsolutePath(PROD_OUTPUT));
 	}
