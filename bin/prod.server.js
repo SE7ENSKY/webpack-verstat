@@ -25,8 +25,10 @@ const browserSyncConfig = {
 };
 
 const compiler = webpack(webpackProdConfig);
+compiler.plugin('done', (stats) => browserSync.init(browserSyncConfig));
+compiler.run(callback);
 
-const callback = (err, stats) => {
+function callback(err, stats) {
 	if (err) {
 		console.error(err.stack || err);
 		if (err.details) {
@@ -42,7 +44,4 @@ const callback = (err, stats) => {
 		console.warn(info.warnings);
 	}
 	console.log(stats.toString('normal'));
-	browserSync.init(browserSyncConfig); // TODO done event
-};
-
-compiler.run(callback);
+}

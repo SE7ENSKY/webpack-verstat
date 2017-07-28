@@ -185,7 +185,6 @@ const prodConfig = {
 			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
 			allChunks: true
 		}),
-		...initHtmlWebpackPlugin(PROD_OUTPUT),
 		new ScriptExtHtmlWebpackPlugin({
 			defaultAttribute: 'defer'
 		}),
@@ -194,15 +193,6 @@ const prodConfig = {
 			$: 'jquery',
 			jQuery: 'jquery'
 		}),
-		new CleanWebpackPlugin(
-			['dist'],
-			{
-				root: PROJECT_ROOT,
-				verbose: false,
-				dry: false,
-				watch: false
-			}
-		),
 		new CommonsChunkPlugin({
 			name: gererateVendor(),
 			minChunks: ({ resource }) => (/node_modules/.test(resource)) || (/vendor/.test(resource))
@@ -239,7 +229,8 @@ const prodConfig = {
 		}),
 		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
 		new BeautifyHtmlPlugin({ ocd: true }),
-		new StylesPostprocessorPlugin(stylesPostprocessorConfig)
+		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
+		...initHtmlWebpackPlugin(PROD_OUTPUT)
 	]
 };
 

@@ -21,7 +21,6 @@
     "chalk": "^2.0.1",
     "chokidar": "^1.7.0",
     "circular-dependency-plugin": "^3.0.0",
-    "clean-webpack-plugin": "^0.1.16",
     "coffee-loader": "^0.7.3",
     "coffee-script": "^1.12.5",
     "console-stamp": "^0.2.5",

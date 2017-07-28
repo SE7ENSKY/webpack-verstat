@@ -22,6 +22,7 @@ const {
 	mkdirSync,
 	existsSync,
 	unlinkSync,
+	lstatSync,
 	utimesSync
 } = require('fs');
 const { watch } = require('chokidar');
@@ -48,22 +49,16 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // ---------- Constants ----------
 const PROJECT_ROOT = resolve(__dirname, '../');
-
 const PROD_OUTPUT = join(PROJECT_ROOT, 'dist');
-
+let ADJACENT_DIRECTORIES_MODE;
 const DEV_OUTPUT = '/';
-
 const TEMPLATE_DEPENDENCIES = new Map();
-
 let TEMPLATE_DEPENDENCIES_KEY;
-
 const SITE_GRID = [];
-
 const SUPPORTED_BROWSERS_LIST = [
 	'last 4 versions',
 	'ie >= 10'
 ];
-
 const CSS_NANO_BASE_CONFIG = {
 	autoprefixer: false,
 	rawCache: true,
@@ -103,14 +98,12 @@ const CSS_NANO_BASE_CONFIG = {
 	uniqueSelectors: true,
 	zindex: false
 };
-
 const CSS_NANO_MINIMIZE_CONFIG = {
 	discardComments: {
 		removeAll: true
 	},
 	normalizeWhitespace: true
 };
-
 const PERFECTIONIST_CONFIG = {
 	cascade: true,
 	colorCase: 'lower',
@@ -177,17 +170,32 @@ function boldTerminalString(str) {
 	}
 }
 
-function readFile(file) {
-	return readFileSync(file, { encoding: 'utf8' });
+function customReadFile(file, encoding = 'utf8') {
+	return readFileSync(file, { encoding });
+}
+
+function removeDirectory(path) {
+	if (existsSync(path)) {
+		readdirSync(path).forEach(function (file, index) {
+			const currentPath = join(path, file);
+			if (lstatSync(currentPath).isDirectory()) {
+				removeDirectory(currentPath);
+			} else {
+				unlinkSync(currentPath);
+			}
+		});
+		rmdirSync(path);
+	}
 }
 
 function createDirectory(path, fileSystem) {
 	if (isString(path)) {
 		let filePathParts;
-		if (extname(path) !== '') {
-			filePathParts = dirname(path).split(sep).filter(item => item !== '');
+		const shortPath = path.replace(PROJECT_ROOT, '');
+		if (extname(shortPath) !== '') {
+			filePathParts = dirname(shortPath).split(sep).filter(item => item !== '');
 		} else {
-			filePathParts = path.split(sep).filter(item => item !== '');
+			filePathParts = shortPath.split(sep).filter(item => item !== '');
 		}
 		if (filePathParts.length) {
 			let dirPath = '';
@@ -196,15 +204,26 @@ function createDirectory(path, fileSystem) {
 					if (fileSystem.readdirSync(index === 0 ? DEV_OUTPUT : dirPath).indexOf(filePathParts[index]) === -1) {
 						dirPath += `${sep}${filePathParts[index]}`;
 						fileSystem.mkdirpSync(dirPath);
+						console.log(
+							boldTerminalString('addDir:'),
+							shortenAbsolutePath(join(PROJECT_ROOT, 'memory-fs', dirPath))
+						);
 					} else {
 						dirPath += `${sep}${filePathParts[index]}`;
 					}
 				});
 			} else {
+				dirPath = PROJECT_ROOT;
 				filePathParts.forEach(function (item, index) {
-					if (readdirSync(index === 0 ? DEV_OUTPUT : dirPath).indexOf(filePathParts[index]) === -1) {
+					if (readdirSync(dirPath).indexOf(filePathParts[index]) === -1) {
 						dirPath += `${sep}${filePathParts[index]}`;
 						mkdirSync(dirPath);
+						const shortenPath = shortenAbsolutePath(dirPath);
+						if (shortenPath.indexOf('pages') !== -1) {
+							console.log(boldTerminalString('addDir:'), shortenPath);
+						} else {
+							console.log(boldTerminalString('addDir:'), shortenPath.replace('src', 'dist'));
+						}
 					} else {
 						dirPath += `${sep}${filePathParts[index]}`;
 					}
@@ -214,17 +233,18 @@ function createDirectory(path, fileSystem) {
 	}
 }
 
-function writeFileToDirectory(file, fileContent, fileSystem, command) {
-	if (isString(file) && isString(fileContent)) {
-		const filePath = file.replace(join(PROJECT_ROOT, 'src'), '');
-		if (fileContent !== '') {
+function writeFileToDirectory(file, fileContent, fileSystem, event) {
+	if (isString(file)) {
+		const filePath = file.replace(join(PROJECT_ROOT, 'src'), fileSystem ? '' : 'dist');
+		if (fileContent.length) {
 			createDirectory(filePath, fileSystem);
 			if (fileSystem) {
 				fileSystem.writeFileSync(filePath, fileContent);
+				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file).replace('src', 'memory-fs'));
 			} else {
 				writeFileSync(filePath, fileContent);
+				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file).replace('src', 'dist'));
 			}
-			console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(file).replace('src', 'dist'));
 		}
 	}
 }
@@ -237,151 +257,168 @@ function extractTitleFromHTML(fileContent, openTag = '<title>', closeTag = '</ti
 
 function getModifiedNib(path) {
 	const dirPath = dirname(path);
-	if (readFile(path).indexOf('path: fallback') !== -1) {
+	if (customReadFile(path).indexOf('path: fallback') !== -1) {
 		return join(dirPath, 'nib-mod-fallback.styl');
 	}
 	return join(dirPath, 'nib-mod.styl');
 }
 
-function handleAdjacentFile(file, fileContent, fileSystem, compiler, command, mode) {
-	if (mode === 'init') {
+function handleAdjacentFile(file, fileContent, fileSystem, compiler, event, mode) {
+	switch (mode) {
+	case 'init':
 		if (fileSystem) {
 			compiler.plugin('after-emit', function (compilation, callback) {
-				writeFileToDirectory(file, fileContent, fileSystem, command);
+				if (ADJACENT_DIRECTORIES_MODE !== 'watch') writeFileToDirectory(file, fileContent, fileSystem, event);
 				callback();
 			});
 		} else {
-			writeFileToDirectory(file, fileContent, fileSystem, command);
+			const timerId = setTimeout(function waitForOutputDirectory() {
+				if (!existsSync(PROD_OUTPUT)) {
+					setTimeout(waitForOutputDirectory, 500);
+				} else {
+					writeFileToDirectory(file, fileContent, fileSystem, event);
+				}
+			}, 500);
 		}
-	} else if (mode === 'watch') {
-		writeFileToDirectory(file, fileContent, fileSystem, command);
+		break;
+	case 'watch':
+		writeFileToDirectory(file, fileContent, fileSystem, event);
+		break;
 	}
 }
 
-function handleAdjacentAsset(path, fileSystem, compiler, browserSync, command, mode) {
-	switch (command) {
-		case 'addDir':
-			if (mode === 'init') {
-				if (fileSystem) {
-					compiler.plugin('after-emit', function (compilation, callback) {
-						createDirectory(path, fileSystem);
-						callback();
-					});
-				} else {
-					createDirectory(path, fileSystem);
-				}
-			} else if (mode === 'watch') {
-				createDirectory(path, fileSystem);
+function handleAdjacentAsset(path, fileSystem, compiler, browserSync, event, mode) {
+	const pathExtension = extname(path);
+	switch (event) {
+	case 'addDir':
+		if (mode === 'watch') {
+			createDirectory(path, fileSystem);
+			if (browserSync) browserSync.reload();
+		}
+		break;
+	case 'unlinkDir':
+		if (mode === 'watch') {
+			if (fileSystem) {
+				fileSystem.rmdirSync(path.replace(join(PROJECT_ROOT, 'src'), ''));
+				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'memory-fs'));
+			} else {
+				rmdirSync(path);
+				console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'dist'));
 			}
-			break;
-		case 'unlinkDir':
-			if (mode === 'init') {
-				if (fileSystem) {
-					compiler.plugin('after-emit', function (compilation, callback) {
-						fileSystem.rmdirSync(path);
-						if (browserSync) browserSync.reload();
-						callback();
-					});
-				} else {
-					rmdirSync(path);
-					if (browserSync) browserSync.reload();
-				}
-			} else if (mode === 'watch') {
-				if (fileSystem) {
-					fileSystem.rmdirSync(path);
-					if (browserSync) browserSync.reload();
-				} else {
-					rmdirSync(path);
-					if (browserSync) if (browserSync) browserSync.reload();
-				}
+			if (browserSync) browserSync.reload();
+		}
+		break;
+	case 'unlink':
+		if (mode === 'watch') {
+			let file;
+			switch (pathExtension) {
+			case '.jade':
+			case '.pug':
+			case '.mjml':
+			case '.md':
+				file = path.replace(pathExtension, '.html');
+				break;
+			case '.styl':
+				file = path.replace(pathExtension, '.css');
+				break;
+			default:
+				file = path;
 			}
-			break;
-		case 'unlink':
-			if (mode === 'init') {
-				if (fileSystem) {
-					compiler.plugin('after-emit', function (compilation, callback) {
-						fileSystem.unlinkSync(path);
-						if (browserSync) browserSync.reload();
-						console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-						callback();
-					});
-				} else {
-					unlinkSync(path);
+			if (fileSystem) {
+				const modifiedPath = file.replace(join(PROJECT_ROOT, 'src'), '');
+				if (fileSystem.readdirSync(dirname(modifiedPath)).indexOf(basename(modifiedPath)) !== -1) {
+					fileSystem.unlinkSync(modifiedPath);
+					console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'memory-fs'));
+					if (extname(file) === '.html') {
+						removeSiteGridItem(path);
+						renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]), 'change');
+					}
 					if (browserSync) browserSync.reload();
-					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
 				}
-			} else if (mode === 'watch') {
-				if (fileSystem) {
-					fileSystem.unlinkSync(path);
+			} else {
+				const modifiedPath = file.replace('src', 'dist');
+				if (existsSync(modifiedPath)) {
+					unlinkSync(modifiedPath);
+					console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path).replace('src', 'dist'));
+					if (extname(file) === '.html') {
+						removeSiteGridItem(path);
+						renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]), 'change');
+					}
 					if (browserSync) browserSync.reload();
-					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-				} else {
-					unlinkSync(path);
-					if (browserSync) browserSync.reload();
-					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
 				}
 			}
+		}
+		break;
+	case 'add':
+	case 'change':
+		switch (pathExtension) {
+		case '.jade':
+		case '.pug':
+		case '.mjml':
+		case '.md':
+		case '.html':
+		case '.css':
+		case '.styl':
+			writeFileToDirectory(path, customReadFile(path), fileSystem, event);
 			break;
-		case 'add':
-		case 'change':
-			if (mode === 'init') {
-				if (fileSystem) {
-					compiler.plugin('after-emit', function (compilation, callback) {
-						writeFileToDirectory(path, readFile(path), fileSystem, command);
-						if (browserSync) browserSync.reload();
-						console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-						callback();
-					});
-				} else {
-					writeFileToDirectory(path, readFile(path), fileSystem, command);
-					console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-					if (browserSync) browserSync.reload();
-				}
-			} else if (mode === 'watch') {
-				writeFileToDirectory(path, readFile(path), fileSystem, command);
-				console.log(boldTerminalString(`${command}:`), shortenAbsolutePath(path).replace('src', 'dist'));
-				if (browserSync) browserSync.reload();
-			}
-			break;
+		default:
+			writeFileToDirectory(path, customReadFile(path, null), fileSystem, event);
+		}
+		if (browserSync) browserSync.reload();
+		break;
 	}
 }
 
-function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync, command, mode) {
+function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync, event, mode) {
 	if (isString(file)) {
 		let content;
 		if (isString(fileContent)) {
 			content = fileContent;
 		} else {
-			content = readFile(file);
+			content = customReadFile(file);
 		}
 		if (content !== '') {
 			// content // TODO autoprefixer inline css, uglify/prettify
 			// process.env.UGLIFY
-			handleAdjacentFile(file, content, fileSystem, compiler, command, mode);
+			handleAdjacentFile(file, content, fileSystem, compiler, event, mode);
 			siteGridEngine(extractTitleFromHTML(content), file, file);
-			sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`).forEach(function (item) {
-				renderTemplate(compileSiteGrid(item));
-			});
+			renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]), 'change');
 			if (browserSync) browserSync.reload();
 		}
 	}
 }
 
-function handleAdjacentTemplate(file, fileSystem, compiler, browserSync, command, mode) {
-	const content = readFile(file);
-	if (content !== '') {
+function handleAdjacentTemplate(file, fileSystem, compiler, browserSync, event, mode) {
+	const content = customReadFile(file);
+	if (content.length) {
 		const fn = compile(content);
 		const locals = {};
-		handleAdjacentHTML(file.replace(extname(file), '.html'), fn(locals), fileSystem, compiler, browserSync, command, mode);
+		handleAdjacentHTML(
+			file.replace(extname(file), '.html'),
+			fn(locals),
+			fileSystem,
+			compiler,
+			browserSync,
+			event,
+			mode
+		);
 	}
 }
 
-function handleAdjacentMJML(file, fileSystem, compiler, browserSync, command, mode) {
-	const content = readFile(file);
-	if (content !== '') {
+function handleAdjacentMJML(file, fileSystem, compiler, browserSync, event, mode) {
+	const content = customReadFile(file);
+	if (content.length) {
 		const { error, html } = mjml2html(content);
 		if (!error) {
-			handleAdjacentHTML(file.replace(extname(file), '.html'), html, fileSystem, compiler, browserSync, command, mode);
+			handleAdjacentHTML(
+				file.replace(extname(file), '.html'),
+				html,
+				fileSystem,
+				compiler,
+				browserSync,
+				event,
+				mode
+			);
 		} else {
 			console.log(error);
 		}
@@ -389,96 +426,113 @@ function handleAdjacentMJML(file, fileSystem, compiler, browserSync, command, mo
 }
 
 // TODO standalone markdown
-function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, command, mode) {}
+function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, mode) {}
 
-function handleAdjacentStylus(file, fileSystem, compiler, browserSync, command, mode) {
-	const content = readFile(file);
-	if (content !== '') {
+function handleAdjacentStylus(file, fileSystem, compiler, browserSync, event, mode) {
+	const content = customReadFile(file);
+	if (content.length) {
 		stylus(content)
 			.render(function (err, css) {
 				if (err) throw err;
-				handleAdjacentCSS(file.replace(extname(file), '.css'), css, fileSystem, compiler, browserSync, command, mode);
+				handleAdjacentCSS(
+					file.replace(extname(file), '.css'),
+					css,
+					fileSystem,
+					compiler,
+					browserSync,
+					event,
+					mode
+				);
 			});
 	}
 }
 
-function handleAdjacentCSS(file, fileContent, fileSystem, compiler, browserSync, command, mode) {
+function handleAdjacentCSS(file, fileContent, fileSystem, compiler, browserSync, event, mode) {
 	if (isString(file)) {
 		let content;
 		if (isString(fileContent)) {
 			content = fileContent;
 		} else {
-			content = readFile(file);
+			content = customReadFile(file);
 		}
-		if (content !== '') {
+		if (content.length) {
 			// content // TODO autoprefixer inline css, uglify/prettify
 			// process.env.UGLIFY
-			handleAdjacentFile(file, content, fileSystem, compiler, browserSync, command, mode);
+			handleAdjacentFile(file, content, fileSystem, compiler, event, mode);
 			if (browserSync) browserSync.reload();
 		}
 	}
 }
 
-function adjacentDirectoriesRouter(file, fileSystem, compiler, browserSync, command, mode) {
-	switch (command) {
-		case 'add':
-		case 'change':
-			switch (extname(file)) {
-				case '.html':
-					handleAdjacentHTML(file, undefined, fileSystem, compiler, browserSync, command, mode);
-					break;
-				case '.jade':
-				case '.pug':
-					handleAdjacentTemplate(file, fileSystem, compiler, browserSync, command, mode);
-					break;
-				case '.mjml':
-					handleAdjacentMJML(file, fileSystem, compiler, browserSync, command, mode);
-					break;
-				case '.md':
-					handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, command, mode);
-					break;
-				case '.styl':
-					handleAdjacentStylus(file, fileSystem, compiler, browserSync, command, mode);
-					break;
-				case '.css':
-					handleAdjacentCSS(file, undefined, fileSystem, compiler, browserSync, command, mode);
-					break;
-				default:
-					handleAdjacentAsset(file, fileSystem, compiler, browserSync, command, mode);
-			}
+function adjacentDirectoriesRouter(file, fileSystem, compiler, browserSync, event, mode) {
+	ADJACENT_DIRECTORIES_MODE = mode;
+	switch (event) {
+	case 'add':
+	case 'change':
+		switch (extname(file)) {
+		case '.html':
+			handleAdjacentHTML(file, undefined, fileSystem, compiler, browserSync, event, mode);
 			break;
-		case 'addDir':
-		case 'unlinkDir':
-		case 'unlink':
-			handleAdjacentAsset(file, fileSystem, compiler, browserSync, command, mode);
+		case '.jade':
+		case '.pug':
+			handleAdjacentTemplate(file, fileSystem, compiler, browserSync, event, mode);
 			break;
+		case '.mjml':
+			handleAdjacentMJML(file, fileSystem, compiler, browserSync, event, mode);
+			break;
+		case '.md':
+			handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, mode);
+			break;
+		case '.styl':
+			handleAdjacentStylus(file, fileSystem, compiler, browserSync, event, mode);
+			break;
+		case '.css':
+			handleAdjacentCSS(file, undefined, fileSystem, compiler, browserSync, event, mode);
+			break;
+		default:
+			handleAdjacentAsset(file, fileSystem, compiler, browserSync, event, mode);
+		}
+		break;
+	case 'addDir':
+	case 'unlinkDir':
+	case 'unlink':
+		handleAdjacentAsset(file, fileSystem, compiler, browserSync, event, mode);
+		break;
 	}
 }
 
-function watchadjacentDirectories(warchPath, fileSystem, compiler, browserSync) {
-	if (Array.isArray(warchPath) && warchPath.length) {
+function watchadjacentDirectories(watchPath, ignorePaths, fileSystem, compiler, browserSync) {
+	if (isString(watchPath) && Array.isArray(ignorePaths) && ignorePaths.length) {
 		watch(
-			warchPath,
+			watchPath,
 			{
 				ignoreInitial: true,
 				awaitWriteFinish: true,
-				usePolling: true
+				usePolling: true,
+				ignored: ignorePaths.map(item => join(PROJECT_ROOT, 'src', item))
 			}
 		)
 		.on('add', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'add', 'watch'))
 		.on('change', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'change', 'watch'))
-		.on('unlink', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'unlink', 'watch'))
+		.on('unlinkDir', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'unlinkDir', 'watch'))
 		.on('addDir', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'addDir', 'watch'))
-		.on('unlinkDir', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'unlinkDir', 'watch'));
+		.on('unlink', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'unlink', 'watch'));
 	}
 }
 
 function initAdjacentDirectories(outputPath, outputFileSystem, compiler, browserSync, ignoreFolders) {
 	if (isString(outputPath) && ignoreFolders.every(item => isString(item))) {
-		const folders = ignoreFolders.join().replace(/,/g, '|');
-		const files = sync(`${PROJECT_ROOT}/src/!(${folders})/**/*.*`);
-		files.forEach(file => adjacentDirectoriesRouter(file, outputFileSystem, compiler, browserSync, 'add', 'init'));
-		if (outputFileSystem) watchadjacentDirectories(files, outputFileSystem, compiler, browserSync);
+		const pattern = sync(`${PROJECT_ROOT}/src/!(${ignoreFolders.join().replace(/,/g, '|')})/**/*.*`);
+		pattern.forEach(file => adjacentDirectoriesRouter(file, outputFileSystem, compiler, browserSync, 'add', 'init'));
+		if (outputFileSystem) {
+			watchadjacentDirectories(
+				join(PROJECT_ROOT, 'src', '**', '*.*'),
+				ignoreFolders,
+				outputFileSystem,
+				compiler,
+				browserSync
+			);
+		}
 	}
 }
 
@@ -488,6 +542,16 @@ function siteGridEngine(title, url, layout) {
 		url: url.replace(`${PROJECT_ROOT}/src`, '').replace(extname(url), '.html'),
 		layout: layout.replace(`${PROJECT_ROOT}/src/`, '')
 	});
+}
+
+function removeSiteGridItem(itemPath) {
+	if (isString(itemPath)) {
+		const item = itemPath.replace(`${PROJECT_ROOT}/src/`, '').replace(extname(itemPath), '');
+		const itemIndex = SITE_GRID.findIndex(function (element) {
+			return element.layout.replace(extname(element.layout), '') === item;
+		});
+		if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
+	}
 }
 
 function compileSiteGrid(template) {
@@ -505,7 +569,7 @@ function compileBlock(mod, block) {
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return compile(`${mod}\n${readFile(blockPath)}`);
+		return compile(`${mod}\n${customReadFile(blockPath)}`);
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return compile(`div [block ${block} not found]`);
@@ -521,7 +585,7 @@ function renderBlockEngine(blockName, data) {
 function getGlobalData() {
 	const data = sync(`${PROJECT_ROOT}/src/data/*.yml`).map((file) => {
 		const obj = {};
-		obj[basename(file, '.yml')] = safeLoad(readFile(file));
+		obj[basename(file, '.yml')] = safeLoad(customReadFile(file));
 		return obj;
 	});
 	return data.length ? Object.assign({}, ...data) : {};
@@ -605,17 +669,6 @@ function compileTemplate(templateWithData) {
 	return {};
 }
 
-function removeFiles(files) {
-	if (files.length) {
-		files.forEach(function (item) {
-			if (existsSync(item)) {
-				unlinkSync(item);
-				console.log(boldTerminalString('unlink old:'), shortenAbsolutePath(item));
-			}
-		});
-	}
-}
-
 function changeFileTimestamp(number, path) {
 	if (existsSync(path)) {
 		const modifier = parseInt(number);
@@ -629,57 +682,45 @@ function changeFileTimestamp(number, path) {
 	}
 }
 
-function renderTemplate(templateData) {
+function renderTemplate(templateData, event = 'add') {
 	if (Object.keys(templateData).length !== 0) {
 		const path = join(PROJECT_ROOT, 'src', 'pages', templateData.filename);
 		writeFileSync(path, templateData.content, 'utf-8');
 		changeFileTimestamp(-10, path);
-		console.log(boldTerminalString('add:'), shortenAbsolutePath(path));
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(path));
 	}
 }
 
 function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler, browserSync) {
-	const pagesDirectory = `${PROJECT_ROOT}/src/pages/`;
-	const pages = `${pagesDirectory}*.html`;
-
-	if (!existsSync(pagesDirectory)) createDirectory(pagesDirectory);
-
-	removeFiles(sync(pages));
-
-	sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`).forEach(function (item) {
-		renderTemplate(compileTemplate(item));
-	});
-
+	if (!outputFileSystem && existsSync(PROD_OUTPUT)) {
+		removeDirectory(PROD_OUTPUT);
+		console.log(boldTerminalString('unlinkDir:'), shortenAbsolutePath(PROD_OUTPUT));
+	}
+	const pagesDirectory = join(PROJECT_ROOT, 'src', 'pages');
+	if (existsSync(pagesDirectory)) {
+		removeDirectory(pagesDirectory);
+		console.log(boldTerminalString('unlinkDir:'), shortenAbsolutePath(pagesDirectory));
+	}
+	createDirectory(pagesDirectory);
+	sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`).forEach(item => renderTemplate(compileTemplate(item)));
+	renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]));
 	initAdjacentDirectories(
 		outputPath,
 		outputFileSystem,
 		compiler,
 		browserSync,
-		[
-			'assets',
-			'blocks',
-			'data',
-			'globals',
-			'layouts',
-			'pages',
-			'vendor'
-		]
+		['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor']
 	);
-
-	sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`).forEach(function (item) {
-		renderTemplate(compileSiteGrid(item));
-	});
-
-	return sync(pages).map(function (item) {
+	return sync(`${PROJECT_ROOT}/src/pages/*.html`).map(function (item) {
 		const filename = basename(item);
 		let inject;
 		switch (filename) {
-			case 'styles.html':
-			case 'sitegrid.html':
-				inject = false;
-				break;
-			default:
-				inject = 'body';
+		case 'styles.html':
+		case 'sitegrid.html':
+			inject = false;
+			break;
+		default:
+			inject = 'body';
 		}
 		return new HtmlWebpackPlugin({
 			filename,
@@ -702,7 +743,6 @@ module.exports = {
 	CSS_NANO_BASE_CONFIG,
 	CSS_NANO_MINIMIZE_CONFIG,
 	PERFECTIONIST_CONFIG,
-	readFile,
 	generateEntry,
 	gererateVendor,
 	boldTerminalString,

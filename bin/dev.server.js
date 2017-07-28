@@ -46,7 +46,14 @@ const devServerConfig = {
 const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
 compiler.outputFileSystem = memoryFS;
-compiler.apply(...initHtmlWebpackPlugin(webpackDevConfig.output.path, compiler.outputFileSystem, compiler, browserSync));
+compiler.apply(
+	...initHtmlWebpackPlugin(
+		webpackDevConfig.output.path,
+		compiler.outputFileSystem,
+		compiler,
+		browserSync
+	)
+);
 const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 
@@ -87,6 +94,8 @@ browserSync.init({
 		}
 	]
 });
+
+// TODO refactor callbacks
 
 function handleChanges(templateWithData, template, block) {
 	if (!templateWithData && !template && !block) {
