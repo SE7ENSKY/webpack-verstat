@@ -13,6 +13,7 @@ const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../config/webpack.dev.config');
 const {
 	PROJECT_ROOT,
+	CONSOLE_OUTPUT,
 	PROD_OUTPUT,
 	boldTerminalString,
 	addBlockToTemplateBranch,
@@ -40,9 +41,7 @@ const devServerConfig = {
 	https: false,
 	host: 'localhost',
 	port: 8080,
-	stats: {
-		colors: true
-	}
+	stats: CONSOLE_OUTPUT
 };
 
 const memoryFS = new MemoryFileSystem();

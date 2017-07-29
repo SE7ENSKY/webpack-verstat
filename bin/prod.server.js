@@ -6,6 +6,7 @@ require('console-stamp')(console, {
 const webpack = require('webpack');
 const webpackProdConfig = require('../config/webpack.prod.config');
 const browserSync = require('browser-sync').create();
+const { CONSOLE_OUTPUT } = require('./utils');
 
 
 const browserSyncConfig = {
@@ -26,22 +27,4 @@ const browserSyncConfig = {
 
 const compiler = webpack(webpackProdConfig);
 compiler.plugin('done', (stats) => browserSync.init(browserSyncConfig));
-compiler.run(callback);
-
-function callback(err, stats) {
-	if (err) {
-		console.error(err.stack || err);
-		if (err.details) {
-			console.error(err.details);
-		}
-		return;
-	}
-	const info = stats.toJson();
-	if (stats.hasErrors()) {
-		console.error(info.errors);
-	}
-	if (stats.hasWarnings()) {
-		console.warn(info.warnings);
-	}
-	console.log(stats.toString('normal'));
-}
+compiler.run((err, stats) => console.log(stats.toString(CONSOLE_OUTPUT)));

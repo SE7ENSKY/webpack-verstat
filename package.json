@@ -3,8 +3,8 @@
   "version": "2.0.0",
   "description": "Frontend project for Verstat Template",
   "scripts": {
-    "build:min": "TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --progress --colors --config config/webpack.prod.config.js",
-    "build": "TIMESTAMP=true NODE_ENV=production webpack --progress --colors --config config/webpack.prod.config.js",
+    "build:min": "TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
+    "build": "TIMESTAMP=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
     "prod": "NODE_ENV=production nodemon -e js --watch config/webpack.prod.config.js --watch bin/prod.server.js --watch bin/utils.js bin/prod.server.js",
     "dev": "NODE_ENV=development nodemon -e js --watch config/webpack.dev.config.js --watch bin/dev.server.js --watch bin/utils.js bin/dev.server.js"
   },

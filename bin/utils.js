@@ -40,9 +40,7 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO smartcache
-// TODO minimize webpack output
 // TODO happypack
-
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
 
@@ -56,6 +54,13 @@ const DEV_OUTPUT = sep; // /
 const TEMPLATE_DEPENDENCIES = new Map();
 let TEMPLATE_DEPENDENCIES_KEY;
 const SITE_GRID = [];
+const CONSOLE_OUTPUT = {
+	colors: true,
+	modules: false,
+	children: false,
+	hash: false,
+	timings: false
+};
 const SUPPORTED_BROWSERS_LIST = [
 	'last 4 versions',
 	'ie >= 10'
@@ -784,6 +789,7 @@ module.exports = {
 	PROJECT_ROOT,
 	PROD_OUTPUT,
 	DEV_OUTPUT,
+	CONSOLE_OUTPUT,
 	SUPPORTED_BROWSERS_LIST,
 	CSS_NANO_BASE_CONFIG,
 	CSS_NANO_MINIMIZE_CONFIG,

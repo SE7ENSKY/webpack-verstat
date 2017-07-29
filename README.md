@@ -1,6 +1,8 @@
 # Verstat v2
 Release candidate
 
+NOTE: all paths in css and html start with a sign ```/``` . On ```Linux``` ```nodemon``` restarts only once due bug with ```chokidar```.
+
 **Languages**
 ```
  1. HTML
