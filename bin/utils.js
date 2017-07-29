@@ -1,5 +1,10 @@
 const supportsColor = require('supports-color');
+const postcss = require('postcss');
 const chalk = require('chalk');
+const cssNext = require('postcss-cssnext');
+const cssMQpacker = require('css-mqpacker');
+const perfectionist = require('perfectionist');
+const cssNano = require('cssnano');
 const { mjml2html } = require('mjml');
 const stylus = require('stylus');
 const {
@@ -40,8 +45,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
-// TODO web workers ?
-// TODO service worker ?
 
 // ---------- Constants ----------
 const PROJECT_ROOT = resolve(__dirname, '../');
@@ -394,9 +397,20 @@ function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync
 			content = customReadFile(file);
 		}
 		if (content.length) {
-			// content // TODO autoprefixer inline css, uglify/prettify
-			// process.env.UGLIFY
-			handleAdjacentFile(file, content, fileSystem, compiler, event, mode);
+			handleAdjacentFile(
+				file,
+				prettifyHTML(
+					content,
+					{
+						indent_char: ' ',
+						indent_size: 2
+					}
+				),
+				fileSystem,
+				compiler,
+				event,
+				mode
+			);
 			siteGridEngine(extractTitleFromHTML(content), file, file);
 			renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]), 'change');
 			if (browserSync) browserSync.reload();
@@ -472,10 +486,22 @@ function handleAdjacentCSS(file, fileContent, fileSystem, compiler, browserSync,
 			content = customReadFile(file);
 		}
 		if (content.length) {
-			// content // TODO autoprefixer inline css, uglify/prettify
-			// process.env.UGLIFY
-			handleAdjacentFile(file, content, fileSystem, compiler, event, mode);
-			if (browserSync) browserSync.reload();
+			const postcssPlugins = [
+				cssNext({
+					autoprefixer: {
+						browsers: SUPPORTED_BROWSERS_LIST
+					}
+				}),
+				cssMQpacker(),
+				cssNano(Object.assign(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
+			];
+			if (!process.env.UGLIFY) postcssPlugins.push(perfectionist(PERFECTIONIST_CONFIG));
+			postcss(postcssPlugins)
+			.process(content)
+			.then(function (result) {
+				handleAdjacentFile(file, result.css, fileSystem, compiler, event, mode);
+				if (browserSync) browserSync.reload();
+			});
 		}
 	}
 }

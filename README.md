@@ -1,10 +1,49 @@
 # Verstat v2
-The open beta.
+Release candidate
+
+**Languages**
+```
+ 1. HTML
+ 2. Jade/Pug
+ 3. MJML
+ 4. Markdown
+ 5. CSS
+ 6. Stylus
+ 7. SASS/SCSS
+ 8. LESS
+ 9. ECMAScript 6+
+10. CoffeeScript
+11. JSON
+12. YAML
+```
+
+**Features**
+```
+ 1. Multi page applications
+ 2. Cross-platform build system
+ 3. Webpack
+ 4. Code splitting
+ 5. Hot Reloading
+ 6. happypack
+ 7. Babel 
+ 8. ESLint
+ 9. nodemon
+10. UglifyJS
+11. nib
+12. Autoprefixer
+13. cssnext
+14. perfectionist
+15. CSS MQPacker
+16. cssnano
+17. bemto
+18. Browsersync
+19. yarn
+```
 
 **Requirements**
 
 ```
-node: ^6.0.0
+node: ^7.0.0
 npm: ^4.0.0
 ```
 
