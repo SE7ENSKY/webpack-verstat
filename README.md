@@ -11,7 +11,7 @@ Release candidate
  6. Stylus
  7. SASS/SCSS
  8. LESS
- 9. ECMAScript 6+
+ 9. JavaScript
 10. CoffeeScript
 11. JSON
 12. YAML
@@ -25,7 +25,7 @@ Release candidate
  4. Code splitting
  5. Hot Reloading
  6. happypack
- 7. Babel 
+ 7. Babel/ECMAScript 6+
  8. ESLint
  9. nodemon
 10. UglifyJS
