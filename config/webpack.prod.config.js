@@ -7,7 +7,6 @@ if (process.env.TIMESTAMP) {
 
 const { join } = require('path');
 const nib = require('nib');
-const cssNext = require('postcss-cssnext');
 const cssMQpacker = require('css-mqpacker');
 const perfectionist = require('perfectionist');
 const cssNano = require('cssnano');
@@ -27,9 +26,12 @@ const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
+const HappyPack = require('happypack');
+const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const {
 	PROJECT_ROOT,
 	PROD_OUTPUT,
+	POSTCSS_CONFIG,
 	SUPPORTED_BROWSERS_LIST,
 	CSS_NANO_BASE_CONFIG,
 	CSS_NANO_MINIMIZE_CONFIG,
@@ -63,8 +65,21 @@ const fileLoaderExclude = [
 	join(PROJECT_ROOT, 'node_modules'),
 	join(PROJECT_ROOT, 'src', 'vendor')
 ];
-
 const urlLoaderInclude = fileLoaderExclude;
+
+const postcssLoaderOptions = {
+	sourceMap: false,
+	config: {
+		path: POSTCSS_CONFIG,
+		ctx: {
+			cssnext: {
+				autoprefixer: {
+					browsers: SUPPORTED_BROWSERS_LIST
+				}
+			}
+		}
+	}
+};
 
 const prodConfig = {
 	context: join(PROJECT_ROOT, 'src'),
@@ -82,98 +97,63 @@ const prodConfig = {
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg)$/,
 				include: urlLoaderInclude,
-				use: 'url-loader'
+				use: 'happypack/loader?id=url'
 			},
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
 				exclude: fileLoaderExclude,
-				loader: 'file-loader'
+				use: 'happypack/loader?id=file'
 			},
 			{
 				test: /\.json$/,
-				use: 'json-loader'
+				use: 'happypack/loader?id=json'
 			},
 			{
 				test: /\.yaml$/,
-				use: 'yaml-loader'
+				use: 'happypack/loader?id=yaml'
 			},
 			{
 				test: /\.md$/,
-				use: ['html-loader', 'markdown-loader']
+				use: 'happypack/loader?id=markdown'
 			},
 			{
 				test: /\.html$/,
-				use: 'html-loader'
+				use: 'happypack/loader?id=html'
 			},
 			{
 				test: /\.coffee$/,
-				use: 'coffee-loader'
+				use: 'happypack/loader?id=coffeescript'
 			},
 			{
 				test: /\.js$/,
 				exclude: /node_modules/,
-				use: {
-					loader: 'babel-loader',
-					options: {
-						cacheDirectory: true,
-						babelrc: false,
-						plugins: ['transform-runtime'],
-						presets: [
-							[
-								'env',
-								{
-									targets: {
-										browsers: SUPPORTED_BROWSERS_LIST
-									},
-									modules: false,
-									loose: true,
-									useBuiltIns: true
-								}
-							]
-						]
-					}
-				}
+				use: 'happypack/loader?id=babel'
 			},
 			{
 				test: /\.css$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						'postcss-loader'
-					],
+					use: 'happypack/loader?id=css',
 					fallback: ['style-loader']
 				})
 			},
 			{
 				test: /\.(sass|scss)$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						'postcss-loader',
-						'sass-loader'
-					],
+					use: 'happypack/loader?id=sass',
 					fallback: ['style-loader']
 				})
 			},
 			{
 				test: /\.less$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						'postcss-loader',
-						'less-loader'
-					],
+					use: 'happypack/loader?id=less',
 					fallback: ['style-loader']
 				})
 			},
 			{
 				test: /\.styl$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						'postcss-loader',
-						'stylus-loader'
-					],
+					use: 'happypack/loader?id=stylus',
 					fallback: ['style-loader']
 				})
 			}
@@ -188,6 +168,146 @@ const prodConfig = {
 		new ExtractTextPlugin({
 			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
 			allChunks: true
+		}),
+		new HappyPack({
+			id: 'markdown',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'html-loader',
+				'markdown-loader'
+			]
+		}),
+		new HappyPack({
+			id: 'html',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['html-loader']
+		}),
+		new HappyPack({
+			id: 'css',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderOptions
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'sass',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderOptions
+				},
+				{
+					path: 'sass-loader',
+					query: {
+						sourceMap: false
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'less',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderOptions
+				},
+				{
+					path: 'less-loader',
+					query: {
+						sourceMap: false
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'stylus',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderOptions
+				},
+				{
+					path: 'stylus-loader',
+					query: {
+						sourceMap: false,
+						use: nib(),
+						import: [getModifiedNib(require.resolve('verstat-nib'))],
+						preferPathResolver: 'webpack'
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'yaml',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['yaml-loader']
+		}),
+		new HappyPack({
+			id: 'json',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['json-loader']
+		}),
+		new HappyPack({
+			id: 'coffeescript',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['coffee-loader']
+		}),
+		new HappyPack({
+			id: 'url',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['url-loader']
+		}),
+		new HappyPack({
+			id: 'file',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['file-loader']
+		}),
+		new HappyPack({
+			id: 'babel',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [{
+				path: 'babel-loader',
+				query: {
+					cacheDirectory: true,
+					babelrc: false,
+					plugins: ['transform-runtime'],
+					presets: [
+						[
+							'env',
+							{
+								targets: {
+									browsers: SUPPORTED_BROWSERS_LIST
+								},
+								modules: false,
+								loose: true,
+								useBuiltIns: true
+							}
+						]
+					]
+				}
+			}]
 		}),
 		new ScriptExtHtmlWebpackPlugin({
 			defaultAttribute: 'defer'
@@ -215,22 +335,6 @@ const prodConfig = {
 				to: join('assets', 'video')
 			}
 		]),
-		new LoaderOptionsPlugin({
-			options: {
-				stylus: {
-					use: [nib()],
-					import: [getModifiedNib(require.resolve('verstat-nib'))],
-					preferPathResolver: 'webpack'
-				},
-				postcss: [
-					cssNext({
-						autoprefixer: {
-							browsers: SUPPORTED_BROWSERS_LIST
-						}
-					})
-				]
-			}
-		}),
 		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),

@@ -40,12 +40,12 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO smartcache
-// TODO happypack
 // TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
 // TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
 
 // ---------- Constants ----------
 const PROJECT_ROOT = resolve(__dirname, '../');
+const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js');
 const OUTPUT_DIRECTORY = 'dist';
 const MEMORY_DIRECTORY = 'memory-fs';
 const PROD_OUTPUT = join(PROJECT_ROOT, OUTPUT_DIRECTORY);
@@ -58,8 +58,8 @@ const CONSOLE_OUTPUT = {
 	colors: true,
 	modules: false,
 	children: false,
-	hash: false,
-	timings: false
+	hash: process.env.NODE_ENV === 'production',
+	timings: process.env.NODE_ENV === 'production'
 };
 const SUPPORTED_BROWSERS_LIST = [
 	'last 4 versions',
@@ -788,6 +788,7 @@ function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler, browserSy
 module.exports = {
 	PROJECT_ROOT,
 	PROD_OUTPUT,
+	POSTCSS_CONFIG,
 	DEV_OUTPUT,
 	CONSOLE_OUTPUT,
 	SUPPORTED_BROWSERS_LIST,
