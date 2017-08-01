@@ -1,6 +1,7 @@
 const supportsColor = require('supports-color');
 const postcss = require('postcss');
 const chalk = require('chalk');
+const fm = require('front-matter');
 const cssNext = require('postcss-cssnext');
 const cssMQpacker = require('css-mqpacker');
 const perfectionist = require('perfectionist');
@@ -460,8 +461,40 @@ function handleAdjacentMJML(file, fileSystem, compiler, browserSync, event, mode
 	}
 }
 
-// TODO standalone markdown
-function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, mode) {}
+function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, mode) {
+	const extractedData = fm(customReadFile(file));
+	if (Object.keys(extractedData.attributes).length !== 0) {
+		const modifiedExtractedData = Object.assign(
+			{ content: extractedData.body },
+			extractedData,
+			extractedData.attributes
+		);
+		delete modifiedExtractedData.body;
+		delete modifiedExtractedData.layout;
+		delete modifiedExtractedData.attributes;
+		delete modifiedExtractedData.frontmatter;
+		const layouts = sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+		const template = layouts.filter(layout => layout.indexOf(extractedData.attributes.layout) !== -1);
+		if (template.length) {
+			const fn = compileFile(template[0]);
+			const initialLocals = {
+				renderBlock: renderBlockEngine,
+				file: modifiedExtractedData,
+				content: modifiedExtractedData.content
+			};
+			const locals = Object.assign(initialLocals, getGlobalData());
+			handleAdjacentHTML(
+				file.replace(extname(file), '.html'),
+				fn(locals),
+				fileSystem,
+				compiler,
+				browserSync,
+				event,
+				mode
+			);
+		}
+	}
+}
 
 function handleAdjacentStylus(file, fileSystem, compiler, browserSync, event, mode) {
 	const content = customReadFile(file);
