@@ -13,7 +13,6 @@ const cssNano = require('cssnano');
 const {
 	NoEmitOnErrorsPlugin,
 	ProvidePlugin,
-	LoaderOptionsPlugin,
 	WatchIgnorePlugin,
 	DefinePlugin,
 	optimize: {

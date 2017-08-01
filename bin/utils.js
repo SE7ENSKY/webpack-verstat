@@ -581,6 +581,7 @@ function initAdjacentDirectories(outputPath, outputFileSystem, compiler, browser
 				compiler,
 				browserSync
 			);
+			compiler.plugin('done', (stats) => ADJACENT_DIRECTORIES_MODE = 'watch');
 		}
 	}
 }
