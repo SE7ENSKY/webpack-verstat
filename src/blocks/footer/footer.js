@@ -1,0 +1,3 @@
+$(() => {
+	$('.owl-carousel').owlCarousel();
+});

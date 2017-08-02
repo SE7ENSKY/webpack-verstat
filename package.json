@@ -84,6 +84,7 @@
     "fastclick": "^1.0.6",
     "gsap": "^1.19.1",
     "jquery": "^3.2.1",
-    "normalize.css": "^6.0.0"
+    "normalize.css": "^6.0.0",
+    "owl.carousel": "^2.2.0"
   }
 }
