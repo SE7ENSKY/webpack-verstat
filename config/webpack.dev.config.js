@@ -259,21 +259,19 @@ const devConfig = {
 		new NoEmitOnErrorsPlugin(),
 		new ProvidePlugin({
 			$: 'jquery',
-			jQuery: 'jquery'
+			jQuery: 'jquery',
+			'window.jQuery': 'jquery'
 		}),
 		new HotModuleReplacementPlugin(),
 		new CopyWebpackPlugin([
 			{
-				from: join('assets', 'fonts'),
-				to: join('assets', 'fonts')
-			},
-			{
-				from: join('assets', 'img'),
-				to: join('assets', 'img')
-			},
-			{
-				from: join('assets', 'video'),
-				to: join('assets', 'video')
+				from: 'assets',
+				to: 'assets',
+				ignore: [
+					'scripts/*',
+					'styles/*',
+					'*.js'
+				]
 			}
 		]),
 		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),

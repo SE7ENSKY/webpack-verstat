@@ -15,7 +15,8 @@ const {
 	dirname,
 	sep,
 	join,
-	isAbsolute
+	isAbsolute,
+	normalize
 } = require('path');
 const { safeLoad } = require('js-yaml');
 const pretty = require('pretty');
@@ -41,8 +42,6 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 // TODO smartcache
-// TODO pug markdown: jstransformer-markdown-it (https://pugjs.org/language/filters.html)
-// TODO pug babel: jstransformer-babel (https://pugjs.org/language/filters.html)
 
 // ---------- Constants ----------
 const PROJECT_ROOT = resolve(__dirname, '../');
@@ -51,7 +50,7 @@ const OUTPUT_DIRECTORY = 'dist';
 const MEMORY_DIRECTORY = 'memory-fs';
 const PROD_OUTPUT = join(PROJECT_ROOT, OUTPUT_DIRECTORY);
 let ADJACENT_DIRECTORIES_MODE;
-const DEV_OUTPUT = sep; // /
+const DEV_OUTPUT = '/';
 const TEMPLATE_DEPENDENCIES = new Map();
 let TEMPLATE_DEPENDENCIES_KEY;
 const SITE_GRID = [];
@@ -209,14 +208,14 @@ function createDirectory(path, fileSystem) {
 			if (fileSystem) {
 				filePathParts.forEach(function (item, index) {
 					if (fileSystem.readdirSync(index === 0 ? DEV_OUTPUT : dirPath).indexOf(filePathParts[index]) === -1) {
-						dirPath += join(sep, filePathParts[index]);
+						dirPath += `${DEV_OUTPUT}${filePathParts[index]}`;
 						fileSystem.mkdirpSync(dirPath);
 						console.log(
 							boldTerminalString('addDir:'),
 							shortenAbsolutePath(join(PROJECT_ROOT, MEMORY_DIRECTORY, dirPath))
 						);
 					} else {
-						dirPath += join(sep, filePathParts[index]);
+						dirPath += `${DEV_OUTPUT}${filePathParts[index]}`;
 					}
 				});
 			} else {
@@ -246,7 +245,7 @@ function writeFileToDirectory(file, fileContent, fileSystem, event) {
 		if (fileContent.length) {
 			createDirectory(filePath, fileSystem);
 			if (fileSystem) {
-				fileSystem.writeFileSync(filePath, fileContent);
+				fileSystem.writeFileSync(filePath.replace(/\\/g, '/'), fileContent);
 				console.log(
 					boldTerminalString(`${event}:`),
 					shortenAbsolutePath(file).replace('src', MEMORY_DIRECTORY)
@@ -551,26 +550,26 @@ function adjacentDirectoriesRouter(file, fileSystem, compiler, browserSync, even
 	case 'change':
 		switch (extname(file)) {
 		case '.html':
-			handleAdjacentHTML(file, undefined, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentHTML(normalize(file), undefined, fileSystem, compiler, browserSync, event, mode);
 			break;
 		case '.jade':
 		case '.pug':
-			handleAdjacentTemplate(file, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentTemplate(normalize(file), fileSystem, compiler, browserSync, event, mode);
 			break;
 		case '.mjml':
-			handleAdjacentMJML(file, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentMJML(normalize(file), fileSystem, compiler, browserSync, event, mode);
 			break;
 		case '.md':
-			handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentMarkdown(normalize(file), fileSystem, compiler, browserSync, event, mode);
 			break;
 		case '.styl':
-			handleAdjacentStylus(file, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentStylus(normalize(file), fileSystem, compiler, browserSync, event, mode);
 			break;
 		case '.css':
-			handleAdjacentCSS(file, undefined, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentCSS(normalize(file), undefined, fileSystem, compiler, browserSync, event, mode);
 			break;
 		default:
-			handleAdjacentAsset(file, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentAsset(normalize(file), fileSystem, compiler, browserSync, event, mode);
 		}
 		break;
 	case 'addDir':
@@ -620,11 +619,11 @@ function initAdjacentDirectories(outputPath, outputFileSystem, compiler, browser
 }
 
 function siteGridEngine(title, url, layout) {
-	const path = join(PROJECT_ROOT, 'src');
+	const path = join(PROJECT_ROOT, 'src').replace(/\\/g, '/');
 	SITE_GRID.push({
 		title: title || null,
-		url: url.replace(path, '').replace(extname(url), '.html'),
-		layout: layout.replace(join(path, sep), '')
+		url: url.replace(extname(url), '.html').replace(/\\/g, '/').replace(path, ''),
+		layout: layout.replace(join(path, sep), '').replace(/\\/g, '/')
 	});
 }
 

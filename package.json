@@ -3,10 +3,10 @@
   "version": "2.0.0",
   "description": "Frontend project for Verstat Template",
   "scripts": {
-    "build:min": "TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
-    "build": "TIMESTAMP=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
-    "prod": "NODE_ENV=production nodemon -e js --watch config --watch bin bin/prod.server.js",
-    "dev": "NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js"
+    "build:min": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
+    "build": "cross-env TIMESTAMP=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
+    "prod": "cross-env NODE_ENV=production nodemon -e js --watch config --watch bin bin/prod.server.js",
+    "dev": "cross-env NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js"
   },
   "author": "se7ensky",
   "license": "ISC",
@@ -25,6 +25,7 @@
     "coffee-script": "^1.12.5",
     "console-stamp": "^0.2.5",
     "copy-webpack-plugin": "^4.0.1",
+    "cross-env": "^5.0.2",
     "css-loader": "^0.28.1",
     "css-mqpacker": "^6.0.1",
     "cssnano": "^3.10.0",
