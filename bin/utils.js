@@ -393,7 +393,7 @@ function handleAdjacentAsset(path, fileSystem, compiler, browserSync, event, mod
 	}
 }
 
-function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync, event, mode) {
+function handleAdjacentHTML(file, fileContent, prettify, fileSystem, compiler, browserSync, event, mode) {
 	if (isString(file)) {
 		let content;
 		if (isString(fileContent)) {
@@ -402,15 +402,13 @@ function handleAdjacentHTML(file, fileContent, fileSystem, compiler, browserSync
 			content = customReadFile(file);
 		}
 		if (content.length) {
+			const prettifyConfig = {
+				indent_char: ' ',
+				indent_size: 2
+			};
 			handleAdjacentFile(
 				file,
-				prettifyHTML(
-					content,
-					{
-						indent_char: ' ',
-						indent_size: 2
-					}
-				),
+				prettify ? prettifyHTML(content, prettifyConfig) : content,
 				fileSystem,
 				compiler,
 				event,
@@ -431,6 +429,7 @@ function handleAdjacentTemplate(file, fileSystem, compiler, browserSync, event, 
 		handleAdjacentHTML(
 			file.replace(extname(file), '.html'),
 			fn(locals),
+			true,
 			fileSystem,
 			compiler,
 			browserSync,
@@ -448,6 +447,7 @@ function handleAdjacentMJML(file, fileSystem, compiler, browserSync, event, mode
 			handleAdjacentHTML(
 				file.replace(extname(file), '.html'),
 				html,
+				false,
 				fileSystem,
 				compiler,
 				browserSync,
@@ -485,6 +485,7 @@ function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, 
 			handleAdjacentHTML(
 				file.replace(extname(file), '.html'),
 				fn(locals),
+				true,
 				fileSystem,
 				compiler,
 				browserSync,
@@ -550,7 +551,7 @@ function adjacentDirectoriesRouter(file, fileSystem, compiler, browserSync, even
 	case 'change':
 		switch (extname(file)) {
 		case '.html':
-			handleAdjacentHTML(normalize(file), undefined, fileSystem, compiler, browserSync, event, mode);
+			handleAdjacentHTML(normalize(file), undefined, true, fileSystem, compiler, browserSync, event, mode);
 			break;
 		case '.jade':
 		case '.pug':
