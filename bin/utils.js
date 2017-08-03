@@ -793,7 +793,7 @@ function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler, browserSy
 		outputFileSystem,
 		compiler,
 		browserSync,
-		['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor']
+		['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor', '*.*']
 	);
 	return sync(`${PROJECT_ROOT}/src/pages/*.html`).map(function (item) {
 		const filename = basename(item);

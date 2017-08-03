@@ -119,7 +119,7 @@ function handleGlobalData(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	case 'add':
-	case 'unlink:':
+	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 		break;
@@ -134,7 +134,7 @@ function handleTemplateWithData(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	case 'add':
-	case 'unlink:':
+	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 		break;
@@ -145,7 +145,7 @@ function handleTemplate(event, file) {
 	switch (event) {
 	case 'change':
 	case 'add':
-	case 'unlink:':
+	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges(null, file, null);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
@@ -162,7 +162,7 @@ function handleBlock(event, file) {
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	case 'change':
-	case 'unlink:':
+	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges(null, null, file);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
