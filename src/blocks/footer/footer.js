@@ -1,3 +1,0 @@
-$(() => {
-	$('.owl-carousel').owlCarousel();
-});

@@ -10,25 +10,19 @@ if (module.hot) {
 
 const getRequiredfiles = file => file.keys().forEach(file);
 
-// ---------------------- import styles ----------------------
+// ------------------ import vendor styles -------------------
 import 'normalize.css/normalize.css';
+
+// ------------------ import system styles -------------------
 import './styles/main.styl';
-import 'owl.carousel/dist/assets/owl.carousel.css';
-// import 'node_modules';
+
+// ------------------ import vendor scripts ------------------
 // import '../vendor/';
 
-
-// ---------------------- import scripts ---------------------
-// import 'node_modules';
-// import '../vendor/';
-import '../vendor/twitter-bootstrap/transition.js';
-import '../vendor/twitter-bootstrap/tab.js';
-import '../vendor/twitter-bootstrap/tooltip.js';
-import 'owl.carousel';
+// ----------------- import system scripts -------------------
 import '../assets/scripts/jquery-select7.coffee';
 import '../assets/scripts/main.js';
 
-
-// ---------------------- import blocks ----------------------
+// ------------------ import system blocks -------------------
 getRequiredfiles(require.context('../blocks/', true, /\.(css|styl|less|sass|scss)$/));
 getRequiredfiles(require.context('../blocks/', true, /\.(js|coffee)$/));
