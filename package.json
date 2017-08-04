@@ -102,7 +102,7 @@
     "owl.carousel": "^2.2.0",
     "parallax-js": "^3.0.0",
     "pickadate": "^3.5.6",
-    "pixi": "^0.3.1",
+    "pixi.js": "^4.5.4",
     "scrollmagic": "^2.0.5",
     "select2": "^4.0.3",
     "viewport-units-buggyfill": "^0.6.2",

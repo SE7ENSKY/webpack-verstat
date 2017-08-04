@@ -41,7 +41,6 @@ const {
 const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO smartcache
 
 // ---------- Constants ----------
 const PROJECT_ROOT = resolve(__dirname, '../');
@@ -730,7 +729,7 @@ function compileTemplate(templateWithData) {
 		siteGridEngine(
 			extractedData.title,
 			templateWithData,
-			extname(extractedData.layout) ? extractedData.layout : `${extractedData.layout}${extname(template[0])}`
+			extname(extractedData.layout).length ? extractedData.layout : `${extractedData.layout}${extname(template[0])}`
 		);
 		templateDependenciesEngine(template[0], templateWithData);
 		const fn = compileFile(template[0]);

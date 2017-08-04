@@ -66,7 +66,10 @@ browserSync.init({
 	reloadDebounce: 300,
 	watchOptions: {
 		ignoreInitial: true,
-		awaitWriteFinish: true
+		awaitWriteFinish: true,
+		usePolling: true,
+		interval: 100,
+		binaryInterval: 300
 	},
 	port: devServerConfig.port,
 	server: {
