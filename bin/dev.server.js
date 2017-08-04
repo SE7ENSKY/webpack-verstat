@@ -144,12 +144,19 @@ function handleTemplateWithData(event, file) {
 function handleTemplate(event, file) {
 	switch (event) {
 	case 'change':
-	case 'add':
-	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		handleChanges(null, file, null);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
+	case 'add':
+	case 'unlink':
+		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
+		if (getTemplateBranch(null, file, null).length) {
+			changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+		} else {
+			handleChanges(null, file, null);
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		}
 	}
 }
 
