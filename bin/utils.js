@@ -283,13 +283,17 @@ function handleAdjacentFile(file, fileContent, fileSystem, compiler, event, mode
 				callback();
 			});
 		} else {
-			const timerId = setTimeout(function waitForOutputDirectory() {
-				if (!existsSync(PROD_OUTPUT)) {
-					setTimeout(waitForOutputDirectory, 100);
-				} else {
-					writeFileToDirectory(file, fileContent, fileSystem, event);
-				}
-			}, 100);
+			if (existsSync(PROD_OUTPUT)) {
+				writeFileToDirectory(file, fileContent, fileSystem, event);
+			} else {
+				setTimeout(function waitForOutputDirectory() {
+					if (!existsSync(PROD_OUTPUT)) {
+						setTimeout(waitForOutputDirectory, 35);
+					} else {
+						writeFileToDirectory(file, fileContent, fileSystem, event);
+					}
+				}, 35);
+			}
 		}
 		break;
 	case 'watch':
