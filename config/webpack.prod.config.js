@@ -23,6 +23,8 @@ const {
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+// const ResourceHintWebpackPlugin = require('preload-webpack-plugin');
+// const { CriticalPlugin } = require('webpack-plugin-critical');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const HappyPack = require('happypack');
@@ -86,7 +88,33 @@ const prodConfig = {
 	output: {
 		path: PROD_OUTPUT,
 		publicPath: '/',
-		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js`
+		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`
+	},
+	resolve: {
+		extensions: [
+			'.js',
+			'.coffee',
+			'.yaml',
+			'.json',
+			'.css',
+			'.sass',
+			'.scss',
+			'.less',
+			'.styl',
+			'.png',
+			'.jpg',
+			'.jpeg',
+			'.gif'
+		],
+		alias: {
+			assets: join(PROJECT_ROOT, 'src', 'assets'),
+			fonts: join(PROJECT_ROOT, 'src', 'assets', 'fonts'),
+			img: join(PROJECT_ROOT, 'src', 'assets', 'img'),
+			video: join(PROJECT_ROOT, 'src', 'assets', 'video'),
+			scripts: join(PROJECT_ROOT, 'src', 'assets', 'scripts'),
+			styles: join(PROJECT_ROOT, 'src', 'assets', 'styles'),
+			vendor: join(PROJECT_ROOT, 'src', 'vendor')
+		}
 	},
 	devtool: false,
 	target: 'web',
@@ -161,13 +189,24 @@ const prodConfig = {
 	plugins: [
 		new DefinePlugin({
 			'process.env': {
-				NODE_ENV: process.env.NODE_ENV
+				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
 		}),
 		new ExtractTextPlugin({
-			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
+			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].css`,
 			allChunks: true
 		}),
+		// new ResourceHintWebpackPlugin(
+		// 	{
+		// 		rel: 'preload',
+		// 		as(entry) {
+		// 			if (/\.css$/.test(entry)) return 'style';
+		// 			return 'script';
+		// 		},
+		// 		include: 'all',
+		// 		fileBlacklist: [/\.map/]
+		// 	}
+		// ),
 		new HappyPack({
 			id: 'markdown',
 			verbose: false,
@@ -246,7 +285,12 @@ const prodConfig = {
 					query: {
 						sourceMap: false,
 						use: nib(),
-						import: [getModifiedNib(require.resolve('verstat-nib'))],
+						import: [
+							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+							getModifiedNib(require.resolve('verstat-nib'))
+						],
 						preferPathResolver: 'webpack'
 					}
 				}
@@ -291,7 +335,12 @@ const prodConfig = {
 				query: {
 					cacheDirectory: true,
 					babelrc: false,
-					plugins: ['transform-runtime'],
+					plugins: [
+						'babel-plugin-transform-class-properties',
+						'babel-plugin-syntax-dynamic-import',
+						'babel-plugin-transform-runtime',
+						'babel-plugin-transform-object-rest-spread'
+					],
 					presets: [
 						[
 							'env',
@@ -300,8 +349,7 @@ const prodConfig = {
 									browsers: SUPPORTED_BROWSERS_LIST
 								},
 								modules: false,
-								loose: true,
-								useBuiltIns: true
+								loose: true
 							}
 						]
 					]
@@ -319,7 +367,8 @@ const prodConfig = {
 		}),
 		new CommonsChunkPlugin({
 			name: gererateVendor(),
-			minChunks: ({ resource }) => (/node_modules/.test(resource)) || (/vendor/.test(resource))
+			filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
+			minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
 		}),
 		new CopyWebpackPlugin([
 			{
@@ -328,7 +377,8 @@ const prodConfig = {
 				ignore: [
 					'scripts/*',
 					'styles/*',
-					'*.js'
+					'*.js',
+					'.DS_Store'
 				]
 			}
 		]),

@@ -49,6 +49,32 @@ const devConfig = {
 		publicPath: '/',
 		filename: 'assets/[name].js'
 	},
+	resolve: {
+		extensions: [
+			'.js',
+			'.coffee',
+			'.yaml',
+			'.json',
+			'.css',
+			'.sass',
+			'.scss',
+			'.less',
+			'.styl',
+			'.png',
+			'.jpg',
+			'.jpeg',
+			'.gif'
+		],
+		alias: {
+			assets: join(PROJECT_ROOT, 'src', 'assets'),
+			fonts: join(PROJECT_ROOT, 'src', 'assets', 'fonts'),
+			img: join(PROJECT_ROOT, 'src', 'assets', 'img'),
+			video: join(PROJECT_ROOT, 'src', 'assets', 'video'),
+			scripts: join(PROJECT_ROOT, 'src', 'assets', 'scripts'),
+			styles: join(PROJECT_ROOT, 'src', 'assets', 'styles'),
+			vendor: join(PROJECT_ROOT, 'src', 'vendor')
+		}
+	},
 	devtool: 'cheap-module-eval-source-map',
 	target: 'web',
 	module: {
@@ -109,7 +135,7 @@ const devConfig = {
 	plugins: [
 		new DefinePlugin({
 			'process.env': {
-				NODE_ENV: process.env.NODE_ENV
+				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
 		}),
 		new HappyPack({
@@ -194,7 +220,12 @@ const devConfig = {
 					query: {
 						sourceMap: false,
 						use: nib(),
-						import: [getModifiedNib(require.resolve('verstat-nib'))],
+						import: [
+							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+							getModifiedNib(require.resolve('verstat-nib'))
+						],
 						preferPathResolver: 'webpack'
 					}
 				}
@@ -239,7 +270,12 @@ const devConfig = {
 				query: {
 					cacheDirectory: true,
 					babelrc: false,
-					plugins: ['transform-runtime'],
+					plugins: [
+						'babel-plugin-transform-class-properties',
+						'babel-plugin-syntax-dynamic-import',
+						'babel-plugin-transform-runtime',
+						'babel-plugin-transform-object-rest-spread'
+					],
 					presets: [
 						[
 							'env',
@@ -248,8 +284,7 @@ const devConfig = {
 									browsers: SUPPORTED_BROWSERS_LIST
 								},
 								modules: false,
-								loose: true,
-								useBuiltIns: true
+								loose: true
 							}
 						]
 					]
@@ -270,7 +305,8 @@ const devConfig = {
 				ignore: [
 					'scripts/*',
 					'styles/*',
-					'*.js'
+					'*.js',
+					'.DS_Store'
 				]
 			}
 		]),

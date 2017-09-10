@@ -1,22 +1,26 @@
 include ../globals/commons
 include ../../node_modules/verstat-bemto/bemto-tabs
 
+block params
 
 doctype html
 html
-  head
-    meta(charset="UTF-8")
-    meta(content="width=device-width, initial-scale=1" name="viewport")
-    meta(name="theme-color" content="#1073fb")
-    if file.title
-        title!= file.title
-    block styles
-      rontEndWebDev
+	head
+		meta(charset="UTF-8")
+		meta(content="width=device-width, minimum-scale=1, maximum-scale=1", name="viewport")
+		meta(name="theme-color" content="#56943E")
+		link(rel="shortcut icon" href=assets("img/favicon.png?v=1"))
+		title
+			if file.title
+				| #{file.title} – #{site.title}
+			else if site.title
+				| #{site.title}
+		block styles
 
-  body
-    block root
+	body
+		block root
+			!= content
 
-    block fonts
-    block styles
-    block scripts
-    block analytics
+		block fonts
+		block scripts
+		block analytics

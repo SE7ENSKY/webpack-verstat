@@ -42,7 +42,7 @@ const bemto = require('verstat-bemto/index-tabs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 
-// ---------- Constants ----------
+// ---------------------- Constants ----------------------
 const PROJECT_ROOT = resolve(__dirname, '../');
 const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js');
 const OUTPUT_DIRECTORY = 'dist';
@@ -124,7 +124,7 @@ const PERFECTIONIST_CONFIG = {
 	sourcemap: false,
 	zeroLengthNoUnit: true
 };
-// ---------- Constants ----------
+// ---------------------- Constants ----------------------
 
 function isString(str) {
 	return typeof str === 'string' || str instanceof String;
@@ -655,8 +655,9 @@ function compileBlock(mod, block) {
 	const index = blocks.findIndex(item => item.indexOf(block) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
+		const commonsPath = sync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`);
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return compile(`${mod}\n${customReadFile(blockPath)}`);
+		return compile(`${customReadFile(commonsPath[0])}\n${mod}\n${customReadFile(blockPath)}`);
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return compile(`div [block ${block} not found]`);
@@ -670,9 +671,9 @@ function renderBlockEngine(blockName, data) {
 }
 
 function getGlobalData() {
-	const data = sync(`${PROJECT_ROOT}/src/data/*.yml`).map((file) => {
+	const data = sync(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`).map((file) => {
 		const obj = {};
-		obj[basename(file, '.yml')] = safeLoad(customReadFile(file));
+		obj[basename(file, extname(file))] = safeLoad(customReadFile(file));
 		return obj;
 	});
 	return data.length ? Object.assign({}, ...data) : {};
@@ -802,7 +803,6 @@ function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler, browserSy
 		const filename = basename(item);
 		let inject;
 		switch (filename) {
-		case 'styles.html':
 		case 'sitegrid.html':
 			inject = false;
 			break;

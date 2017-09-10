@@ -44,6 +44,9 @@ const devServerConfig = {
 	stats: CONSOLE_OUTPUT
 };
 
+// fix for '[nodemon] app crashed'
+process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
+
 const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
 compiler.outputFileSystem = memoryFS;
