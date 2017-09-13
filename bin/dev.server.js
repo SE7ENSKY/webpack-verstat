@@ -3,7 +3,11 @@ require('console-stamp')(console, {
 	label: false
 });
 
-const { join } = require('path');
+const {
+	join,
+	basename,
+	extname
+} = require('path');
 const { sync } = require('glob');
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
@@ -103,8 +107,9 @@ browserSync.init({
 });
 
 function handleChanges(templateWithData, template, block) {
-	if (!templateWithData && !template && !block) {
-		const branch = sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
+	const templateBasename = template ? basename(template, extname(template)) : template;
+	if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
+		const branch = sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`);
 		if (branch.length) {
 			console.log(boldTerminalString('recompiling all branches...'));
 			branch.forEach(item => renderTemplate(compileTemplate(item)));

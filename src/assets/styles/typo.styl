@@ -1,13 +1,14 @@
 h1, h2, h3, h4, h5, h6
-	font-weight bold
+	font-weight normal
+	text-transform uppercase
 
 h1
 	margin 0 0 35px
-	font-size 35px
-	line-height 1.3
+	font-size 48px
+	line-height 1.1
 h2
 	margin 0 0 20px
-	font-size 28px
+	font-size 30px
 h3
 	margin 0 0 15px
 	font-size 20px
@@ -22,7 +23,7 @@ h6
 	font-size 14px
 
 p
-	margin 0 0 15px
+	margin 0 0 25px
 
 a
 	transition .2s color ease-in-out
@@ -31,3 +32,25 @@ a
 
 small
 	font-size 75%
+
+blockquote
+	margin 60px 0
+	padding 60px
+	border 6px solid #dfeada
+	font-size 48px
+	line-height 1.1
+	text-transform uppercase
+	color brandColor
+	.slim-wrap &
+		margin-left -17%
+		margin-right @margin-left
+		padding-left calc(17% - 6px)
+		padding-right @padding-left
+
+// code
+// 	font-family Menlo, Monaco, Consolas, "Courier New", monospace
+// 	padding 3px 5px
+// 	font-size 80%
+// 	color siteColor
+// 	background-color #e3fff3
+// 	border-radius 2px

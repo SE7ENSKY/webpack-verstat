@@ -69,7 +69,7 @@ const fileLoaderExclude = [
 const urlLoaderInclude = fileLoaderExclude;
 
 const postcssLoaderOptions = {
-	sourceMap: false,
+	sourceMap: process.env.SOURCEMAP ? true : false,
 	config: {
 		path: POSTCSS_CONFIG,
 		ctx: {
@@ -113,10 +113,11 @@ const prodConfig = {
 			video: join(PROJECT_ROOT, 'src', 'assets', 'video'),
 			scripts: join(PROJECT_ROOT, 'src', 'assets', 'scripts'),
 			styles: join(PROJECT_ROOT, 'src', 'assets', 'styles'),
-			vendor: join(PROJECT_ROOT, 'src', 'vendor')
+			vendor: join(PROJECT_ROOT, 'src', 'vendor'),
+			modernizr$: join(PROJECT_ROOT, '.modernizrrc')
 		}
 	},
-	devtool: false,
+	devtool: process.env.SOURCEMAP ? 'source-map' : false,
 	target: 'web',
 	watch: false,
 	module: {
@@ -155,6 +156,16 @@ const prodConfig = {
 				test: /\.js$/,
 				exclude: /node_modules/,
 				use: 'happypack/loader?id=babel'
+			},
+			// this.exec() is not supported by HappyPack
+			// https://github.com/amireh/happypack/wiki/Webpack-Loader-API-Support
+			{
+				test: /\.modernizrrc.js$/,
+				use: ['modernizr-loader']
+			},
+			{
+				test: /\.modernizrrc(\.json)?$/,
+				use: ['modernizr-loader', 'json-loader']
 			},
 			{
 				test: /\.css$/,
@@ -247,7 +258,7 @@ const prodConfig = {
 				{
 					path: 'sass-loader',
 					query: {
-						sourceMap: false
+						sourceMap: process.env.SOURCEMAP ? true : false
 					}
 				}
 			]
@@ -265,7 +276,7 @@ const prodConfig = {
 				{
 					path: 'less-loader',
 					query: {
-						sourceMap: false
+						sourceMap: process.env.SOURCEMAP ? true : false
 					}
 				}
 			]
@@ -283,7 +294,7 @@ const prodConfig = {
 				{
 					path: 'stylus-loader',
 					query: {
-						sourceMap: false,
+						sourceMap: process.env.SOURCEMAP ? true : false,
 						use: nib(),
 						import: [
 							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),

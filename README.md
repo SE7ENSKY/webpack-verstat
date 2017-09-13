@@ -1,7 +1,7 @@
 # Verstat v2
 Release candidate
 
-NOTE: all paths in css and html start with a sign ```/``` . On ```Linux``` ```nodemon``` restarts only once due bug with ```chokidar```.
+NOTE: all paths in css and html start with a sign ```/``` . On Linux[nodemon](https://github.com/remy/nodemon)restarts only once due bug with[chokidar](https://github.com/paulmillr/chokidar). For[Modernizr](https://github.com/Modernizr/Modernizr)we use[modernizr-loader](https://github.com/peerigon/modernizr-loader).
 
 **Languages**
 ```
@@ -40,6 +40,7 @@ NOTE: all paths in css and html start with a sign ```/``` . On ```Linux``` ```no
 17. bemto
 18. Browsersync
 19. yarn
+20. Modernizr
 ```
 
 **Requirements**
@@ -114,9 +115,13 @@ verstat // project name
 │   │   ├── video
 │   │   └── project-name.js // webpack entry, imports
 │   ├── blocks
+│   │   └── container
+│   │       └── container.styl
 │   ├── data
+│   │   └── text.yml
 │   ├── globals
 │   │   ├── commons.pug
+│   │   ├── functions.styl
 │   │   ├── mixins.styl
 │   │   └── variables.styl
 │   ├── layouts
@@ -132,6 +137,8 @@ verstat // project name
 ├── .eslintignore
 ├── .eslintrc
 ├── .gitignore
+├── .modernizrrc
 ├── package.json
-└── README.md
+├── README.md
+└── yarn.lock
 ```

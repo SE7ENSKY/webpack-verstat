@@ -1,7 +1,6 @@
 include ../globals/commons
 include ../../node_modules/verstat-bemto/bemto-tabs
 
-block params
 
 doctype html
 html
@@ -10,11 +9,8 @@ html
 		meta(content="width=device-width, minimum-scale=1, maximum-scale=1", name="viewport")
 		meta(name="theme-color" content="#56943E")
 		link(rel="shortcut icon" href=assets("img/favicon.png?v=1"))
-		title
-			if file.title
-				| #{file.title} – #{site.title}
-			else if site.title
-				| #{site.title}
+		if file.title
+			title!= file.title
 		block styles
 
 	body

@@ -72,7 +72,8 @@ const devConfig = {
 			video: join(PROJECT_ROOT, 'src', 'assets', 'video'),
 			scripts: join(PROJECT_ROOT, 'src', 'assets', 'scripts'),
 			styles: join(PROJECT_ROOT, 'src', 'assets', 'styles'),
-			vendor: join(PROJECT_ROOT, 'src', 'vendor')
+			vendor: join(PROJECT_ROOT, 'src', 'vendor'),
+			modernizr$: join(PROJECT_ROOT, '.modernizrrc')
 		}
 	},
 	devtool: 'cheap-module-eval-source-map',
@@ -129,6 +130,16 @@ const devConfig = {
 				test: /\.js$/,
 				exclude: /node_modules/,
 				use: 'happypack/loader?id=babel'
+			},
+			// this.exec() is not supported by HappyPack
+			// https://github.com/amireh/happypack/wiki/Webpack-Loader-API-Support
+			{
+				test: /\.modernizrrc.js$/,
+				use: ['modernizr-loader']
+			},
+			{
+				test: /\.modernizrrc(\.json)?$/,
+				use: ['modernizr-loader', 'json-loader']
 			}
 		]
 	},

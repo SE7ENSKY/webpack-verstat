@@ -1,4 +1,6 @@
 import FastClick from 'fastclick';
+import Modernizr from 'modernizr';
+
 
 $ ->
 	unless Modernizr.touchevents

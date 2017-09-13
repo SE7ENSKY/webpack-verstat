@@ -202,6 +202,7 @@ function createDirectory(path, fileSystem) {
 		} else {
 			filePathParts = shortPath.split(sep).filter(item => item.length);
 		}
+		filePathParts = filePathParts.filter(item => item !== '.DS_Store'); // fix for .DS_Store
 		if (filePathParts.length) {
 			let dirPath = '';
 			if (fileSystem) {
