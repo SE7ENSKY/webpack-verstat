@@ -1,7 +1,7 @@
 # Verstat v2
 Release candidate
 
-NOTE: all paths in css and html start with a sign ```/``` . On Linux [nodemon](https://github.com/remy/nodemon)restarts only once due bug with [chokidar](https://github.com/paulmillr/chokidar). For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
+NOTE: all paths in css and html start with a sign ```/``` . On Linux [nodemon](https://github.com/remy/nodemon) restarts only once due bug with [chokidar](https://github.com/paulmillr/chokidar). For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
 
 **Languages**
 ```
