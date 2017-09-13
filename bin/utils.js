@@ -43,6 +43,13 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 
 // ---------------------- Constants ----------------------
+const ASSETS_NAMING_CONVENTION = {
+	images: 'i',
+	fonts: 'f',
+	videos: 'v',
+	scripts: 'scripts',
+	styles: 'styles'
+};
 const PROJECT_ROOT = resolve(__dirname, '../');
 const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js');
 const OUTPUT_DIRECTORY = 'dist';
@@ -828,6 +835,7 @@ module.exports = {
 	PROD_OUTPUT,
 	POSTCSS_CONFIG,
 	DEV_OUTPUT,
+	ASSETS_NAMING_CONVENTION,
 	CONSOLE_OUTPUT,
 	SUPPORTED_BROWSERS_LIST,
 	CSS_NANO_BASE_CONFIG,

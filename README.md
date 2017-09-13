@@ -109,11 +109,11 @@ verstat // project name
 ├── dist
 ├── src
 │   ├── assets
-│   │   ├── fonts
-│   │   ├── img
+│   │   ├── f // fonts
+│   │   ├── i // images
 │   │   ├── scripts
 │   │   ├── styles
-│   │   ├── video
+│   │   ├── v // videos
 │   │   └── project-name.js // webpack entry, imports
 │   ├── blocks
 │   │   └── container

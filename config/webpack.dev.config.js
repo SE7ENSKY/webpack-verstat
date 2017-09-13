@@ -12,6 +12,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HappyPack = require('happypack');
 const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const {
+	ASSETS_NAMING_CONVENTION,
 	PROJECT_ROOT,
 	DEV_OUTPUT,
 	POSTCSS_CONFIG,
@@ -67,11 +68,11 @@ const devConfig = {
 		],
 		alias: {
 			assets: join(PROJECT_ROOT, 'src', 'assets'),
-			fonts: join(PROJECT_ROOT, 'src', 'assets', 'fonts'),
-			img: join(PROJECT_ROOT, 'src', 'assets', 'img'),
-			video: join(PROJECT_ROOT, 'src', 'assets', 'video'),
-			scripts: join(PROJECT_ROOT, 'src', 'assets', 'scripts'),
-			styles: join(PROJECT_ROOT, 'src', 'assets', 'styles'),
+			f: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
+			i: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
+			v: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
+			scripts: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
+			styles: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
 			vendor: join(PROJECT_ROOT, 'src', 'vendor'),
 			modernizr$: join(PROJECT_ROOT, '.modernizrrc')
 		}
@@ -314,8 +315,8 @@ const devConfig = {
 				from: 'assets',
 				to: 'assets',
 				ignore: [
-					'scripts/*',
-					'styles/*',
+					`${ASSETS_NAMING_CONVENTION.scripts}/*`,
+					`${ASSETS_NAMING_CONVENTION.styles}/*`,
 					'*.js',
 					'.DS_Store'
 				]
