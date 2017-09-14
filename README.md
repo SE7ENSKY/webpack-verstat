@@ -44,6 +44,19 @@ NOTE: all paths in css and html start with a sign ```/``` . On Linux [nodemon](h
 21. Critical CSS
 ```
 
+**Assets naming convention**
+
+```
+// bin/utils.js
+const ASSETS_NAMING_CONVENTION = {
+  images: 'i',
+  fonts: 'f',
+  videos: 'v',
+  scripts: 'scripts',
+  styles: 'styles'
+}
+```
+
 **Requirements**
 
 ```
