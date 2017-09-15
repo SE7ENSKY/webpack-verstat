@@ -79,10 +79,10 @@ npm i
 ```
 // only for development, read/write, server on localhost:8080
 // yarn
-yarn dev
+yarn start
 
 // npm
-npm run dev
+npm run start
 ```
 ```
 // only for production, read-only, server on localhost:3000

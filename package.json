@@ -6,8 +6,7 @@
     "build:min": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
     "build": "cross-env TIMESTAMP=true NODE_ENV=production webpack --config config/webpack.prod.config.js",
     "prod": "cross-env NODE_ENV=production UGLIFY=true SOURCEMAP=true nodemon -e js --watch config --watch bin bin/prod.server.js",
-    "dev": "cross-env NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js",
-    "start": "npm run dev"
+    "start": "cross-env NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js"
   },
   "author": "se7ensky",
   "license": "ISC",
