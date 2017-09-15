@@ -42,6 +42,29 @@ const postcssLoaderOptions = {
 	}
 };
 
+const babelLoaderOptions = {
+	cacheDirectory: true,
+	babelrc: false,
+	plugins: [
+		'babel-plugin-transform-class-properties',
+		'babel-plugin-syntax-dynamic-import',
+		'babel-plugin-transform-runtime',
+		'babel-plugin-transform-object-rest-spread'
+	],
+	presets: [
+		[
+			'env',
+			{
+				targets: {
+					browsers: SUPPORTED_BROWSERS_LIST
+				},
+				modules: false,
+				loose: true
+			}
+		]
+	]
+};
+
 const devConfig = {
 	context: join(PROJECT_ROOT, 'src'),
 	entry: generateEntry('webpack-hot-middleware/client'),
@@ -259,7 +282,13 @@ const devConfig = {
 			id: 'coffeescript',
 			verbose: false,
 			threadPool: happyThreadPool,
-			loaders: ['coffee-loader']
+			loaders: [
+				{
+					path: 'babel-loader',
+					query: babelLoaderOptions
+				},
+				'coffee-loader'
+			]
 		}),
 		new HappyPack({
 			id: 'url',
@@ -279,28 +308,7 @@ const devConfig = {
 			threadPool: happyThreadPool,
 			loaders: [{
 				path: 'babel-loader',
-				query: {
-					cacheDirectory: true,
-					babelrc: false,
-					plugins: [
-						'babel-plugin-transform-class-properties',
-						'babel-plugin-syntax-dynamic-import',
-						'babel-plugin-transform-runtime',
-						'babel-plugin-transform-object-rest-spread'
-					],
-					presets: [
-						[
-							'env',
-							{
-								targets: {
-									browsers: SUPPORTED_BROWSERS_LIST
-								},
-								modules: false,
-								loose: true
-							}
-						]
-					]
-				}
+				query: babelLoaderOptions
 			}]
 		}),
 		new NoEmitOnErrorsPlugin(),
