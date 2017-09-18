@@ -49,6 +49,7 @@ const babelLoaderOptions = {
 		'babel-plugin-transform-class-properties',
 		'babel-plugin-syntax-dynamic-import',
 		'babel-plugin-transform-runtime',
+		'babel-plugin-syntax-async-functions',
 		'babel-plugin-transform-object-rest-spread'
 	],
 	presets: [
@@ -58,8 +59,7 @@ const babelLoaderOptions = {
 				targets: {
 					browsers: SUPPORTED_BROWSERS_LIST
 				},
-				modules: false,
-				loose: true
+				modules: false
 			}
 		]
 	]
