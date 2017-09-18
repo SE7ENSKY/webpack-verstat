@@ -3,7 +3,7 @@ Release :tada:
 
 **NOTE:** All paths in css and html start with a sign ```/``` . On Linux [nodemon](https://github.com/remy/nodemon) restarts only once due bug with [chokidar](https://github.com/paulmillr/chokidar). For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
 
-**WARNING: ```yarn``` temporary removed due [js-beautify bug](https://github.com/beautify-web/js-beautify/issues/1247). Further ```yarn``` use under consideration.**
+**WARNING: ```yarn``` temporary removed due [js-beautify bug](https://github.com/beautify-web/js-beautify/issues/1247). Further use of ```yarn``` is under consideration.**
 
 **Languages**
 ```
