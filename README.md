@@ -1,9 +1,9 @@
 # Verstat v2
-Release
+Release :tada:
 
-**NOTE:** all paths in css and html start with a sign ```/``` . On Linux [nodemon](https://github.com/remy/nodemon) restarts only once due bug with [chokidar](https://github.com/paulmillr/chokidar). For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
+**NOTE:** All paths in css and html start with a sign ```/``` . On Linux [nodemon](https://github.com/remy/nodemon) restarts only once due bug with [chokidar](https://github.com/paulmillr/chokidar). For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
 
-**WARNING: ```yarn``` temporary removed due [js-beautify bug](https://github.com/beautify-web/js-beautify/issues/1247) . Further ```yarn``` use under consideration.**
+**WARNING: ```yarn``` temporary removed due [js-beautify bug](https://github.com/beautify-web/js-beautify/issues/1247). Further ```yarn``` use under consideration.**
 
 **Languages**
 ```
@@ -18,7 +18,7 @@ Release
  9. JavaScript
 10. CoffeeScript
 11. JSON
-12. YAML
+12. YAML (temporary removed)
 ```
 
 **Features**
@@ -43,7 +43,7 @@ Release
 18. Browsersync
 19. yarn
 20. Modernizr
-21. Critical CSS
+21. Critical CSS (currently in development)
 ```
 
 **Assets naming convention**
@@ -155,6 +155,5 @@ verstat // project name
 ├── .gitignore
 ├── .modernizrrc
 ├── package.json
-├── README.md
-└── yarn.lock
+└── README.md
 ```
