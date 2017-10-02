@@ -6,6 +6,7 @@ if (process.env.TIMESTAMP) {
 }
 
 const { join } = require('path');
+const { merge } = require('lodash');
 const nib = require('nib');
 const cssMQpacker = require('css-mqpacker');
 const perfectionist = require('perfectionist');
@@ -50,11 +51,7 @@ const stylesPostprocessorConfig = {
 	output: PROD_OUTPUT,
 	plugins: [
 		cssMQpacker(),
-		cssNano(
-			Object.assign(
-				CSS_NANO_BASE_CONFIG,
-				process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}
-			)
+		cssNano(merge(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {})
 		)
 	]
 };

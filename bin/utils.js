@@ -8,6 +8,7 @@ const perfectionist = require('perfectionist');
 const cssNano = require('cssnano');
 const { mjml2html } = require('mjml');
 const stylus = require('stylus');
+const { merge } = require('lodash');
 const {
 	resolve,
 	extname,
@@ -171,7 +172,7 @@ function prettifyHTML(str, options) {
 			indent_char: '\t',
 			indent_size: 1
 		};
-		return pretty(str, options ? Object.assign(defaultOptions, options) : defaultOptions);
+		return pretty(str, options ? merge(defaultOptions, options) : defaultOptions);
 	}
 }
 
@@ -474,7 +475,7 @@ function handleAdjacentMJML(file, fileSystem, compiler, browserSync, event, mode
 function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, mode) {
 	const extractedData = fm(customReadFile(file));
 	if (Object.keys(extractedData.attributes).length !== 0) {
-		const modifiedExtractedData = Object.assign(
+		const modifiedExtractedData = merge(
 			{ content: extractedData.body },
 			extractedData,
 			extractedData.attributes
@@ -492,7 +493,7 @@ function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, 
 				file: modifiedExtractedData,
 				content: modifiedExtractedData.content
 			};
-			const locals = Object.assign(initialLocals, getGlobalData());
+			const locals = merge(initialLocals, getGlobalData());
 			handleAdjacentHTML(
 				file.replace(extname(file), '.html'),
 				fn(locals),
@@ -542,7 +543,7 @@ function handleAdjacentCSS(file, fileContent, fileSystem, compiler, browserSync,
 					}
 				}),
 				cssMQpacker(),
-				cssNano(Object.assign(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
+				cssNano(merge(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
 			];
 			if (!process.env.UGLIFY) postcssPlugins.push(perfectionist(PERFECTIONIST_CONFIG));
 			postcss(postcssPlugins)
@@ -684,7 +685,7 @@ function getGlobalData() {
 		obj[basename(file, extname(file))] = safeLoad(customReadFile(file));
 		return obj;
 	});
-	return data.length ? Object.assign({}, ...data) : {};
+	return data.length ? merge({}, ...data) : {};
 }
 
 function templateDependenciesEngine(template, data) {
@@ -733,7 +734,7 @@ function getTemplateBranch(templateWithData, template, block) {
 
 function compileTemplate(templateWithData) {
 	const extractedData = loadFront(templateWithData, '\/\/---', 'content');
-	const modifiedExtractedData = Object.assign({}, extractedData);
+	const modifiedExtractedData = merge({}, extractedData);
 	delete modifiedExtractedData.layout;
 	delete modifiedExtractedData.content;
 	const layouts = sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
@@ -752,11 +753,11 @@ function compileTemplate(templateWithData) {
 			content: (function () {
 				const fn = compile(`${bemto}\n${extractedData.content}`);
 				const initialLocals = { renderBlock: renderBlockEngine };
-				const locals = Object.assign(initialLocals, modifiedExtractedData, getGlobalData());
+				const locals = merge(initialLocals, modifiedExtractedData, getGlobalData());
 				return fn(locals);
 			})()
 		};
-		const locals = Object.assign(initialLocals, getGlobalData());
+		const locals = merge(initialLocals, getGlobalData());
 		return {
 			filename: `${basename(templateWithData, extname(templateWithData))}.html`,
 			content: prettifyHTML(fn(locals))
