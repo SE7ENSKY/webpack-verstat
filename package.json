@@ -8,6 +8,10 @@
     "prod": "cross-env NODE_ENV=production UGLIFY=true SOURCEMAP=true nodemon -e js --watch config --watch bin bin/prod.server.js",
     "start": "cross-env NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:SE7ENSKY/webpack-verstat.git"
+  },
   "author": "se7ensky",
   "license": "ISC",
   "devDependencies": {

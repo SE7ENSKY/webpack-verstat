@@ -297,11 +297,11 @@ function handleAdjacentFile(file, fileContent, fileSystem, compiler, event, mode
 			} else {
 				setTimeout(function waitForOutputDirectory() {
 					if (!existsSync(PROD_OUTPUT)) {
-						setTimeout(waitForOutputDirectory, 35);
+						setTimeout(waitForOutputDirectory, 20);
 					} else {
 						writeFileToDirectory(file, fileContent, fileSystem, event);
 					}
-				}, 35);
+				}, 20);
 			}
 		}
 		break;

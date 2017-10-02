@@ -155,7 +155,7 @@ const devConfig = {
 				exclude: /node_modules/,
 				use: 'happypack/loader?id=babel'
 			},
-			// this.exec() is not supported by HappyPack
+			// modernizr-loader is not supported by HappyPack
 			// https://github.com/amireh/happypack/wiki/Webpack-Loader-API-Support
 			{
 				test: /\.modernizrrc.js$/,
