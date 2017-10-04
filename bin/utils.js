@@ -145,7 +145,9 @@ function generateEntry(server) {
 		const file = entry[0];
 		const objProp = basename(file, '.js');
 		obj[objProp] = [file.replace(join(PROJECT_ROOT, 'src'), '.')];
-		if (isString(server)) obj[objProp].push(server);
+		if (Array.isArray(server) && server.every(item => isString(item))) {
+			server.reverse().forEach(item => obj[objProp].unshift(item));
+		}
 		return obj;
 	}
 	return null;

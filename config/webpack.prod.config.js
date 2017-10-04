@@ -85,9 +85,7 @@ const babelLoaderOptions = {
 	babelrc: false,
 	plugins: [
 		'babel-plugin-transform-class-properties',
-		'babel-plugin-syntax-dynamic-import',
 		'babel-plugin-transform-runtime',
-		'babel-plugin-syntax-async-functions',
 		'babel-plugin-transform-object-rest-spread'
 	],
 	presets: [
