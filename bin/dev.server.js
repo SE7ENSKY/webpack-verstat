@@ -29,7 +29,8 @@ const {
 	initHtmlWebpackPlugin
 } = require('./utils');
 
-
+const port = 8080;
+const uiPort = 8081;
 const devServerConfig = {
 	contentBase: PROD_OUTPUT,
 	publicPath: webpackDevConfig.output.publicPath,
@@ -44,7 +45,7 @@ const devServerConfig = {
 	inline: true,
 	https: false,
 	host: 'localhost',
-	port: 8080,
+	port,
 	stats: CONSOLE_OUTPUT
 };
 
@@ -66,7 +67,9 @@ const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerCon
 const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 
 browserSync.init({
-	ui: false,
+	ui: {
+		port: uiPort
+	},
 	open: false,
 	notify: false,
 	reloadOnRestart: true,
