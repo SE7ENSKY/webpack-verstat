@@ -676,6 +676,7 @@ function compileBlock(mod, block) {
 
 function renderBlockEngine(blockName, data) {
 	data.renderBlock = function (blockName, data) {
+		renderBlockEngine(blockName, data);
 		return compileBlock(bemto, blockName[0])(data);
 	};
 	return compileBlock(bemto, blockName[0])(data);

@@ -18,3 +18,8 @@
 			| &#32;
 			code .
 				= name
+	mixin modal(modalName)
+		p
+			code &lt;a href='#{modalName}' data-toggle='modal'&gt;Show #{modalName}&lt;/a&gt;
+			br
+			a.btn(href=`#${modalName}` data-toggle="modal")= modalName
