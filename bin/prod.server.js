@@ -6,20 +6,20 @@ require('console-stamp')(console, {
 const webpack = require('webpack');
 const webpackProdConfig = require('../config/webpack.prod.config');
 const browserSync = require('browser-sync').create();
-const { CONSOLE_OUTPUT } = require('./utils');
+const {
+	CONSOLE_OUTPUT,
+	CHOKIDAR_WATCH_OPTIONS
+} = require('./utils');
 
-
+const port = 3000;
 const browserSyncConfig = {
 	ui: false,
 	open: false,
 	notify: false,
 	reloadOnRestart: true,
-	watchOptions: {
-		ignoreInitial: true,
-		awaitWriteFinish: true
-	},
+	watchOptions: CHOKIDAR_WATCH_OPTIONS,
 	host: 'localhost',
-	port: 3000,
+	port,
 	server: {
 		baseDir: webpackProdConfig.output.path
 	}

@@ -72,6 +72,13 @@ const SUPPORTED_BROWSERS_LIST = [
 	'last 4 versions',
 	'ie >= 10'
 ];
+const CHOKIDAR_WATCH_OPTIONS = {
+	ignoreInitial: true,
+	awaitWriteFinish: true,
+	usePolling: true,
+	interval: 100,
+	binaryInterval: 300
+};
 const CSS_NANO_BASE_CONFIG = {
 	autoprefixer: false,
 	rawCache: true,
@@ -599,14 +606,7 @@ function watchadjacentDirectories(watchPath, ignorePaths, fileSystem, compiler, 
 	if (isString(watchPath) && Array.isArray(ignorePaths) && ignorePaths.length) {
 		watch(
 			watchPath,
-			{
-				ignoreInitial: true,
-				awaitWriteFinish: true,
-				usePolling: true,
-				interval: 100,
-				binaryInterval: 300,
-				ignored: ignorePaths.map(item => join(PROJECT_ROOT, 'src', item))
-			}
+			merge(CHOKIDAR_WATCH_OPTIONS, { ignored: ignorePaths.map(item => join(PROJECT_ROOT, 'src', item)) })
 		)
 		.on('add', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'add', 'watch'))
 		.on('change', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'change', 'watch'))
@@ -840,6 +840,7 @@ module.exports = {
 	DEV_OUTPUT,
 	ASSETS_NAMING_CONVENTION,
 	CONSOLE_OUTPUT,
+	CHOKIDAR_WATCH_OPTIONS,
 	SUPPORTED_BROWSERS_LIST,
 	CSS_NANO_BASE_CONFIG,
 	CSS_NANO_MINIMIZE_CONFIG,

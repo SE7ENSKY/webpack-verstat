@@ -19,6 +19,7 @@ const {
 	PROJECT_ROOT,
 	CONSOLE_OUTPUT,
 	PROD_OUTPUT,
+	CHOKIDAR_WATCH_OPTIONS,
 	boldTerminalString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
@@ -35,9 +36,9 @@ const devServerConfig = {
 	contentBase: PROD_OUTPUT,
 	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
-		ignored: /node_modules/,
-		aggregateTimeout: 300,
-		poll: 1000
+		ignored: /node_modules/
+		// aggregateTimeout: 300,
+		// poll: 1000
 	},
 	compress: false,
 	hot: true,
@@ -73,14 +74,8 @@ browserSync.init({
 	open: false,
 	notify: false,
 	reloadOnRestart: true,
-	reloadDebounce: 300,
-	watchOptions: {
-		ignoreInitial: true,
-		awaitWriteFinish: true,
-		usePolling: true,
-		interval: 100,
-		binaryInterval: 300
-	},
+	reloadDebounce: 200,
+	watchOptions: CHOKIDAR_WATCH_OPTIONS,
 	port: devServerConfig.port,
 	server: {
 		baseDir: PROD_OUTPUT,
