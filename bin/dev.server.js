@@ -8,6 +8,7 @@ const {
 	basename,
 	extname
 } = require('path');
+const { toUnix } = require('upath');
 const { sync } = require('glob');
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
@@ -139,7 +140,7 @@ function handleTemplateWithData(event, file) {
 	switch (event) {
 	case 'change':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges(file, null, null);
+		handleChanges(toUnix(file), null, null);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	case 'add':
@@ -154,16 +155,16 @@ function handleTemplate(event, file) {
 	switch (event) {
 	case 'change':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges(null, file, null);
+		handleChanges(null, toUnix(file), null);
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	case 'add':
 	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		if (getTemplateBranch(null, file, null).length) {
+		if (getTemplateBranch(null, toUnix(file), null).length) {
 			changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 		} else {
-			handleChanges(null, file, null);
+			handleChanges(null, toUnix(file), null);
 			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		}
 	}
@@ -174,13 +175,13 @@ function handleBlock(event, file) {
 	case 'add':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
 		addBlockToTemplateBranch(file);
-		handleChanges(null, null, file);
+		handleChanges(null, null, toUnix(file));
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	case 'change':
 	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges(null, null, file);
+		handleChanges(null, null, toUnix(file));
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;
 	}
