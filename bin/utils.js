@@ -9,7 +9,6 @@ const cssNano = require('cssnano');
 const { mjml2html } = require('mjml');
 const stylus = require('stylus');
 const { merge } = require('lodash');
-const { toUnix } = require('upath');
 const {
 	resolve,
 	extname,
@@ -171,9 +170,9 @@ function gererateVendor() {
 function shortenAbsolutePath(absolutePath) {
 	if (isAbsolute(absolutePath)) {
 		const rootPathParts = PROJECT_ROOT.split(sep);
-		return `${rootPathParts[rootPathParts.length - 1]}${toUnix(absolutePath).replace(toUnix(PROJECT_ROOT), '')}`;
+		return `${rootPathParts[rootPathParts.length - 1]}${absolutePath.replace(/\\/g, '/').replace(PROJECT_ROOT.replace(/\\/g, '/'), '')}`;
 	}
-	return toUnix(absolutePath);
+	return absolutePath.replace(/\\/g, '/');
 }
 
 function prettifyHTML(str, options) {
