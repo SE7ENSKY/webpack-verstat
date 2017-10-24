@@ -161,12 +161,7 @@ function handleTemplate(event, file) {
 	case 'add':
 	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		if (getTemplateBranch(null, toUnix(file), null).length) {
-			changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-		} else {
-			handleChanges(null, toUnix(file), null);
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		}
+		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 	}
 }
 
@@ -174,7 +169,7 @@ function handleBlock(event, file) {
 	switch (event) {
 	case 'add':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		addBlockToTemplateBranch(file);
+		addBlockToTemplateBranch(toUnix(file));
 		handleChanges(null, null, toUnix(file));
 		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		break;

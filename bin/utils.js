@@ -78,7 +78,8 @@ const CHOKIDAR_WATCH_OPTIONS = {
 	awaitWriteFinish: true,
 	usePolling: true,
 	interval: 100,
-	binaryInterval: 300
+	binaryInterval: 300,
+	ignored: ['.DS_Store']
 };
 const CSS_NANO_BASE_CONFIG = {
 	autoprefixer: false,
