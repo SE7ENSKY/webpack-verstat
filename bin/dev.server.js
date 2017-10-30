@@ -160,7 +160,12 @@ function handleTemplate(event, file) {
 	case 'add':
 	case 'unlink':
 		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+		if (getTemplateBranch(null, file.replace(/\\/g, '/'), null).length) {
+			changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+		} else {
+			handleChanges(null, file.replace(/\\/g, '/'), null);
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		}
 	}
 }
 

@@ -220,7 +220,7 @@ function createDirectory(path, fileSystem) {
 		} else {
 			filePathParts = shortPath.split(sep).filter(item => item.length);
 		}
-		filePathParts = filePathParts.filter(item => item !== '.DS_Store'); // fix for .DS_Store
+		filePathParts = filePathParts.filter(item => item !== '.DS_Store');
 		if (filePathParts.length) {
 			let dirPath = '';
 			if (fileSystem) {
@@ -664,7 +664,7 @@ function compileSiteGrid(template) {
 
 function compileBlock(mod, block) {
 	const blocks = sync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
-	const index = blocks.findIndex(item => item.indexOf(block) !== -1);
+	const index = blocks.findIndex(item => item.indexOf(`/${block}/`) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		const commonsPath = sync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`);
@@ -691,7 +691,7 @@ function getGlobalData() {
 	return data.length ? merge({}, ...data) : {};
 }
 
-function templateDependenciesEngine(template, data) {
+function templateDependenciesEngine(template, templateDependencies, data) {
 	const fileExt = extname(data);
 	const key = `${basename(data, fileExt)}${fileExt}`;
 	TEMPLATE_DEPENDENCIES_KEY = key;
@@ -700,6 +700,7 @@ function templateDependenciesEngine(template, data) {
 		{
 			file: data,
 			layout: template,
+			layoutDependencies: templateDependencies,
 			blocks: new Map()
 		}
 	);
@@ -720,8 +721,8 @@ function getTemplateBranch(templateWithData, template, block) {
 	const branch = [];
 	if (TEMPLATE_DEPENDENCIES.size) {
 		for (const [key, value] of TEMPLATE_DEPENDENCIES) {
-			const { file, layout, blocks } = value;
-			if (file === templateWithData || layout === template) {
+			const { file, layout, layoutDependencies, blocks } = value;
+			if (file === templateWithData || layout === template || layoutDependencies.some(item => item === template)) {
 				branch.push(value.file);
 			} else if (blocks.size) {
 				for (const [key2, value2] of blocks) {
@@ -748,8 +749,12 @@ function compileTemplate(templateWithData) {
 			templateWithData,
 			extname(extractedData.layout).length ? extractedData.layout : `${extractedData.layout}${extname(template[0])}`
 		);
-		templateDependenciesEngine(template[0], templateWithData);
 		const fn = compileFile(template[0]);
+		templateDependenciesEngine(
+			template[0],
+			fn.dependencies.map(item => item.replace(/\\/g, '/')).filter(item => item.indexOf('/layouts/') !== -1),
+			templateWithData
+		);
 		const initialLocals = {
 			renderBlock: renderBlockEngine,
 			file: modifiedExtractedData,
