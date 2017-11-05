@@ -51,6 +51,7 @@ const ASSETS_NAMING_CONVENTION = {
 	scripts: 'scripts',
 	styles: 'styles'
 };
+const BUNDLE_VISUALIZER_NAME = 'bundle-statistics.html';
 const PROJECT_ROOT = resolve(__dirname, '../');
 const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js');
 const OUTPUT_DIRECTORY = 'dist';
@@ -647,7 +648,8 @@ function removeSiteGridItem(itemPath) {
 	if (isString(itemPath)) {
 		const item = itemPath.replace(join(PROJECT_ROOT, 'src', sep), '').replace(extname(itemPath), '');
 		const itemIndex = SITE_GRID.findIndex(function (element) {
-			return element.layout.replace(extname(element.layout), '') === item;
+			const elementLayout = element.layout;
+			return elementLayout ? elementLayout.replace(extname(elementLayout), '') === item : false;
 		});
 		if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
 	}
@@ -807,6 +809,13 @@ function initHtmlWebpackPlugin(outputPath, outputFileSystem, compiler, browserSy
 		console.log(boldTerminalString('unlinkDir:'), shortenAbsolutePath(pagesDirectory));
 	}
 	createDirectory(pagesDirectory);
+	if (process.env.SOURCEMAP) {
+		SITE_GRID.push({
+			title: 'Webpack bundle visualizer',
+			url: `/${BUNDLE_VISUALIZER_NAME}`,
+			layout: null
+		});
+	}
 	sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`).forEach(item => renderTemplate(compileTemplate(item)));
 	renderTemplate(compileSiteGrid(sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0]));
 	initAdjacentDirectories(
@@ -845,6 +854,7 @@ module.exports = {
 	POSTCSS_CONFIG,
 	DEV_OUTPUT,
 	ASSETS_NAMING_CONVENTION,
+	BUNDLE_VISUALIZER_NAME,
 	CONSOLE_OUTPUT,
 	CHOKIDAR_WATCH_OPTIONS,
 	SUPPORTED_BROWSERS_LIST,

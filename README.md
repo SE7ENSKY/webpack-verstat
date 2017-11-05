@@ -42,6 +42,7 @@ Release :tada:
 19. yarn
 20. Modernizr
 21. Critical CSS (currently in development)
+22. Webpack Visualizer
 ```
 
 **Assets naming convention**
@@ -85,7 +86,7 @@ yarn start
 npm run start
 ```
 ```
-// only for production, read-only, server on localhost:3000
+// only for production, read-only, server on localhost:3000, bundle visualizer on bundle-statistics.html
 // yarn
 yarn prod
 

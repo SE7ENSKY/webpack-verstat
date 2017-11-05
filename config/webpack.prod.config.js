@@ -24,6 +24,7 @@ const {
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+const Visualizer = require('webpack-visualizer-plugin');
 // const ResourceHintWebpackPlugin = require('preload-webpack-plugin');
 // const { CriticalPlugin } = require('webpack-plugin-critical');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -33,6 +34,7 @@ const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const {
 	PROJECT_ROOT,
 	ASSETS_NAMING_CONVENTION,
+	BUNDLE_VISUALIZER_NAME,
 	PROD_OUTPUT,
 	POSTCSS_CONFIG,
 	SUPPORTED_BROWSERS_LIST,
@@ -416,6 +418,12 @@ if (process.env.UGLIFY) {
 			screw_ie8: true,
 			warnings: false
 		}
+	}));
+}
+
+if (process.env.SOURCEMAP) {
+	prodConfig.plugins.push(new Visualizer({
+		filename: `./${BUNDLE_VISUALIZER_NAME}`
 	}));
 }
 
