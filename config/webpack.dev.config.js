@@ -46,6 +46,7 @@ const babelLoaderOptions = {
 	cacheDirectory: true,
 	babelrc: false,
 	plugins: [
+		'babel-plugin-lodash',
 		'babel-plugin-transform-class-properties',
 		'babel-plugin-transform-runtime',
 		'babel-plugin-transform-object-rest-spread'
