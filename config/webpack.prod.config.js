@@ -25,6 +25,7 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const Visualizer = require('webpack-visualizer-plugin');
+const OfflinePlugin = require('offline-plugin');
 // const ResourceHintWebpackPlugin = require('preload-webpack-plugin');
 // const { CriticalPlugin } = require('webpack-plugin-critical');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -424,6 +425,23 @@ if (process.env.UGLIFY) {
 if (process.env.SOURCEMAP) {
 	prodConfig.plugins.push(new Visualizer({
 		filename: `./${BUNDLE_VISUALIZER_NAME}`
+	}));
+}
+
+if (process.env.NODE_ENV === 'production') {
+	prodConfig.plugins.push(new OfflinePlugin({
+		excludes: [
+			'**/*.map',
+			'**/bundle-statistics.html',
+			'**/sitegrid.html',
+			'**/styles.html'
+		],
+		ServiceWorker: {
+			navigateFallbackURL: '/',
+			events: true,
+			minify: true
+		},
+		AppCache: false
 	}));
 }
 
