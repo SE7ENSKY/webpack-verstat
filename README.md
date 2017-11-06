@@ -43,7 +43,7 @@ Release :tada:
 20. Modernizr
 21. Critical CSS (currently in development)
 22. Webpack Visualizer
-23. Service Worker
+23. Service Worker (HTTPS protocol needed)
 ```
 
 **Assets naming convention**
