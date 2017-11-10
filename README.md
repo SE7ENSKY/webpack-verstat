@@ -40,10 +40,11 @@ Release :tada:
 17. bemto
 18. Browsersync
 19. yarn
-20. Modernizr
+20. Modernizr (modernizr-loader)
 21. Critical CSS (webpack-plugin-critical)
 22. Webpack Visualizer
 23. Service Worker (offline-plugin, HTTPS protocol needed)
+24. Lazy Loading (lozad)
 ```
 
 **Assets naming convention**
