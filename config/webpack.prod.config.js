@@ -17,17 +17,16 @@ const {
 	WatchIgnorePlugin,
 	DefinePlugin,
 	optimize: {
-		UglifyJsPlugin,
-		CommonsChunkPlugin
+		UglifyJsPlugin
+		// CommonsChunkPlugin
 	}
 } = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
-const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+// const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const Visualizer = require('webpack-visualizer-plugin');
 const OfflinePlugin = require('offline-plugin');
-// const ResourceHintWebpackPlugin = require('preload-webpack-plugin');
-// const { CriticalPlugin } = require('webpack-plugin-critical');
+const { CriticalPlugin } = require('webpack-plugin-critical');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const HappyPack = require('happypack');
@@ -43,7 +42,7 @@ const {
 	CSS_NANO_MINIMIZE_CONFIG,
 	PERFECTIONIST_CONFIG,
 	generateEntry,
-	gererateVendor,
+	// gererateVendor,
 	getModifiedNib,
 	initHtmlWebpackPlugin
 } = require('../bin/utils');
@@ -230,17 +229,6 @@ const prodConfig = {
 			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].css`,
 			allChunks: true
 		}),
-		// new ResourceHintWebpackPlugin(
-		// 	{
-		// 		rel: 'preload',
-		// 		as(entry) {
-		// 			if (/\.css$/.test(entry)) return 'style';
-		// 			return 'script';
-		// 		},
-		// 		include: 'all',
-		// 		fileBlacklist: [/\.map/]
-		// 	}
-		// ),
 		new HappyPack({
 			id: 'markdown',
 			verbose: false,
@@ -375,20 +363,20 @@ const prodConfig = {
 				query: babelLoaderOptions
 			}]
 		}),
-		new ScriptExtHtmlWebpackPlugin({
-			defaultAttribute: 'defer'
-		}),
+		// new ScriptExtHtmlWebpackPlugin({
+		// 	defaultAttribute: 'defer'
+		// }),
 		new NoEmitOnErrorsPlugin(),
 		new ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery',
 			'window.jQuery': 'jquery'
 		}),
-		new CommonsChunkPlugin({
-			name: gererateVendor(),
-			filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
-			minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
-		}),
+		// new CommonsChunkPlugin({
+		// 	name: gererateVendor(),
+		// 	filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
+		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
+		// }),
 		new CopyWebpackPlugin([
 			{
 				from: 'assets',
@@ -404,7 +392,14 @@ const prodConfig = {
 		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
-		...initHtmlWebpackPlugin(PROD_OUTPUT)
+		...initHtmlWebpackPlugin(PROD_OUTPUT),
+		new CriticalPlugin({
+			src: 'index.html',
+			inline: true,
+			minify: true,
+			extract: false,
+			dest: 'index.html'
+		})
 	]
 };
 
@@ -432,7 +427,6 @@ if (process.env.NODE_ENV === 'production') {
 	prodConfig.plugins.push(new OfflinePlugin({
 		caches: {
 			main: [
-				'index.html',
 				'**/*.js',
 				'**/*.css'
 			]

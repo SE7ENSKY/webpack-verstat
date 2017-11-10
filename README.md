@@ -41,9 +41,9 @@ Release :tada:
 18. Browsersync
 19. yarn
 20. Modernizr
-21. Critical CSS (currently in development)
+21. Critical CSS (webpack-plugin-critical)
 22. Webpack Visualizer
-23. Service Worker (HTTPS protocol needed)
+23. Service Worker (offline-plugin, HTTPS protocol needed)
 ```
 
 **Assets naming convention**
