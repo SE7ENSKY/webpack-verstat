@@ -70,8 +70,9 @@ const CONSOLE_OUTPUT = {
 	timings: process.env.NODE_ENV === 'production'
 };
 const SUPPORTED_BROWSERS_LIST = [
-	'last 4 versions',
-	'ie >= 10'
+	'last 3 versions',
+	'Explorer >= 11',
+	'Safari >= 9'
 ];
 const CHOKIDAR_WATCH_OPTIONS = {
 	ignoreInitial: true,
