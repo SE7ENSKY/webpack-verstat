@@ -53,7 +53,7 @@ const stylesPostprocessorConfig = {
 	output: PROD_OUTPUT,
 	plugins: [
 		cssMQpacker(),
-		cssNano(merge(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {})
+		cssNano(merge({}, CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {})
 		)
 	]
 };

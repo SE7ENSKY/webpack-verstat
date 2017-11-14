@@ -184,7 +184,7 @@ function prettifyHTML(str, options) {
 			indent_char: '\t',
 			indent_size: 1
 		};
-		return pretty(str, options ? merge(defaultOptions, options) : defaultOptions);
+		return pretty(str, options ? merge({}, defaultOptions, options) : defaultOptions);
 	}
 }
 
@@ -488,6 +488,7 @@ function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, 
 	const extractedData = fm(customReadFile(file));
 	if (Object.keys(extractedData.attributes).length !== 0) {
 		const modifiedExtractedData = merge(
+			{},
 			{ content: extractedData.body },
 			extractedData,
 			extractedData.attributes
@@ -505,7 +506,7 @@ function handleAdjacentMarkdown(file, fileSystem, compiler, browserSync, event, 
 				file: modifiedExtractedData,
 				content: modifiedExtractedData.content
 			};
-			const locals = merge(initialLocals, getGlobalData());
+			const locals = merge({}, initialLocals, getGlobalData());
 			handleAdjacentHTML(
 				file.replace(extname(file), '.html'),
 				fn(locals),
@@ -555,7 +556,7 @@ function handleAdjacentCSS(file, fileContent, fileSystem, compiler, browserSync,
 					}
 				}),
 				cssMQpacker(),
-				cssNano(merge(CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
+				cssNano(merge({}, CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {}))
 			];
 			if (!process.env.UGLIFY) postcssPlugins.push(perfectionist(PERFECTIONIST_CONFIG));
 			postcss(postcssPlugins)
@@ -609,7 +610,7 @@ function watchadjacentDirectories(watchPath, ignorePaths, fileSystem, compiler, 
 	if (isString(watchPath) && Array.isArray(ignorePaths) && ignorePaths.length) {
 		watch(
 			watchPath,
-			merge(CHOKIDAR_WATCH_OPTIONS, { ignored: ignorePaths.map(item => join(PROJECT_ROOT, 'src', item)) })
+			merge({}, CHOKIDAR_WATCH_OPTIONS, { ignored: ignorePaths.map(item => join(PROJECT_ROOT, 'src', item)) })
 		)
 		.on('add', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'add', 'watch'))
 		.on('change', path => adjacentDirectoriesRouter(path, fileSystem, compiler, browserSync, 'change', 'watch'))
@@ -764,11 +765,11 @@ function compileTemplate(templateWithData) {
 			content: (function () {
 				const fn = compile(`${bemto}\n${extractedData.content}`);
 				const initialLocals = { renderBlock: renderBlockEngine };
-				const locals = merge(initialLocals, modifiedExtractedData, getGlobalData());
+				const locals = merge({}, initialLocals, modifiedExtractedData, getGlobalData());
 				return fn(locals);
 			})()
 		};
-		const locals = merge(initialLocals, getGlobalData());
+		const locals = merge({}, initialLocals, getGlobalData());
 		return {
 			filename: `${basename(templateWithData, extname(templateWithData))}.html`,
 			content: prettifyHTML(fn(locals))
