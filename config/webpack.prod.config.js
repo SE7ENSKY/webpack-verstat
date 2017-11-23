@@ -427,8 +427,11 @@ if (process.env.NODE_ENV === 'production') {
 	prodConfig.plugins.push(new OfflinePlugin({
 		caches: {
 			main: [
-				'**/*.js',
-				'**/*.css'
+				'**/*.css',
+				'**/*.js'
+			],
+			additional: [
+				'**/*.*'
 			]
 		},
 		excludes: [
@@ -437,6 +440,7 @@ if (process.env.NODE_ENV === 'production') {
 			'**/sitegrid.html',
 			'**/styles.html'
 		],
+		safeToUseOptionalCaches: true,
 		ServiceWorker: {
 			navigateFallbackURL: '/',
 			events: true,
