@@ -5,11 +5,9 @@ require('console-stamp')(console, {
 
 const webpack = require('webpack');
 const webpackProdConfig = require('../config/webpack.prod.config');
+const consoleOutputConfig = require('../config/console.output.config');
+const chokidarWatchConfig = require('../config/chokidar.watch.config');
 const browserSync = require('browser-sync').create();
-const {
-	CONSOLE_OUTPUT,
-	CHOKIDAR_WATCH_OPTIONS
-} = require('./utils');
 
 const port = 3000;
 const browserSyncConfig = {
@@ -17,7 +15,7 @@ const browserSyncConfig = {
 	open: false,
 	notify: false,
 	reloadOnRestart: true,
-	watchOptions: CHOKIDAR_WATCH_OPTIONS,
+	watchOptions: chokidarWatchConfig,
 	host: 'localhost',
 	port,
 	server: {
@@ -27,4 +25,4 @@ const browserSyncConfig = {
 
 const compiler = webpack(webpackProdConfig);
 compiler.plugin('done', (stats) => browserSync.init(browserSyncConfig));
-compiler.run((err, stats) => console.log(stats.toString(CONSOLE_OUTPUT)));
+compiler.run((err, stats) => console.log(stats.toString(consoleOutputConfig)));

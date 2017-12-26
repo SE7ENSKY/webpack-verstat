@@ -1,12 +1,6 @@
-const { join } = require('path');
+const path = require('path');
 const nib = require('nib');
-const {
-	HotModuleReplacementPlugin,
-	NoEmitOnErrorsPlugin,
-	ProvidePlugin,
-	WatchIgnorePlugin,
-	DefinePlugin
-} = require('webpack');
+const webpack = require('webpack');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HappyPack = require('happypack');
@@ -14,17 +8,17 @@ const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const {
 	ASSETS_NAMING_CONVENTION,
 	PROJECT_ROOT,
-	DEV_OUTPUT,
+	DEV_OUTPUT_DIRECTORY,
 	POSTCSS_CONFIG,
 	SUPPORTED_BROWSERS_LIST,
 	generateEntry,
 	getModifiedNib
-} = require('../bin/utils');
+} = require('../bin/core');
 
 
 const fileLoaderExclude = [
-	join(PROJECT_ROOT, 'node_modules'),
-	join(PROJECT_ROOT, 'src', 'vendor')
+	path.join(PROJECT_ROOT, 'node_modules'),
+	path.join(PROJECT_ROOT, 'src', 'vendor')
 ];
 const urlLoaderInclude = fileLoaderExclude;
 
@@ -65,13 +59,13 @@ const babelLoaderOptions = {
 };
 
 const devConfig = {
-	context: join(PROJECT_ROOT, 'src'),
+	context: path.join(PROJECT_ROOT, 'src'),
 	entry: generateEntry([
 		'event-source-polyfill',
 		'webpack-hot-middleware/client'
 	]),
 	output: {
-		path: DEV_OUTPUT,
+		path: DEV_OUTPUT_DIRECTORY,
 		publicPath: '/',
 		filename: 'assets/[name].js'
 	},
@@ -92,14 +86,14 @@ const devConfig = {
 			'.gif'
 		],
 		alias: {
-			assets: join(PROJECT_ROOT, 'src', 'assets'),
-			f: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
-			i: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
-			v: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
-			scripts: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
-			styles: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
-			vendor: join(PROJECT_ROOT, 'src', 'vendor'),
-			modernizr$: join(PROJECT_ROOT, '.modernizrrc')
+			assets: path.join(PROJECT_ROOT, 'src', 'assets'),
+			f: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
+			i: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
+			v: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
+			scripts: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
+			styles: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
+			vendor: path.join(PROJECT_ROOT, 'src', 'vendor'),
+			modernizr$: path.join(PROJECT_ROOT, '.modernizrrc')
 		}
 	},
 	devtool: 'cheap-module-eval-source-map',
@@ -170,7 +164,7 @@ const devConfig = {
 		]
 	},
 	plugins: [
-		new DefinePlugin({
+		new webpack.DefinePlugin({
 			'process.env': {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
@@ -258,9 +252,9 @@ const devConfig = {
 						sourceMap: false,
 						use: nib(),
 						import: [
-							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
-							join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
-							join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+							path.join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+							path.join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+							path.join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
 							getModifiedNib(require.resolve('verstat-nib'))
 						],
 						preferPathResolver: 'webpack'
@@ -313,13 +307,13 @@ const devConfig = {
 				query: babelLoaderOptions
 			}]
 		}),
-		new NoEmitOnErrorsPlugin(),
-		new ProvidePlugin({
+		new webpack.NoEmitOnErrorsPlugin(),
+		new webpack.ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery',
 			'window.jQuery': 'jquery'
 		}),
-		new HotModuleReplacementPlugin(),
+		new webpack.HotModuleReplacementPlugin(),
 		new CopyWebpackPlugin([
 			{
 				from: 'assets',
@@ -332,7 +326,7 @@ const devConfig = {
 				]
 			}
 		]),
-		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
+		new webpack.WatchIgnorePlugin([path.join(PROJECT_ROOT, 'node_modules')]),
 		new CircularDependencyPlugin({
 			exclude: /node_modules/,
 			failOnError: true

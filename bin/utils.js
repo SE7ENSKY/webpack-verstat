@@ -51,13 +51,13 @@ const ASSETS_NAMING_CONVENTION = {
 	scripts: 'scripts',
 	styles: 'styles'
 };
-const BUNDLE_VISUALIZER_NAME = 'bundle-statistics.html';
-const PROJECT_ROOT = resolve(__dirname, '../');
-const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js');
-const OUTPUT_DIRECTORY = 'dist';
-const MEMORY_DIRECTORY = 'memory-fs';
-const PROD_OUTPUT = join(PROJECT_ROOT, OUTPUT_DIRECTORY);
-let ADJACENT_DIRECTORIES_MODE;
+const BUNDLE_VISUALIZER_NAME = 'bundle-statistics.html'; // d
+const PROJECT_ROOT = resolve(__dirname, '../'); // d
+const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js'); // e
+const OUTPUT_DIRECTORY = 'dist'; // d
+const MEMORY_DIRECTORY = 'memory-fs'; // ?
+const PROD_OUTPUT = join(PROJECT_ROOT, OUTPUT_DIRECTORY); // e
+let ADJACENT_DIRECTORIES_MODE; // ?
 const DEV_OUTPUT = '/';
 const TEMPLATE_DEPENDENCIES = new Map();
 let TEMPLATE_DEPENDENCIES_KEY;
@@ -748,6 +748,7 @@ function compileTemplate(templateWithData) {
 	const layouts = sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
 	const template = layouts.filter(layout => layout.indexOf(extractedData.layout) !== -1);
 	if (template.length) {
+		console.log('TEST #1:', extname(extractedData.layout).length ? extractedData.layout : `${extractedData.layout}${extname(template[0])}`);
 		siteGridEngine(
 			extractedData.title,
 			templateWithData,

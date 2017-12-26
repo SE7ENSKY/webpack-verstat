@@ -3,37 +3,34 @@ require('console-stamp')(console, {
 	label: false
 });
 
-const {
-	join,
-	basename,
-	extname
-} = require('path');
-const { sync } = require('glob');
+const path = require('path');
+const glob = require('glob');
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../config/webpack.dev.config');
+const chokidarWatchConfig = require('../config/chokidar.watch.config');
+const consoleOutputConfig = require('../config/console.output.config');
 const {
 	PROJECT_ROOT,
-	CONSOLE_OUTPUT,
-	PROD_OUTPUT,
-	CHOKIDAR_WATCH_OPTIONS,
-	boldTerminalString,
+	PROD_OUTPUT_DIRECTORY,
+	boldString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
-	shortenAbsolutePath,
-	getTemplateBranch,
+	shortenPath,
+	getTemplateBranches,
+	getGlobalData,
 	renderTemplate,
 	compileTemplate,
-	initHtmlWebpackPlugin
-} = require('./utils');
+	addHtmlWebpackPlugins
+} = require('./core');
 
 const port = 8080;
 const uiPort = 8081;
 const devServerConfig = {
-	contentBase: PROD_OUTPUT,
+	contentBase: PROD_OUTPUT_DIRECTORY,
 	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
 		ignored: /node_modules/
@@ -47,17 +44,17 @@ const devServerConfig = {
 	https: false,
 	host: 'localhost',
 	port,
-	stats: CONSOLE_OUTPUT
+	stats: consoleOutputConfig
 };
 
 // fix for '[nodemon] app crashed'
-process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
+// process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
 
 const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
 compiler.outputFileSystem = memoryFS;
 compiler.apply(
-	...initHtmlWebpackPlugin(
+	...addHtmlWebpackPlugins(
 		webpackDevConfig.output.path,
 		compiler.outputFileSystem,
 		compiler,
@@ -75,10 +72,10 @@ browserSync.init({
 	notify: false,
 	reloadOnRestart: true,
 	reloadDebounce: 200,
-	watchOptions: CHOKIDAR_WATCH_OPTIONS,
+	watchOptions: chokidarWatchConfig,
 	port: devServerConfig.port,
 	server: {
-		baseDir: PROD_OUTPUT,
+		baseDir: PROD_OUTPUT_DIRECTORY,
 		middleware: [
 			webpackDevMiddlewareInstance,
 			webpackHotMiddlewareInstance
@@ -105,83 +102,91 @@ browserSync.init({
 });
 
 function handleChanges(templateWithData, template, block) {
-	const templateBasename = template ? basename(template, extname(template)) : template;
+	const templateBasename = template ? path.basename(template, path.extname(template)) : template;
 	if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
-		const branch = sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`);
-		if (branch.length) {
-			console.log(boldTerminalString('recompiling all branches...'));
-			branch.forEach(item => renderTemplate(compileTemplate(item)));
+		const branches = glob.sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`);
+		const branchesSize = branches.length;
+		if (branchesSize) {
+			const layouts = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+			const data = getGlobalData();
+			console.log(boldString('recompiling all branches...'));
+			for (let i = 0; i < branchesSize; i++) {
+				renderTemplate(compileTemplate(branches[i], layouts, data));
+			}
 		}
 	} else {
-		getTemplateBranch(templateWithData, template, block).forEach(function (item) {
-			console.log(boldTerminalString('recompile branch:'), shortenAbsolutePath(item));
-			renderTemplate(compileTemplate(item));
-		});
+		const layouts = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+		const data = getGlobalData();
+		const templateBranches = getTemplateBranches(templateWithData, template, block);
+		for (let i = 0, templateBranchesSize = templateBranches.length; i < templateBranchesSize; i++) {
+			console.log(boldString('recompile branch:'), shortenPath(templateBranches[i]));
+			renderTemplate(compileTemplate(templateBranches[i], layouts, data));
+		}
 	}
 }
 
 function handleGlobalData(event, file) {
 	switch (event) {
-	case 'change':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges();
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		break;
-	case 'add':
-	case 'unlink':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-		break;
+		case 'change':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			handleChanges();
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+			break;
+		case 'add':
+		case 'unlink':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			changeFileTimestamp(1, path.join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+			break;
 	}
 }
 
 function handleTemplateWithData(event, file) {
 	switch (event) {
-	case 'change':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges(file.replace(/\\/g, '/'), null, null);
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		break;
-	case 'add':
-	case 'unlink':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-		break;
+		case 'change':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			handleChanges(file.replace(/\\/g, '/'), null, null);
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+			break;
+		case 'add':
+		case 'unlink':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			changeFileTimestamp(1, path.join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+			break;
 	}
 }
 
 function handleTemplate(event, file) {
 	switch (event) {
-	case 'change':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges(null, file.replace(/\\/g, '/'), null);
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		break;
-	case 'add':
-	case 'unlink':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		if (getTemplateBranch(null, file.replace(/\\/g, '/'), null).length) {
-			changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-		} else {
+		case 'change':
+			console.log(boldString(`${event}:`), shortenPath(file));
 			handleChanges(null, file.replace(/\\/g, '/'), null);
 			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		}
+			break;
+		case 'add':
+		case 'unlink':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			if (getTemplateBranches(null, file.replace(/\\/g, '/'), null).length) {
+				changeFileTimestamp(1, path.join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+			} else {
+				handleChanges(null, file.replace(/\\/g, '/'), null);
+				webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+			}
 	}
 }
 
 function handleBlock(event, file) {
 	switch (event) {
-	case 'add':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		addBlockToTemplateBranch(file.replace(/\\/g, '/'));
-		handleChanges(null, null, file.replace(/\\/g, '/'));
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		break;
-	case 'change':
-	case 'unlink':
-		console.log(boldTerminalString(`${event}:`), shortenAbsolutePath(file));
-		handleChanges(null, null, file.replace(/\\/g, '/'));
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		break;
+		case 'add':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			addBlockToTemplateBranch(file.replace(/\\/g, '/'));
+			handleChanges(null, null, file.replace(/\\/g, '/'));
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+			break;
+		case 'change':
+		case 'unlink':
+			console.log(boldString(`${event}:`), shortenPath(file));
+			handleChanges(null, null, file.replace(/\\/g, '/'));
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+			break;
 	}
 }

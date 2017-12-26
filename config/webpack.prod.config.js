@@ -5,66 +5,68 @@ if (process.env.TIMESTAMP) {
 	});
 }
 
-const { join } = require('path');
-const { merge } = require('lodash');
+const path = require('path');
+const _ = require('lodash');
 const nib = require('nib');
 const cssMQpacker = require('css-mqpacker');
 const perfectionist = require('perfectionist');
 const cssNano = require('cssnano');
-const {
-	NoEmitOnErrorsPlugin,
-	ProvidePlugin,
-	WatchIgnorePlugin,
-	DefinePlugin,
-	optimize: {
-		UglifyJsPlugin
-		// CommonsChunkPlugin
-	}
-} = require('webpack');
+// const {
+// 	NoEmitOnErrorsPlugin,
+// 	ProvidePlugin,
+// 	WatchIgnorePlugin,
+// 	DefinePlugin,
+// 	optimize: {
+// 		UglifyJsPlugin
+// 		// CommonsChunkPlugin
+// 	}
+// } = require('webpack');
+const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 // const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const Visualizer = require('webpack-visualizer-plugin');
 const OfflinePlugin = require('offline-plugin');
-const { CriticalPlugin } = require('webpack-plugin-critical');
+// const { CriticalPlugin } = require('webpack-plugin-critical');
+const webpackPluginCritical = require('webpack-plugin-critical');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const HappyPack = require('happypack');
+const cssnanoBaseConfig = require('./cssnano.base.config');
+const cssnanoMinifyConfig = require('./cssnano.minify.config');
+const perfectionistConfig = require('./perfectionist.config');
 const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const {
 	PROJECT_ROOT,
 	ASSETS_NAMING_CONVENTION,
-	BUNDLE_VISUALIZER_NAME,
-	PROD_OUTPUT,
+	BUNDLE_STATISTICS,
+	PROD_OUTPUT_DIRECTORY,
 	POSTCSS_CONFIG,
 	SUPPORTED_BROWSERS_LIST,
-	CSS_NANO_BASE_CONFIG,
-	CSS_NANO_MINIMIZE_CONFIG,
-	PERFECTIONIST_CONFIG,
 	generateEntry,
 	// gererateVendor,
 	getModifiedNib,
-	initHtmlWebpackPlugin
-} = require('../bin/utils');
+	addHtmlWebpackPlugins
+} = require('../bin/core');
 
 
 const stylesPostprocessorConfig = {
 	root: PROJECT_ROOT,
-	output: PROD_OUTPUT,
+	output: PROD_OUTPUT_DIRECTORY,
 	plugins: [
 		cssMQpacker(),
-		cssNano(merge({}, CSS_NANO_BASE_CONFIG, process.env.UGLIFY ? CSS_NANO_MINIMIZE_CONFIG : {})
+		cssNano(_.merge({}, cssnanoBaseConfig, process.env.UGLIFY ? cssnanoMinifyConfig : {})
 		)
 	]
 };
 
 if (!process.env.UGLIFY) {
-	stylesPostprocessorConfig.plugins.push(perfectionist(PERFECTIONIST_CONFIG));
+	stylesPostprocessorConfig.plugins.push(perfectionist(perfectionistConfig));
 }
 
 const fileLoaderExclude = [
-	join(PROJECT_ROOT, 'node_modules'),
-	join(PROJECT_ROOT, 'src', 'vendor')
+	path.join(PROJECT_ROOT, 'node_modules'),
+	path.join(PROJECT_ROOT, 'src', 'vendor')
 ];
 const urlLoaderInclude = fileLoaderExclude;
 
@@ -105,10 +107,10 @@ const babelLoaderOptions = {
 };
 
 const prodConfig = {
-	context: join(PROJECT_ROOT, 'src'),
+	context: path.join(PROJECT_ROOT, 'src'),
 	entry: generateEntry(),
 	output: {
-		path: PROD_OUTPUT,
+		path: PROD_OUTPUT_DIRECTORY,
 		publicPath: '/',
 		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`
 	},
@@ -129,14 +131,14 @@ const prodConfig = {
 			'.gif'
 		],
 		alias: {
-			assets: join(PROJECT_ROOT, 'src', 'assets'),
-			f: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
-			i: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
-			v: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
-			scripts: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
-			styles: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
-			vendor: join(PROJECT_ROOT, 'src', 'vendor'),
-			modernizr$: join(PROJECT_ROOT, '.modernizrrc')
+			assets: path.join(PROJECT_ROOT, 'src', 'assets'),
+			f: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
+			i: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
+			v: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
+			scripts: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
+			styles: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
+			vendor: path.join(PROJECT_ROOT, 'src', 'vendor'),
+			modernizr$: path.join(PROJECT_ROOT, '.modernizrrc')
 		}
 	},
 	devtool: process.env.SOURCEMAP ? 'source-map' : false,
@@ -220,7 +222,7 @@ const prodConfig = {
 		]
 	},
 	plugins: [
-		new DefinePlugin({
+		new webpack.DefinePlugin({
 			'process.env': {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
@@ -308,9 +310,9 @@ const prodConfig = {
 						sourceMap: process.env.SOURCEMAP ? true : false,
 						use: nib(),
 						import: [
-							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
-							join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
-							join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+							path.join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+							path.join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+							path.join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
 							getModifiedNib(require.resolve('verstat-nib'))
 						],
 						preferPathResolver: 'webpack'
@@ -366,8 +368,8 @@ const prodConfig = {
 		// new ScriptExtHtmlWebpackPlugin({
 		// 	defaultAttribute: 'defer'
 		// }),
-		new NoEmitOnErrorsPlugin(),
-		new ProvidePlugin({
+		new webpack.NoEmitOnErrorsPlugin(),
+		new webpack.ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery',
 			'window.jQuery': 'jquery'
@@ -389,11 +391,11 @@ const prodConfig = {
 				]
 			}
 		]),
-		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
+		new webpack.WatchIgnorePlugin([path.join(PROJECT_ROOT, 'node_modules')]),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
-		...initHtmlWebpackPlugin(PROD_OUTPUT),
-		new CriticalPlugin({
+		...addHtmlWebpackPlugins(PROD_OUTPUT_DIRECTORY),
+		new webpackPluginCritical.CriticalPlugin({
 			src: 'index.html',
 			inline: true,
 			minify: true,
@@ -404,7 +406,7 @@ const prodConfig = {
 };
 
 if (process.env.UGLIFY) {
-	prodConfig.plugins.push(new UglifyJsPlugin({
+	prodConfig.plugins.push(new webpack.optimize.UglifyJsPlugin({
 		sourceMap: true,
 		mangle: {
 			screw_ie8: true
@@ -419,7 +421,7 @@ if (process.env.UGLIFY) {
 
 if (process.env.SOURCEMAP) {
 	prodConfig.plugins.push(new Visualizer({
-		filename: `./${BUNDLE_VISUALIZER_NAME}`
+		filename: `.${BUNDLE_STATISTICS.url}`
 	}));
 }
 

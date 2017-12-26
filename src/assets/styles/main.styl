@@ -4,21 +4,24 @@
 @import 'forms.styl'
 @import 'grid.styl'
 
-*
-	font-smoothing antialiased
-	box-sizing border-box
-	&:before
-	&:after
-		box-sizing border-box
-
-img
-	image-rendering -webkit-optimize-contrast
 
 html
 body
 	margin 0
 	padding 0
 	height 100%
+	// adjust font size
+	font-size 100%
+	-webkit-text-size-adjust 100%
+	// font varient
+	font-variant-ligatures none
+	-webkit-font-variant-ligatures none
+	// smoothing
+	text-rendering optimizeLegibility
+	-moz-osx-font-smoothing grayscale
+	font-smoothing antialiased
+	-webkit-font-smoothing antialiased
+	text-shadow rgba(0, 0, 0, .01) 0 0 1px
 
 body
 	position relative
@@ -26,3 +29,6 @@ body
 	font-size 16px
 	line-height 1.5
 	color siteColor
+
+img
+	image-rendering -webkit-optimize-contrast
