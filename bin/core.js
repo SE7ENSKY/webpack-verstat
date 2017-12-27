@@ -17,7 +17,28 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const chokidarWatchConfig = require('../config/chokidar.watch.config');
 
 
+// storages
+const SITE_GRID = [];
+const TEMPLATE_DEPENDENCIES = new Map();
+let TEMPLATE_DEPENDENCIES_KEY = null;
+
+// paths
+const PROJECT_ROOT = path.resolve(__dirname, '../');
+const MEMORY_DIRECTORY = 'memory-fs';
+const SOURCE_DIRECTORY = path.join(PROJECT_ROOT, 'src');
+const PAGES_DIRECTORY = path.join(SOURCE_DIRECTORY, 'pages');
+const OUTPUT_DIRECTORY = 'dist';
+const PROD_OUTPUT_DIRECTORY = path.join(PROJECT_ROOT, OUTPUT_DIRECTORY);
+const DEV_OUTPUT_DIRECTORY = '/';
+const POSTCSS_CONFIG = path.join(PROJECT_ROOT, 'config', 'postcss.config.js');
+
 // constants
+const TEMPLATES = glob.sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
+const TEMPLATES_GRID = glob.sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0];
+const TEMPLATES_NO_GRID = TEMPLATES_GRID ? TEMPLATES.filter(item => item !== TEMPLATES_GRID) : TEMPLATES.slice();
+const COMMONS = glob.sync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`)[0];
+const LAYOUTS = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+const GLOBAL_DATA = getGlobalData();
 const ASSETS_NAMING_CONVENTION = {
 	images: 'i',
 	fonts: 'f',
@@ -29,26 +50,11 @@ const BUNDLE_STATISTICS = {
 	title: 'Bundle statistics',
 	url: '/bundle-statistics.html'
 };
-const OUTPUT_DIRECTORY = 'dist';
 const SUPPORTED_BROWSERS_LIST = [
 	'last 3 versions',
 	'Explorer >= 11',
 	'Safari >= 9'
 ];
-
-// storages
-const SITE_GRID = [];
-const TEMPLATE_DEPENDENCIES = new Map();
-let TEMPLATE_DEPENDENCIES_KEY = null;
-
-// paths
-const PROJECT_ROOT = path.resolve(__dirname, '../');
-const MEMORY_DIRECTORY = 'memory-fs';
-const SOURCE_DIRECTORY = path.join(PROJECT_ROOT, 'src');
-const PAGES_DIRECTORY = path.join(SOURCE_DIRECTORY, 'pages');
-const PROD_OUTPUT_DIRECTORY = path.join(PROJECT_ROOT, OUTPUT_DIRECTORY);
-const DEV_OUTPUT_DIRECTORY = '/';
-const POSTCSS_CONFIG = path.join(PROJECT_ROOT, 'config', 'postcss.config.js');
 
 
 function generateEntry(server) {
@@ -159,9 +165,8 @@ function compileBlock(mod, block) {
 	const index = blocks.findIndex(item => item.indexOf(`/${block}/`) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
-		const filePath = glob.sync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`);
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return pug.compile(`${customReadFile(filePath[0])}\n${mod}\n${customReadFile(blockPath)}`);
+		return pug.compile(`${customReadFile(COMMONS)}\n${mod}\n${customReadFile(blockPath)}`);
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return pug.compile(`div [block ${block} not found]`);
@@ -217,24 +222,32 @@ function getTemplateBranches(templateWithData, template, block) {
 	return branch;
 }
 
-function getGlobalData() {
-	const data = glob.sync(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`).map((file) => {
+function processGlobalData(arr) {
+	return arr.map((file) => {
 		const obj = {};
 		obj[path.basename(file, path.extname(file))] = jsYaml.safeLoad(customReadFile(file));
 		return obj;
 	});
-	return data.length ? _.merge({}, ...data) : {};
 }
 
-function compileTemplate(filePath, layouts, globalData) {
+function getGlobalData(filePath) {
+	if (!filePath) {
+		const data = glob.sync(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`);
+		return data.length ? _.merge({}, ...processGlobalData(data)) : {};
+	}
+	GLOBAL_DATA[path.basename(filePath, path.extname(filePath))] = jsYaml.safeLoad(customReadFile(filePath));
+	return GLOBAL_DATA;
+}
+
+function compileTemplate(filePath, globalData = GLOBAL_DATA) {
 	const extractedData = verstatFrontMatter.loadFront(filePath, '\/\/---', 'content');
 	const modifiedExtractedData = _.merge({}, extractedData);
 	delete modifiedExtractedData.layout;
 	delete modifiedExtractedData.content;
 	const extractedDataLayout = extractedData.layout;
-	const layoutIndex = layouts.findIndex(item => item.indexOf(extractedData.layout) !== -1);
+	const layoutIndex = LAYOUTS.findIndex(item => item.indexOf(extractedData.layout) !== -1);
 	if (layoutIndex !== -1) {
-		const layout = layouts[layoutIndex];
+		const layout = LAYOUTS[layoutIndex];
 		const fn = pug.compileFile(layout);
 		siteGridEngine(
 			extractedData.title,
@@ -266,10 +279,6 @@ function compileTemplate(filePath, layouts, globalData) {
 }
 
 function addHtmlWebpackPlugins(outputPath, memoryFS, compiler, browserSync) {
-	const templates = glob.sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
-	const layouts = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
-	const globalData = getGlobalData();
-
 	if (process.env.SOURCEMAP) {
 		SITE_GRID.push({
 			title: BUNDLE_STATISTICS.title,
@@ -283,13 +292,11 @@ function addHtmlWebpackPlugins(outputPath, memoryFS, compiler, browserSync) {
 
 	createDirectory(PAGES_DIRECTORY);
 
-	for (let i = 0, templatesSize = templates.length; i < templatesSize; i++) {
-		if (templates[i].indexOf('/sitegrid.') !== -1) {
-			renderTemplate(compileSiteGrid(templates[i], layouts, globalData));
-		} else {
-			renderTemplate(compileTemplate(templates[i], layouts, globalData));
-		}
+	for (let i = 0, templatesNoGridSize = TEMPLATES_NO_GRID.length; i < templatesNoGridSize; i++) {
+		renderTemplate(compileTemplate(TEMPLATES[i]));
 	}
+
+	if (TEMPLATES_GRID) renderTemplate(compileSiteGrid(TEMPLATES_GRID));
 
 	// initAdjacentDirectories // ?
 
@@ -316,6 +323,7 @@ function addHtmlWebpackPlugins(outputPath, memoryFS, compiler, browserSync) {
 
 module.exports = {
 	PROJECT_ROOT,
+	TEMPLATES_NO_GRID,
 	PROD_OUTPUT_DIRECTORY,
 	DEV_OUTPUT_DIRECTORY,
 	BUNDLE_STATISTICS,

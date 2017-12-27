@@ -1,7 +1,10 @@
 extends main
 
-
 block main
 	.container
 		if text
 			div!= text.content
+
+		+b.test: +i
+		+b.test2
+			+e.trololo

@@ -1,8 +1,11 @@
 module.exports = {
+	ignored: ['.DS_Store'],
 	ignoreInitial: true,
-	awaitWriteFinish: true,
 	usePolling: true,
 	interval: 100,
 	binaryInterval: 300,
-	ignored: ['.DS_Store']
+	awaitWriteFinish: {
+		stabilityThreshold: 2000,
+		pollInterval: 100
+	}
 };

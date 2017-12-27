@@ -4,7 +4,6 @@ require('console-stamp')(console, {
 });
 
 const path = require('path');
-const glob = require('glob');
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
@@ -15,6 +14,7 @@ const chokidarWatchConfig = require('../config/chokidar.watch.config');
 const consoleOutputConfig = require('../config/console.output.config');
 const {
 	PROJECT_ROOT,
+	TEMPLATES_NO_GRID,
 	PROD_OUTPUT_DIRECTORY,
 	boldString,
 	addBlockToTemplateBranch,
@@ -34,8 +34,6 @@ const devServerConfig = {
 	publicPath: webpackDevConfig.output.publicPath,
 	watchOptions: {
 		ignored: /node_modules/
-		// aggregateTimeout: 300,
-		// poll: 1000
 	},
 	compress: false,
 	hot: true,
@@ -48,7 +46,7 @@ const devServerConfig = {
 };
 
 // fix for '[nodemon] app crashed'
-// process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
+process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
 
 const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
@@ -71,7 +69,7 @@ browserSync.init({
 	open: false,
 	notify: false,
 	reloadOnRestart: true,
-	reloadDebounce: 200,
+	reloadDebounce: 100,
 	watchOptions: chokidarWatchConfig,
 	port: devServerConfig.port,
 	server: {
@@ -97,30 +95,31 @@ browserSync.init({
 		{
 			match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
 			fn: handleBlock
+		},
+		{
+			match: `${PROJECT_ROOT}/src/blocks/**/*.coffee`,
+			fn: handleCoffeeScript
 		}
 	]
 });
 
-function handleChanges(templateWithData, template, block) {
+function handleChanges(templateWithData, template, block, data) {
 	const templateBasename = template ? path.basename(template, path.extname(template)) : template;
 	if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
-		const branches = glob.sync(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`);
-		const branchesSize = branches.length;
-		if (branchesSize) {
-			const layouts = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
-			const data = getGlobalData();
+		const templatesNoGridSize = TEMPLATES_NO_GRID.length;
+		if (templatesNoGridSize) {
+			const globalData = data ? getGlobalData(data) : data;
 			console.log(boldString('recompiling all branches...'));
-			for (let i = 0; i < branchesSize; i++) {
-				renderTemplate(compileTemplate(branches[i], layouts, data));
+			for (let i = 0; i < templatesNoGridSize; i++) {
+				renderTemplate(compileTemplate(TEMPLATES_NO_GRID[i], globalData));
 			}
 		}
 	} else {
-		const layouts = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
-		const data = getGlobalData();
 		const templateBranches = getTemplateBranches(templateWithData, template, block);
 		for (let i = 0, templateBranchesSize = templateBranches.length; i < templateBranchesSize; i++) {
-			console.log(boldString('recompile branch:'), shortenPath(templateBranches[i]));
-			renderTemplate(compileTemplate(templateBranches[i], layouts, data));
+			const templateBranch = templateBranches[i];
+			console.log(boldString('recompile branch:'), shortenPath(templateBranch));
+			renderTemplate(compileTemplate(templateBranch));
 		}
 	}
 }
@@ -129,7 +128,7 @@ function handleGlobalData(event, file) {
 	switch (event) {
 		case 'change':
 			console.log(boldString(`${event}:`), shortenPath(file));
-			handleChanges();
+			handleChanges(null, null, null, file);
 			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 			break;
 		case 'add':
@@ -188,5 +187,11 @@ function handleBlock(event, file) {
 			handleChanges(null, null, file.replace(/\\/g, '/'));
 			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 			break;
+	}
+}
+
+function handleCoffeeScript(event, file) {
+	if (event === 'change') {
+		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 	}
 }

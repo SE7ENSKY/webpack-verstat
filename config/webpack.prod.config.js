@@ -11,24 +11,13 @@ const nib = require('nib');
 const cssMQpacker = require('css-mqpacker');
 const perfectionist = require('perfectionist');
 const cssNano = require('cssnano');
-// const {
-// 	NoEmitOnErrorsPlugin,
-// 	ProvidePlugin,
-// 	WatchIgnorePlugin,
-// 	DefinePlugin,
-// 	optimize: {
-// 		UglifyJsPlugin
-// 		// CommonsChunkPlugin
-// 	}
-// } = require('webpack');
 const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 // const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const Visualizer = require('webpack-visualizer-plugin');
-const OfflinePlugin = require('offline-plugin');
-// const { CriticalPlugin } = require('webpack-plugin-critical');
-const webpackPluginCritical = require('webpack-plugin-critical');
+// const OfflinePlugin = require('offline-plugin');
+// const webpackPluginCritical = require('webpack-plugin-critical');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const HappyPack = require('happypack');
@@ -71,7 +60,7 @@ const fileLoaderExclude = [
 const urlLoaderInclude = fileLoaderExclude;
 
 const postcssLoaderOptions = {
-	sourceMap: process.env.SOURCEMAP ? true : false,
+	sourceMap: !!process.env.SOURCEMAP,
 	config: {
 		path: POSTCSS_CONFIG,
 		ctx: {
@@ -271,7 +260,7 @@ const prodConfig = {
 				{
 					path: 'sass-loader',
 					query: {
-						sourceMap: process.env.SOURCEMAP ? true : false
+						sourceMap: !!process.env.SOURCEMAP
 					}
 				}
 			]
@@ -289,7 +278,7 @@ const prodConfig = {
 				{
 					path: 'less-loader',
 					query: {
-						sourceMap: process.env.SOURCEMAP ? true : false
+						sourceMap: !!process.env.SOURCEMAP
 					}
 				}
 			]
@@ -307,7 +296,7 @@ const prodConfig = {
 				{
 					path: 'stylus-loader',
 					query: {
-						sourceMap: process.env.SOURCEMAP ? true : false,
+						sourceMap: !!process.env.SOURCEMAP,
 						use: nib(),
 						import: [
 							path.join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
@@ -374,7 +363,7 @@ const prodConfig = {
 			jQuery: 'jquery',
 			'window.jQuery': 'jquery'
 		}),
-		// new CommonsChunkPlugin({
+		// new webpack.optimize.CommonsChunkPlugin({
 		// 	name: gererateVendor(),
 		// 	filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
 		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
@@ -394,14 +383,14 @@ const prodConfig = {
 		new webpack.WatchIgnorePlugin([path.join(PROJECT_ROOT, 'node_modules')]),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
-		...addHtmlWebpackPlugins(PROD_OUTPUT_DIRECTORY),
-		new webpackPluginCritical.CriticalPlugin({
-			src: 'index.html',
-			inline: true,
-			minify: true,
-			extract: false,
-			dest: 'index.html'
-		})
+		...addHtmlWebpackPlugins(PROD_OUTPUT_DIRECTORY)
+		// new webpackPluginCritical.CriticalPlugin({
+		// 	src: 'index.html',
+		// 	inline: true,
+		// 	minify: true,
+		// 	extract: false,
+		// 	dest: 'index.html'
+		// })
 	]
 };
 
@@ -425,31 +414,31 @@ if (process.env.SOURCEMAP) {
 	}));
 }
 
-if (process.env.NODE_ENV === 'production') {
-	prodConfig.plugins.push(new OfflinePlugin({
-		caches: {
-			main: [
-				'**/*.css',
-				'**/*.js'
-			],
-			additional: [
-				'**/*.*'
-			]
-		},
-		excludes: [
-			'**/*.map',
-			'**/bundle-statistics.html',
-			'**/sitegrid.html',
-			'**/styles.html'
-		],
-		safeToUseOptionalCaches: true,
-		ServiceWorker: {
-			navigateFallbackURL: '/',
-			events: true,
-			minify: true
-		},
-		AppCache: false
-	}));
-}
+// if (process.env.NODE_ENV === 'production') {
+// 	prodConfig.plugins.push(new OfflinePlugin({
+// 		caches: {
+// 			main: [
+// 				'**/*.css',
+// 				'**/*.js'
+// 			],
+// 			additional: [
+// 				'**/*.*'
+// 			]
+// 		},
+// 		excludes: [
+// 			'**/*.map',
+// 			'**/bundle-statistics.html',
+// 			'**/sitegrid.html',
+// 			'**/styles.html'
+// 		],
+// 		safeToUseOptionalCaches: true,
+// 		ServiceWorker: {
+// 			navigateFallbackURL: '/',
+// 			events: true,
+// 			minify: true
+// 		},
+// 		AppCache: false
+// 	}));
+// }
 
 module.exports = prodConfig;
