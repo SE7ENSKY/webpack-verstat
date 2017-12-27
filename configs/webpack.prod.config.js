@@ -14,6 +14,7 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
 // const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const Visualizer = require('webpack-visualizer-plugin');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 // const OfflinePlugin = require('offline-plugin');
 // const webpackPluginCritical = require('webpack-plugin-critical');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
@@ -31,10 +32,9 @@ const perfectionistConfig = require('./perfectionist.config');
 const webpackBaseConfig = require('./webpack.base.config');
 
 
-
-if (!process.env.SOURCEMAP) {
-	stylesPostprocessorConfig.filter = data => data.replace(/assets\//g, '');
-}
+// if (!process.env.SOURCEMAP) {
+// 	stylesPostprocessorConfig.filter = data => data.replace(/assets\//g, '');
+// }
 
 if (!process.env.UGLIFY) {
 	stylesPostprocessorConfig.plugins.push(perfectionist(perfectionistConfig));
@@ -62,9 +62,7 @@ const prodConfig = {
 						},
 						{
 							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
+							options: { includeRoot: true }
 						}
 					],
 					fallback: 'style-loader'
@@ -81,15 +79,11 @@ const prodConfig = {
 						},
 						{
 							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
+							options: { includeRoot: true }
 						},
 						{
 							loader: 'sass-loader',
-							options: {
-								sourceMap: true
-							}
+							options: { sourceMap: true }
 						}
 					],
 					fallback: 'style-loader'
@@ -106,15 +100,11 @@ const prodConfig = {
 						},
 						{
 							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
+							options: { includeRoot: true }
 						},
 						{
 							loader: 'less-loader',
-							options: {
-								sourceMap: true
-							}
+							options: { sourceMap: true }
 						}
 					],
 					fallback: 'style-loader'
@@ -131,9 +121,7 @@ const prodConfig = {
 						},
 						{
 							loader: 'resolve-url-loader',
-							options: {
-								includeRoot: true
-							}
+							options: { includeRoot: true }
 						},
 						{
 							loader: 'stylus-loader',
@@ -183,9 +171,7 @@ const prodConfig = {
 if (process.env.UGLIFY) {
 	prodConfig.plugins.push(new webpack.optimize.UglifyJsPlugin({
 		sourceMap: true,
-		mangle: {
-			screw_ie8: true
-		},
+		mangle: { screw_ie8: true },
 		comments: false,
 		compress: {
 			screw_ie8: true,
@@ -198,6 +184,10 @@ if (process.env.SOURCEMAP) {
 	prodConfig.plugins.push(new Visualizer({
 		filename: `.${BUNDLE_STATISTICS.url}`
 	}));
+	prodConfig.plugins.push(new ProgressBarPlugin({
+		width: 40,
+		summary: false
+	}));
 }
 
 // if (process.env.NODE_ENV === 'production') {
@@ -207,9 +197,7 @@ if (process.env.SOURCEMAP) {
 // 				'**/*.css',
 // 				'**/*.js'
 // 			],
-// 			additional: [
-// 				'**/*.*'
-// 			]
+// 			additional: [ '**/*.*' ]
 // 		},
 // 		excludes: [
 // 			'**/*.map',

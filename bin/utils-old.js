@@ -53,7 +53,7 @@ const ASSETS_NAMING_CONVENTION = {
 };
 const BUNDLE_VISUALIZER_NAME = 'bundle-statistics.html'; // d
 const PROJECT_ROOT = resolve(__dirname, '../'); // d
-const POSTCSS_CONFIG = join(PROJECT_ROOT, 'config', 'postcss.config.js'); // e
+const POSTCSS_CONFIG = join(PROJECT_ROOT, 'configs', 'postcss.config.js'); // e
 const OUTPUT_DIRECTORY = 'dist'; // d
 const MEMORY_DIRECTORY = 'memory-fs'; // ?
 const PROD_OUTPUT = join(PROJECT_ROOT, OUTPUT_DIRECTORY); // e

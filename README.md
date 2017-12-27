@@ -119,7 +119,7 @@ verstat // project name
 │   ├── dev.server.js
 │   ├── prod.server.js
 │   └── utils.js
-├── config
+├── configs
 │   ├── webpack.dev.config.js
 │   └── webpack.prod.config.js
 ├── dist

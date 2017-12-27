@@ -36,9 +36,7 @@ const devConfig = {
 					},
 					{
 						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
+						options: { includeRoot: true }
 					}
 				]
 			},
@@ -53,15 +51,11 @@ const devConfig = {
 					},
 					{
 						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
+						options: { includeRoot: true }
 					},
 					{
 						loader: 'sass-loader',
-						options: {
-							sourceMap: true
-						}
+						options: { sourceMap: true }
 					}
 				]
 			},
@@ -76,15 +70,11 @@ const devConfig = {
 					},
 					{
 						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
+						options: { includeRoot: true }
 					},
 					{
 						loader: 'less-loader',
-						options: {
-							sourceMap: true
-						}
+						options: { sourceMap: true }
 					}
 				]
 			},
@@ -99,9 +89,7 @@ const devConfig = {
 					},
 					{
 						loader: 'resolve-url-loader',
-						options: {
-							includeRoot: true
-						}
+						options: { includeRoot: true }
 					},
 					{
 						loader: 'stylus-loader',

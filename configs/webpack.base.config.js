@@ -56,7 +56,6 @@ const baseConfig = {
 			},
 			{
 				test: /\.svg$/,
-				// exclude: /font|f|fonts/,
 				exclude: [path.join(PROJECT_ROOT, 'src', 'assets', 'f')],
 				use: {
 					loader: 'file-loader',
@@ -65,7 +64,6 @@ const baseConfig = {
 			},
 			{
 				test: /\.(eot|ttf|woff|woff2|svg)$/,
-				// include: /font|f|fonts/,
 				include: [path.join(PROJECT_ROOT, 'src', 'assets', 'f')],
 				use: {
 					loader: 'file-loader',

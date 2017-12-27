@@ -25,7 +25,7 @@ const PAGES_DIRECTORY = path.join(SOURCE_DIRECTORY, 'pages');
 const OUTPUT_DIRECTORY = 'dist';
 const PROD_OUTPUT_DIRECTORY = path.join(PROJECT_ROOT, OUTPUT_DIRECTORY);
 const DEV_OUTPUT_DIRECTORY = '/';
-const POSTCSS_CONFIG = path.join(PROJECT_ROOT, 'config', 'postcss.config.js');
+const POSTCSS_CONFIG = path.join(PROJECT_ROOT, 'configs', 'postcss.config.js');
 
 // constants
 const TEMPLATES = glob.sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
@@ -138,7 +138,7 @@ function siteGridEngine(title, url, layout) {
 }
 
 function compileSiteGrid(template) {
-	const fn = pug.compileFile(template);
+	const fn = pug.compileFile(template, { compileDebug: true });
 	const locals = { siteGrid: SITE_GRID };
 	return {
 		filename: `${path.basename(template, path.extname(template))}.html`,
@@ -161,10 +161,10 @@ function compileBlock(mod, block) {
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return pug.compile(`${customReadFile(COMMONS)}\n${mod}\n${customReadFile(blockPath)}`);
+		return pug.compile(`${customReadFile(COMMONS)}\n${mod}\n${customReadFile(blockPath)}`, { compileDebug: true });
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
-	return pug.compile(`div [block ${block} not found]`);
+	return pug.compile(`div [block ${block} not found]`, { compileDebug: true });
 }
 
 function renderBlockEngine(blockName, data) {
@@ -243,7 +243,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA) {
 	const layoutIndex = LAYOUTS.findIndex(item => item.indexOf(extractedData.layout) !== -1);
 	if (layoutIndex !== -1) {
 		const layout = LAYOUTS[layoutIndex];
-		const fn = pug.compileFile(layout);
+		const fn = pug.compileFile(layout, { compileDebug: true });
 		siteGridEngine(
 			extractedData.title,
 			filePath,
@@ -258,7 +258,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA) {
 			renderBlock: renderBlockEngine,
 			file: modifiedExtractedData,
 			content: (function () {
-				const fn = pug.compile(`${bemto}\n${extractedData.content}`);
+				const fn = pug.compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
 				const initialLocals = { renderBlock: renderBlockEngine };
 				const locals = _.merge({}, initialLocals, modifiedExtractedData, globalData);
 				return fn(locals);

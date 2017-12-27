@@ -3,10 +3,10 @@
   "version": "2.0.0",
   "description": "Frontend project for Verstat Template",
   "scripts": {
-    "build:min": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --hide-modules --config configs/webpack.prod.config.js",
-    "build": "cross-env TIMESTAMP=true NODE_ENV=production webpack --hide-modules --config configs/webpack.prod.config.js",
-    "prod": "cross-env NODE_ENV=production UGLIFY=true SOURCEMAP=true nodemon -e js --watch config --watch bin bin/prod.server.js",
-    "start": "cross-env NODE_ENV=development nodemon -e js --watch config --watch bin bin/dev.server.js"
+    "build:min": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production webpack --progress --hide-modules --config configs/webpack.prod.config.js",
+    "build": "cross-env TIMESTAMP=true NODE_ENV=production webpack --hide-modules --progress --config configs/webpack.prod.config.js",
+    "prod": "cross-env NODE_ENV=production UGLIFY=true SOURCEMAP=true nodemon -e js --watch configs --watch bin bin/prod.server.js",
+    "start": "cross-env NODE_ENV=development nodemon -e js --watch configs --watch bin bin/dev.server.js"
   },
   "repository": {
     "type": "git",
@@ -100,6 +100,7 @@
     "jquery": "^3.2.1",
     "lozad": "^1.0.6",
     "modernizr": "^3.5.0",
-    "normalize.css": "^7.0.0"
+    "normalize.css": "^7.0.0",
+    "progress-bar-webpack-plugin": "^1.10.0"
   }
 }
