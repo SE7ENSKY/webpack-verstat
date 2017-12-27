@@ -9,9 +9,9 @@ const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
-const webpackDevConfig = require('../config/webpack.dev.config');
-const chokidarWatchConfig = require('../config/chokidar.watch.config');
-const consoleOutputConfig = require('../config/console.output.config');
+const webpackDevConfig = require('../configs/webpack.dev.config');
+const chokidarWatchConfig = require('../configs/chokidar.watch.config');
+const consoleOutputConfig = require('../configs/console.output.config');
 const {
 	PROJECT_ROOT,
 	TEMPLATES_NO_GRID,
@@ -45,7 +45,7 @@ const devServerConfig = {
 	stats: consoleOutputConfig
 };
 
-// fix for '[nodemon] app crashed'
+// fix for '[nodemon] app crashed' and pug exceptions
 process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
 
 const memoryFS = new MemoryFileSystem();
@@ -81,7 +81,7 @@ browserSync.init({
 	},
 	files: [
 		{
-			match: `${PROJECT_ROOT}/src/data/*.yml`,
+			match: `${PROJECT_ROOT}/src/data/*.(yml|yaml)`,
 			fn: handleGlobalData
 		},
 		{

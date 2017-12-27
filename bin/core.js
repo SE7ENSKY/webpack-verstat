@@ -10,11 +10,6 @@ const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
 const verstatFrontMatter = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-// const cssnanoBaseConfig = require('../config/cssnano.base.config');
-// const cssnanoMinifyConfig = require('../config/cssnano.minify.config');
-// const perfectionistConfig = require('../config/perfectionist.config');
-// const consoleOutputConfig = require('../config/console.output.config');
-// const chokidarWatchConfig = require('../config/chokidar.watch.config');
 
 
 // storages

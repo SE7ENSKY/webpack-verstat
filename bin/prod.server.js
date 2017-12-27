@@ -4,9 +4,9 @@ require('console-stamp')(console, {
 });
 
 const webpack = require('webpack');
-const webpackProdConfig = require('../config/webpack.prod.config');
-const consoleOutputConfig = require('../config/console.output.config');
-const chokidarWatchConfig = require('../config/chokidar.watch.config');
+const webpackProdConfig = require('../configs/webpack.prod.config');
+const consoleOutputConfig = require('../configs/console.output.config');
+const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 const browserSync = require('browser-sync').create();
 
 const port = 3000;
