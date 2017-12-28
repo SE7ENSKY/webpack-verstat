@@ -9,10 +9,8 @@ module.exports = {
 	config: {
 		path: POSTCSS_CONFIG,
 		ctx: {
-			cssnext: {
-				autoprefixer: {
-					browsers: SUPPORTED_BROWSERS_LIST
-				}
+			autoprefixer: {
+				browsers: SUPPORTED_BROWSERS_LIST
 			}
 		}
 	}
