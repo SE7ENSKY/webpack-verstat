@@ -7,11 +7,20 @@ const jsYaml = require('js-yaml');
 const pug = require('pug');
 const _ = require('lodash');
 const pretty = require('pretty');
+const progressBar = require('progress');
 const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
 const verstatFrontMatter = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
+
+
+// TODO progress для асинхронних обчислень
+// TODO баг з перезбіркою
+// TODO відключить індивідальний резолв ассетів
+// TODO destructuring assignment для require
+// TODO зробить adjacent directories
+// TODO передивитись політику шляхів
 
 
 // storages

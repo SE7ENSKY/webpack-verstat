@@ -7,7 +7,6 @@ const {
 	DEV_OUTPUT_DIRECTORY,
 	generateEntry,
 	getModifiedNib
-	// addHtmlWebpackPlugins
 } = require('../bin/core');
 const postcssLoaderConfig = require('./postcss.loader.config');
 const webpackBaseConfig = require('./webpack.base.config');

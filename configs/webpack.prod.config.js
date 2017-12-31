@@ -1,12 +1,6 @@
-if (process.env.TIMESTAMP) {
-	require('console-stamp')(console, {
-		pattern: 'HH:MM:ss',
-		label: false
-	});
-}
-
 const path = require('path');
 const nib = require('nib');
+const chalk = require('chalk');
 const perfectionist = require('perfectionist');
 const webpack = require('webpack');
 const webpackMerge = require('webpack-merge');
@@ -24,7 +18,6 @@ const {
 	BUNDLE_STATISTICS,
 	generateEntry,
 	getModifiedNib
-	// addHtmlWebpackPlugins
 } = require('../bin/core');
 const postcssLoaderConfig = require('./postcss.loader.config');
 const stylesPostprocessorConfig = require('./styles.postprocessor.config');
@@ -150,14 +143,18 @@ const prodConfig = {
 		// new ScriptExtHtmlWebpackPlugin({
 		// 	defaultAttribute: 'defer'
 		// }),
+		new ProgressBarPlugin({
+			format: `${chalk.cyan.bold('  webpack ')}${chalk.bold('[')}:bar${chalk.bold(']')}${chalk.green.bold(' :percent')}`,
+			width: 40,
+			summary: false
+		}),
 		// new webpack.optimize.CommonsChunkPlugin({
 		// 	name: gererateVendor(),
 		// 	filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
 		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
 		// }),
 		new BeautifyHtmlPlugin({ ocd: true }),
-		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
-		// ...addHtmlWebpackPlugins(PROD_OUTPUT_DIRECTORY)
+		new StylesPostprocessorPlugin(stylesPostprocessorConfig)
 		// new webpackPluginCritical.CriticalPlugin({
 		// 	src: 'index.html',
 		// 	inline: true,
@@ -183,10 +180,6 @@ if (process.env.UGLIFY) {
 if (process.env.SOURCEMAP) {
 	prodConfig.plugins.push(new Visualizer({
 		filename: `.${BUNDLE_STATISTICS.url}`
-	}));
-	prodConfig.plugins.push(new ProgressBarPlugin({
-		width: 40,
-		summary: false
 	}));
 }
 
