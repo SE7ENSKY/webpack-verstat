@@ -27,7 +27,7 @@
     "beautify-html-plugin": "^1.0.0",
     "browser-sync": "^2.18.12",
     "chalk": "^2.0.1",
-    "chokidar": "^1.7.0",
+    "chokidar": "^2.0.0",
     "circular-dependency-plugin": "^4.3.0",
     "coffee-loader": "^0.9.0",
     "coffeescript": "^2.0.1",

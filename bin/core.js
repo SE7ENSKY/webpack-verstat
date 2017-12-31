@@ -16,7 +16,7 @@ const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
 
 // TODO progress для асинхронних обчислень
-// TODO баг з перезбіркою
+// TODO замінить for of
 // TODO відключить індивідальний резолв ассетів
 // TODO destructuring assignment для require
 // TODO зробить adjacent directories
