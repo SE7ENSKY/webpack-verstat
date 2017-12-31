@@ -6,10 +6,12 @@ const chalk = require('chalk');
 const jsYaml = require('js-yaml');
 const pug = require('pug');
 const _ = require('lodash');
+const pretty = require('pretty');
 const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
 const verstatFrontMatter = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
 
 // storages
@@ -27,13 +29,15 @@ const PROD_OUTPUT_DIRECTORY = path.join(PROJECT_ROOT, OUTPUT_DIRECTORY);
 const DEV_OUTPUT_DIRECTORY = '/';
 const POSTCSS_CONFIG = path.join(PROJECT_ROOT, 'configs', 'postcss.config.js');
 
-// constants
-const TEMPLATES = glob.sync(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
-const TEMPLATES_GRID = glob.sync(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`)[0];
-const TEMPLATES_NO_GRID = TEMPLATES_GRID ? TEMPLATES.filter(item => item !== TEMPLATES_GRID) : TEMPLATES.slice();
-const COMMONS = glob.sync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`)[0];
-const LAYOUTS = glob.sync(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
-const GLOBAL_DATA = getGlobalData();
+// data
+let TEMPLATES;
+let TEMPLATES_GRID;
+let TEMPLATES_NO_GRID;
+let TEMPLATES_NO_GRID_SIZE;
+let LAYOUTS;
+let BLOCKS;
+let GLOBAL_DATA;
+let COMMONS;
 const ASSETS_NAMING_CONVENTION = {
 	images: 'i',
 	fonts: 'f',
@@ -51,6 +55,38 @@ const SUPPORTED_BROWSERS_LIST = [
 	'Safari >= 9'
 ];
 
+
+function customReadFile(file, encoding = 'utf8') {
+	return fs.readFileSync(file, { encoding });
+}
+
+function isString(str) {
+	return typeof str === 'string' || str instanceof String;
+}
+
+function prettifyHTML(str, options) {
+	if (isString(str)) {
+		const defaultOptions = {
+			ocd: true,
+			indent_char: '\t',
+			indent_size: 1
+		};
+		return pretty(str, options ? _.merge({}, defaultOptions, options) : defaultOptions);
+	}
+}
+
+function getFiles(filePath, index) {
+	return new Promise((resolve, reject) => {
+		glob(filePath, (err, matches) => {
+			if (err) reject(new Error(err));
+			if (index !== undefined) {
+				resolve(matches[index]);
+			} else {
+				resolve(matches);
+			}
+		});
+	});
+}
 
 function generateEntry(server) {
 	const entry = glob.sync(`${PROJECT_ROOT}/src/assets/*.js`);
@@ -81,10 +117,6 @@ function getModifiedNib(filePath) {
 	return path.join(dirPath, 'nib-mod.styl');
 }
 
-function customReadFile(file, encoding = 'utf8') {
-	return fs.readFileSync(file, { encoding });
-}
-
 function shortenPath(filePath) {
 	if (path.isAbsolute(filePath)) {
 		return filePath.replace(PROJECT_ROOT, path.basename(PROJECT_ROOT)).replace(/\\/g, '/');
@@ -97,36 +129,80 @@ function boldString(filePath) {
 	return filePath;
 }
 
-function removeDirectory(filePath) {
-	if (fs.existsSync(filePath)) {
-		fse.removeSync(filePath);
-		console.log(boldString('unlinkDir:'), shortenPath(filePath));
+async function removeDirectory(filePath) {
+	try {
+		if (await fse.pathExists(filePath)) await fse.remove(filePath);
+	} catch (err) {
+		throw new Error(err);
 	}
 }
+
+// function removeDirectorySync(filePath) {
+// 	if (fse.pathExistsSync(filePath)) {
+// 		fse.removeSync(filePath);
+// 		console.log(boldString('unlinkDir:'), shortenPath(filePath));
+// 	}
+// }
 
 function createDirectory(filePath) {
-	fse.ensureDirSync(filePath);
-	console.log(boldString('addDir:'), shortenPath(filePath));
+	return fse.ensureDir(filePath)
+		.then(() => { console.log(boldString('addDir:'), shortenPath(filePath)); })
+		.catch((err) => { throw err; });
 }
 
-function changeFileTimestamp(number, filePath) {
+// function createDirectorySync(filePath) {
+// 	fse.ensureDirSync(filePath);
+// 	console.log(boldString('addDir:'), shortenPath(filePath));
+// }
+
+function changeFileTimestamp(number, filePath, cb) {
 	if (number < 0) {
 		const timeThen = (Date.now() / 1000) - Math.abs(number);
-		fs.utimesSync(filePath, timeThen, timeThen);
+		fs.utimes(filePath, timeThen, timeThen, (err) => {
+			if (err) throw err;
+			cb();
+		});
 	} else if (number > 0) {
 		const timeThen = (Date.now() / 1000) + Math.abs(number);
-		fs.utimesSync(filePath, timeThen, timeThen);
+		fs.utimes(filePath, timeThen, timeThen, (err) => {
+			if (err) throw err;
+			cb();
+		});
 	}
 }
+
+// function changeFileTimestampSync(number, filePath) {
+// 	if (number < 0) {
+// 		const timeThen = (Date.now() / 1000) - Math.abs(number);
+// 		fs.utimesSync(filePath, timeThen, timeThen);
+// 	} else if (number > 0) {
+// 		const timeThen = (Date.now() / 1000) + Math.abs(number);
+// 		fs.utimesSync(filePath, timeThen, timeThen);
+// 	}
+// }
 
 function renderTemplate(data, event = 'add') {
 	if (!_.isEmpty(data)) {
 		const filePath = path.join(PAGES_DIRECTORY, data.filename);
-		fs.writeFileSync(filePath, data.content, 'utf-8');
-		changeFileTimestamp(-10, filePath);
-		console.log(boldString(`${event}:`), shortenPath(filePath));
+		return new Promise((resolve, reject) => {
+			fs.writeFile(filePath, data.content, 'utf8', (err) => {
+				if (err) reject(new Error(err));
+				changeFileTimestamp(-10, filePath, () => {
+					resolve(console.log(boldString(`${event}:`), shortenPath(filePath)));
+				});
+			});
+		});
 	}
 }
+
+// function renderTemplateSync(data, event = 'add') {
+// 	if (!_.isEmpty(data)) {
+// 		const filePath = path.join(PAGES_DIRECTORY, data.filename);
+// 		fs.writeFileSync(filePath, data.content, 'utf-8');
+// 		changeFileTimestampSync(-10, filePath);
+// 		console.log(boldString(`${event}:`), shortenPath(filePath));
+// 	}
+// }
 
 function siteGridEngine(title, url, layout) {
 	const srcPath = SOURCE_DIRECTORY.replace(/\\/g, '/');
@@ -155,24 +231,24 @@ function removeSiteGridItem(filePath) {
 	if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
 }
 
-function compileBlock(mod, block) {
-	const blocks = glob.sync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
+function compileBlock(mod, block, isBlocksChanged) {
+	const blocks = isBlocksChanged ? glob.sync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`) : BLOCKS;
 	const index = blocks.findIndex(item => item.indexOf(`/${block}/`) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return pug.compile(`${customReadFile(COMMONS)}\n${mod}\n${customReadFile(blockPath)}`, { compileDebug: true });
+		return pug.compile(`${COMMONS ? customReadFile(COMMONS) : ''}\n${mod}\n${customReadFile(blockPath)}`, { compileDebug: true });
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return pug.compile(`div [block ${block} not found]`, { compileDebug: true });
 }
 
-function renderBlockEngine(blockName, data) {
-	data.renderBlock = function (blockName, data) {
-		return renderBlockEngine(blockName, data);
-	};
-	return compileBlock(bemto, blockName[0])(data);
-}
+// function renderBlockEngine(blockName, data) {
+// 	data.renderBlock = function (blockName, data) {
+// 		return renderBlockEngine(blockName, data);
+// 	};
+// 	return compileBlock(bemto, blockName[0])(data);
+// }
 
 function templateDependenciesEngine(template, templateDependencies, data) {
 	TEMPLATE_DEPENDENCIES_KEY = path.basename(data);
@@ -225,16 +301,15 @@ function processGlobalData(arr) {
 	});
 }
 
-function getGlobalData(filePath) {
-	if (!filePath) {
-		const data = glob.sync(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`);
+function getGlobalData(data) {
+	if (Array.isArray(data)) {
 		return data.length ? _.merge({}, ...processGlobalData(data)) : {};
 	}
-	GLOBAL_DATA[path.basename(filePath, path.extname(filePath))] = jsYaml.safeLoad(customReadFile(filePath));
+	GLOBAL_DATA[path.basename(data, path.extname(data))] = jsYaml.safeLoad(customReadFile(data));
 	return GLOBAL_DATA;
 }
 
-function compileTemplate(filePath, globalData = GLOBAL_DATA) {
+function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = false) {
 	const extractedData = verstatFrontMatter.loadFront(filePath, '\/\/---', 'content');
 	const modifiedExtractedData = _.merge({}, extractedData);
 	delete modifiedExtractedData.layout;
@@ -255,11 +330,23 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA) {
 			filePath
 		);
 		const initialLocals = {
-			renderBlock: renderBlockEngine,
+			renderBlock: function renderBlockEngine(blockName, data) {
+				data.renderBlock = function (blockName, data) {
+					return renderBlockEngine(blockName, data);
+				};
+				return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
+			},
 			file: modifiedExtractedData,
 			content: (function () {
 				const fn = pug.compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
-				const initialLocals = { renderBlock: renderBlockEngine };
+				const initialLocals = {
+					renderBlock: function renderBlockEngine(blockName, data) {
+						data.renderBlock = function (blockName, data) {
+							return renderBlockEngine(blockName, data);
+						};
+						return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
+					}
+				};
 				const locals = _.merge({}, initialLocals, modifiedExtractedData, globalData);
 				return fn(locals);
 			})()
@@ -273,28 +360,56 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA) {
 	return {};
 }
 
-function addHtmlWebpackPlugins(outputPath, memoryFS, compiler, browserSync) {
-	if (process.env.SOURCEMAP) {
-		SITE_GRID.push({
-			title: BUNDLE_STATISTICS.title,
-			url: BUNDLE_STATISTICS.url,
-			layout: null
-		});
+async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSync) {
+	try {
+		TEMPLATES = await getFiles(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
+		TEMPLATES_GRID = await getFiles(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`, 0);
+		TEMPLATES_NO_GRID = TEMPLATES_GRID ? await getFiles(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`) : TEMPLATES.slice();
+		TEMPLATES_NO_GRID_SIZE = TEMPLATES_NO_GRID.length;
+		LAYOUTS = await getFiles(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+		BLOCKS = await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
+		GLOBAL_DATA = getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
+		COMMONS = await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0);
+
+		const renderesTemplates = [];
+
+		if (process.env.SOURCEMAP) {
+			SITE_GRID.push({
+				title: BUNDLE_STATISTICS.title,
+				url: BUNDLE_STATISTICS.url,
+				layout: null
+			});
+		}
+
+		await removeDirectory(PROD_OUTPUT_DIRECTORY);
+		await removeDirectory(PAGES_DIRECTORY);
+
+		await createDirectory(PAGES_DIRECTORY);
+
+		for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i += 1) {
+			renderesTemplates.push(renderTemplate(compileTemplate(TEMPLATES[i])));
+		}
+		await Promise.all(renderesTemplates);
+
+		// initAdjacentDirectories(
+		// 	outputPath,
+		// 	outputFileSystem,
+		// 	compiler,
+		// 	browserSync,
+		// 	['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor', '*.*']
+		// );
+
+		if (TEMPLATES_GRID) await renderTemplate(compileSiteGrid(TEMPLATES_GRID));
+
+		if (cb) {
+			cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);
+		}
+	} catch (err) {
+		throw new Error(err);
 	}
+}
 
-	removeDirectory(PROD_OUTPUT_DIRECTORY);
-	removeDirectory(PAGES_DIRECTORY);
-
-	createDirectory(PAGES_DIRECTORY);
-
-	for (let i = 0, templatesNoGridSize = TEMPLATES_NO_GRID.length; i < templatesNoGridSize; i++) {
-		renderTemplate(compileTemplate(TEMPLATES[i]));
-	}
-
-	if (TEMPLATES_GRID) renderTemplate(compileSiteGrid(TEMPLATES_GRID));
-
-	// initAdjacentDirectories // ?
-
+function addHtmlWebpackPlugins() {
 	return glob.sync(`${PROJECT_ROOT}/src/pages/*.html`).map((item) => {
 		const filename = path.basename(item);
 		let inject;
@@ -318,13 +433,13 @@ function addHtmlWebpackPlugins(outputPath, memoryFS, compiler, browserSync) {
 
 module.exports = {
 	PROJECT_ROOT,
-	TEMPLATES_NO_GRID,
 	PROD_OUTPUT_DIRECTORY,
 	DEV_OUTPUT_DIRECTORY,
 	BUNDLE_STATISTICS,
 	SUPPORTED_BROWSERS_LIST,
 	POSTCSS_CONFIG,
 	ASSETS_NAMING_CONVENTION,
+	initTemplateEngine,
 	generateEntry,
 	gererateVendor,
 	getGlobalData,

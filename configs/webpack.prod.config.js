@@ -23,8 +23,8 @@ const {
 	PROD_OUTPUT_DIRECTORY,
 	BUNDLE_STATISTICS,
 	generateEntry,
-	getModifiedNib,
-	addHtmlWebpackPlugins
+	getModifiedNib
+	// addHtmlWebpackPlugins
 } = require('../bin/core');
 const postcssLoaderConfig = require('./postcss.loader.config');
 const stylesPostprocessorConfig = require('./styles.postprocessor.config');
@@ -157,7 +157,7 @@ const prodConfig = {
 		// }),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
-		...addHtmlWebpackPlugins(PROD_OUTPUT_DIRECTORY)
+		// ...addHtmlWebpackPlugins(PROD_OUTPUT_DIRECTORY)
 		// new webpackPluginCritical.CriticalPlugin({
 		// 	src: 'index.html',
 		// 	inline: true,

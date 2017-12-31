@@ -3,7 +3,11 @@ require('console-stamp')(console, {
 	label: false
 });
 
-const path = require('path');
+const {
+	basename,
+	extname,
+	join
+} = require('path');
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
@@ -14,7 +18,6 @@ const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 const consoleOutputConfig = require('../configs/console.output.config');
 const {
 	PROJECT_ROOT,
-	TEMPLATES_NO_GRID,
 	PROD_OUTPUT_DIRECTORY,
 	boldString,
 	addBlockToTemplateBranch,
@@ -24,7 +27,8 @@ const {
 	getGlobalData,
 	renderTemplate,
 	compileTemplate,
-	addHtmlWebpackPlugins
+	addHtmlWebpackPlugins,
+	initTemplateEngine
 } = require('./core');
 
 const port = 8080;
@@ -51,147 +55,160 @@ process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
 const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
 compiler.outputFileSystem = memoryFS;
-compiler.apply(
-	...addHtmlWebpackPlugins(
-		webpackDevConfig.output.path,
-		compiler.outputFileSystem,
-		compiler,
-		browserSync
-	)
-);
-const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
-const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
+initTemplateEngine(
+	(templatesNoGrid, templatesNoGridSize, globalData) => {
+		compiler.apply(...addHtmlWebpackPlugins());
 
-browserSync.init({
-	ui: {
-		port: uiPort
-	},
-	open: false,
-	notify: false,
-	reloadOnRestart: true,
-	reloadDebounce: 100,
-	watchOptions: chokidarWatchConfig,
-	port: devServerConfig.port,
-	server: {
-		baseDir: PROD_OUTPUT_DIRECTORY,
-		middleware: [
-			webpackDevMiddlewareInstance,
-			webpackHotMiddlewareInstance
-		]
-	},
-	files: [
-		{
-			match: `${PROJECT_ROOT}/src/data/*.(yml|yaml)`,
-			fn: handleGlobalData
-		},
-		{
-			match: `${PROJECT_ROOT}/src/*.?(pug|jade)`,
-			fn: handleTemplateWithData
-		},
-		{
-			match: `${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`,
-			fn: handleTemplate
-		},
-		{
-			match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
-			fn: handleBlock
-		},
-		{
-			match: `${PROJECT_ROOT}/src/blocks/**/*.coffee`,
-			fn: handleCoffeeScript
-		}
-	]
-});
+		const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
+		const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 
-function handleChanges(templateWithData, template, block, data) {
-	const templateBasename = template ? path.basename(template, path.extname(template)) : template;
-	if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
-		const templatesNoGridSize = TEMPLATES_NO_GRID.length;
-		if (templatesNoGridSize) {
-			const globalData = data ? getGlobalData(data) : data;
-			console.log(boldString('recompiling all branches...'));
-			for (let i = 0; i < templatesNoGridSize; i++) {
-				renderTemplate(compileTemplate(TEMPLATES_NO_GRID[i], globalData));
-			}
-		}
-	} else {
-		const templateBranches = getTemplateBranches(templateWithData, template, block);
-		for (let i = 0, templateBranchesSize = templateBranches.length; i < templateBranchesSize; i++) {
-			const templateBranch = templateBranches[i];
-			console.log(boldString('recompile branch:'), shortenPath(templateBranch));
-			renderTemplate(compileTemplate(templateBranch));
-		}
-	}
-}
+		let isBlocksChanged = false;
 
-function handleGlobalData(event, file) {
-	switch (event) {
-		case 'change':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			handleChanges(null, null, null, file);
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-			break;
-		case 'add':
-		case 'unlink':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			changeFileTimestamp(1, path.join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-			break;
-	}
-}
-
-function handleTemplateWithData(event, file) {
-	switch (event) {
-		case 'change':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			handleChanges(file.replace(/\\/g, '/'), null, null);
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-			break;
-		case 'add':
-		case 'unlink':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			changeFileTimestamp(1, path.join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-			break;
-	}
-}
-
-function handleTemplate(event, file) {
-	switch (event) {
-		case 'change':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			handleChanges(null, file.replace(/\\/g, '/'), null);
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-			break;
-		case 'add':
-		case 'unlink':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			if (getTemplateBranches(null, file.replace(/\\/g, '/'), null).length) {
-				changeFileTimestamp(1, path.join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+		function handleChanges(templateWithData, template, block, data) {
+			const templateBasename = template ? basename(template, extname(template)) : template;
+			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
+				if (templatesNoGridSize) {
+					const globalData2 = data ? getGlobalData(data) : data;
+					const renderesTemplates = [];
+					console.log(boldString('recompiling all branches...'));
+					for (let i = 0; i < templatesNoGridSize; i += 1) {
+						renderesTemplates.push(renderTemplate(compileTemplate(templatesNoGrid[i], globalData2)));
+					}
+					Promise.all(renderesTemplates).then(() => webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload()));
+				}
 			} else {
-				handleChanges(null, file.replace(/\\/g, '/'), null);
-				webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+				const templateBranches = getTemplateBranches(templateWithData, template, block);
+				const renderesTemplates = [];
+				for (let i = 0, templateBranchesSize = templateBranches.length; i < templateBranchesSize; i += 1) {
+					const templateBranch = templateBranches[i];
+					console.log(boldString('recompile branch:'), shortenPath(templateBranch));
+					renderesTemplates.push(renderTemplate(compileTemplate(templateBranch, globalData, isBlocksChanged)));
+				}
+				Promise.all(renderesTemplates).then(() => webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload()));
 			}
-	}
-}
+		}
 
-function handleBlock(event, file) {
-	switch (event) {
-		case 'add':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			addBlockToTemplateBranch(file.replace(/\\/g, '/'));
-			handleChanges(null, null, file.replace(/\\/g, '/'));
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-			break;
-		case 'change':
-		case 'unlink':
-			console.log(boldString(`${event}:`), shortenPath(file));
-			handleChanges(null, null, file.replace(/\\/g, '/'));
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-			break;
-	}
-}
-
-function handleCoffeeScript(event, file) {
-	if (event === 'change') {
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-	}
-}
+		browserSync.init({
+			ui: {
+				port: uiPort
+			},
+			open: false,
+			notify: false,
+			reloadOnRestart: true,
+			reloadDebounce: 100,
+			watchOptions: chokidarWatchConfig,
+			port: devServerConfig.port,
+			server: {
+				baseDir: PROD_OUTPUT_DIRECTORY,
+				middleware: [
+					webpackDevMiddlewareInstance,
+					webpackHotMiddlewareInstance
+				]
+			},
+			files: [
+				{
+					match: `${PROJECT_ROOT}/src/data/*.(yml|yaml)`,
+					fn: (event, file) => {
+						switch (event) {
+							case 'change':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								handleChanges(null, null, null, file);
+								break;
+							case 'add':
+							case 'unlink':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+								break;
+							// no default
+						}
+					}
+				},
+				{
+					match: `${PROJECT_ROOT}/src/*.?(pug|jade)`,
+					fn: (event, file) => {
+						switch (event) {
+							case 'change':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								handleChanges(file.replace(/\\/g, '/'), null, null);
+								break;
+							case 'add':
+							case 'unlink':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+								break;
+							// no default
+						}
+					}
+				},
+				{
+					match: `${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`,
+					fn: (event, file) => {
+						switch (event) {
+							case 'change':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								handleChanges(null, file.replace(/\\/g, '/'), null);
+								break;
+							case 'add':
+							case 'unlink':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								if (getTemplateBranches(null, file.replace(/\\/g, '/'), null).length) {
+									changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+								} else {
+									handleChanges(null, file.replace(/\\/g, '/'), null);
+								}
+								break;
+							// no default
+						}
+					}
+				},
+				{
+					match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
+					fn: (event, file) => {
+						switch (event) {
+							case 'add':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								isBlocksChanged = true;
+								addBlockToTemplateBranch(file.replace(/\\/g, '/'));
+								handleChanges(null, null, file.replace(/\\/g, '/'));
+								break;
+							case 'change':
+							case 'unlink':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								if (event === 'unlink') isBlocksChanged = true;
+								handleChanges(null, null, file.replace(/\\/g, '/'));
+								break;
+							// no default
+						}
+					}
+				},
+				{
+					match: `${PROJECT_ROOT}/src/blocks/**/*.coffee`,
+					fn: (event) => {
+						if (event === 'change') webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+					}
+				},
+				{
+					match: `${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`,
+					fn: (event, file) => {
+						switch (event) {
+							case 'change':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								handleChanges(null, null, null);
+								break;
+							case 'add':
+							case 'unlink':
+								console.log(boldString(`${event}:`), shortenPath(file));
+								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+								break;
+							// no default
+						}
+					}
+				}
+			]
+		});
+	},
+	webpackDevConfig.output.path,
+	compiler.outputFileSystem,
+	compiler,
+	browserSync
+);
