@@ -7,7 +7,8 @@ const {
 	basename,
 	extname,
 	join,
-	resolve
+	resolve,
+	normalize
 } = require('path');
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
@@ -71,8 +72,8 @@ initTemplateEngine(
 				if (templatesNoGridSize) {
 					const globalData2 = data ? getGlobalData(data) : data;
 					const renderesTemplates = [];
-					console.log(boldString('recompiling all branches...'));
 					for (let i = 0; i < templatesNoGridSize; i += 1) {
+						console.log(boldString('recompile branch:'), shortenPath(templatesNoGrid[i]));
 						renderesTemplates.push(renderTemplate(compileTemplate(templatesNoGrid[i], globalData2)));
 					}
 					Promise.all(renderesTemplates).then(() => webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload()));
@@ -110,7 +111,7 @@ initTemplateEngine(
 				{
 					match: `${PROJECT_ROOT}/src/data/*.(yml|yaml)`,
 					fn: (event, file) => {
-						const resolvedFile = resolve(PROJECT_ROOT, file);
+						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						switch (event) {
 							case 'change':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
@@ -128,11 +129,11 @@ initTemplateEngine(
 				{
 					match: `${PROJECT_ROOT}/src/*.?(pug|jade)`,
 					fn: (event, file) => {
-						const resolvedFile = resolve(PROJECT_ROOT, file);
+						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						switch (event) {
 							case 'change':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(resolvedFile.replace(/\\/g, '/'), null, null);
+								handleChanges(resolvedFile, null, null);
 								break;
 							case 'add':
 							case 'unlink':
@@ -146,19 +147,19 @@ initTemplateEngine(
 				{
 					match: `${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`,
 					fn: (event, file) => {
-						const resolvedFile = resolve(PROJECT_ROOT, file);
+						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						switch (event) {
 							case 'change':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(null, resolvedFile.replace(/\\/g, '/'), null);
+								handleChanges(null, resolvedFile, null);
 								break;
 							case 'add':
 							case 'unlink':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								if (getTemplateBranches(null, resolvedFile.replace(/\\/g, '/'), null).length) {
+								if (getTemplateBranches(null, resolvedFile, null).length) {
 									changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
 								} else {
-									handleChanges(null, resolvedFile.replace(/\\/g, '/'), null);
+									handleChanges(null, resolvedFile, null);
 								}
 								break;
 							// no default
@@ -168,19 +169,19 @@ initTemplateEngine(
 				{
 					match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
 					fn: (event, file) => {
-						const resolvedFile = resolve(PROJECT_ROOT, file);
+						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						switch (event) {
 							case 'add':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
 								isBlocksChanged = true;
-								addBlockToTemplateBranch(resolvedFile.replace(/\\/g, '/'));
-								handleChanges(null, null, resolvedFile.replace(/\\/g, '/'));
+								addBlockToTemplateBranch(resolvedFile);
+								handleChanges(null, null, resolvedFile);
 								break;
 							case 'change':
 							case 'unlink':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
 								if (event === 'unlink') isBlocksChanged = true;
-								handleChanges(null, null, resolvedFile.replace(/\\/g, '/'));
+								handleChanges(null, null, resolvedFile);
 								break;
 							// no default
 						}
@@ -195,18 +196,10 @@ initTemplateEngine(
 				{
 					match: `${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`,
 					fn: (event, file) => {
-						const resolvedFile = resolve(PROJECT_ROOT, file);
-						switch (event) {
-							case 'change':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(null, null, null);
-								break;
-							case 'add':
-							case 'unlink':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-								break;
-							// no default
+						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+						if (event === 'change') {
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							handleChanges(null, null, null);
 						}
 					}
 				}

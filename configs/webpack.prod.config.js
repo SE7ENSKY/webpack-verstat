@@ -1,8 +1,17 @@
-const path = require('path');
+const { join } = require('path');
 const nib = require('nib');
-const chalk = require('chalk');
+const {
+	cyan,
+	green,
+	bold
+} = require('chalk');
 const perfectionist = require('perfectionist');
-const webpack = require('webpack');
+const {
+	optimize: {
+		UglifyJsPlugin
+		// CommonsChunkPlugin
+	}
+} = require('webpack');
 const webpackMerge = require('webpack-merge');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
@@ -10,7 +19,7 @@ const BeautifyHtmlPlugin = require('beautify-html-plugin');
 const Visualizer = require('webpack-visualizer-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 // const OfflinePlugin = require('offline-plugin');
-// const webpackPluginCritical = require('webpack-plugin-critical');
+// const { CriticalPlugin } = require('webpack-plugin-critical');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const {
 	PROJECT_ROOT,
@@ -52,10 +61,6 @@ const prodConfig = {
 						{
 							loader: 'postcss-loader',
 							options: postcssLoaderConfig
-						},
-						{
-							loader: 'resolve-url-loader',
-							options: { includeRoot: true }
 						}
 					],
 					fallback: 'style-loader'
@@ -71,12 +76,10 @@ const prodConfig = {
 							options: postcssLoaderConfig
 						},
 						{
-							loader: 'resolve-url-loader',
-							options: { includeRoot: true }
-						},
-						{
 							loader: 'sass-loader',
-							options: { sourceMap: true }
+							options: {
+								sourceMap: !!process.env.SOURCEMAP
+							}
 						}
 					],
 					fallback: 'style-loader'
@@ -92,12 +95,10 @@ const prodConfig = {
 							options: postcssLoaderConfig
 						},
 						{
-							loader: 'resolve-url-loader',
-							options: { includeRoot: true }
-						},
-						{
 							loader: 'less-loader',
-							options: { sourceMap: true }
+							options: {
+								sourceMap: !!process.env.SOURCEMAP
+							}
 						}
 					],
 					fallback: 'style-loader'
@@ -113,17 +114,14 @@ const prodConfig = {
 							options: postcssLoaderConfig
 						},
 						{
-							loader: 'resolve-url-loader',
-							options: { includeRoot: true }
-						},
-						{
 							loader: 'stylus-loader',
 							options: {
-								sourceMap: true,
+								sourceMap: !!process.env.SOURCEMAP,
 								use: nib(),
 								import: [
-									path.join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
-									path.join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+									join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+									join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+									join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
 									getModifiedNib(require.resolve('verstat-nib'))
 								],
 								preferPathResolver: 'webpack'
@@ -144,18 +142,18 @@ const prodConfig = {
 		// 	defaultAttribute: 'defer'
 		// }),
 		new ProgressBarPlugin({
-			format: `${chalk.cyan.bold('  webpack ')}${chalk.bold('[')}:bar${chalk.bold(']')}${chalk.green.bold(' :percent')}`,
+			format: `${cyan.bold('  webpack ')}${bold('[')}:bar${bold(']')}${green.bold(' :percent')}`,
 			width: 40,
 			summary: false
 		}),
-		// new webpack.optimize.CommonsChunkPlugin({
+		// new CommonsChunkPlugin({
 		// 	name: gererateVendor(),
 		// 	filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
 		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
 		// }),
 		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig)
-		// new webpackPluginCritical.CriticalPlugin({
+		// new CriticalPlugin({
 		// 	src: 'index.html',
 		// 	inline: true,
 		// 	minify: true,
@@ -166,7 +164,7 @@ const prodConfig = {
 };
 
 if (process.env.UGLIFY) {
-	prodConfig.plugins.push(new webpack.optimize.UglifyJsPlugin({
+	prodConfig.plugins.push(new UglifyJsPlugin({
 		sourceMap: true,
 		mangle: { screw_ie8: true },
 		comments: false,

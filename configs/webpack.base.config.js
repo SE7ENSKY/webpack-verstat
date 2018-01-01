@@ -1,5 +1,10 @@
-const path = require('path');
-const webpack = require('webpack');
+const { join } = require('path');
+const {
+	DefinePlugin,
+	NoEmitOnErrorsPlugin,
+	ProvidePlugin,
+	WatchIgnorePlugin
+} = require('webpack');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const {
@@ -10,7 +15,7 @@ const babelLoaderConfig = require('./babel.loader.config');
 
 
 const baseConfig = {
-	context: path.join(PROJECT_ROOT, 'src'),
+	context: join(PROJECT_ROOT, 'src'),
 	resolve: {
 		extensions: [
 			'.js',
@@ -28,47 +33,33 @@ const baseConfig = {
 			'.gif'
 		],
 		alias: {
-			assets: path.join(PROJECT_ROOT, 'src', 'assets'),
-			f: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
-			i: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
-			v: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
-			scripts: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
-			styles: path.join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
-			vendor: path.join(PROJECT_ROOT, 'src', 'vendor'),
-			modernizr$: path.join(PROJECT_ROOT, '.modernizrrc')
+			assets: join(PROJECT_ROOT, 'src', 'assets'),
+			f: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.fonts),
+			i: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.images),
+			v: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.videos),
+			scripts: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.scripts),
+			styles: join(PROJECT_ROOT, 'src', 'assets', ASSETS_NAMING_CONVENTION.styles),
+			vendor: join(PROJECT_ROOT, 'src', 'vendor'),
+			modernizr$: join(PROJECT_ROOT, '.modernizrrc')
 		}
 	},
 	module: {
 		rules: [
 			{
-				test: /\.(jpe?g|png|gif|ico)$/,
-				use: {
-					loader: 'file-loader',
-					options: { name: 'assets/i/[path][name].[ext]' }
-				}
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg)$/,
+				include: [
+					join(PROJECT_ROOT, 'node_modules'),
+					join(PROJECT_ROOT, 'src', 'vendor')
+				],
+				use: 'file-loader'
 			},
 			{
-				test: /\.(mp4|webm)$/,
-				use: {
-					loader: 'file-loader',
-					options: { name: 'assets/v/[path][name].[ext]' }
-				}
-			},
-			{
-				test: /\.svg$/,
-				exclude: [path.join(PROJECT_ROOT, 'src', 'assets', 'f')],
-				use: {
-					loader: 'file-loader',
-					options: { name: 'assets/i/[path][name].[ext]' }
-				}
-			},
-			{
-				test: /\.(eot|ttf|woff|woff2|svg)$/,
-				include: [path.join(PROJECT_ROOT, 'src', 'assets', 'f')],
-				use: {
-					loader: 'file-loader',
-					options: { name: 'assets/f/[path][name].[ext]' }
-				}
+				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
+				exclude: [
+					join(PROJECT_ROOT, 'node_modules'),
+					join(PROJECT_ROOT, 'src', 'vendor')
+				],
+				use: 'file-loader'
 			},
 			{
 				test: /\.json$/,
@@ -80,20 +71,11 @@ const baseConfig = {
 			},
 			{
 				test: /\.md$/,
-				use: [
-					{
-						loader: 'html-loader',
-						options: { attrs: [] }
-					},
-					'markdown-loader'
-				]
+				use: ['html-loader', 'markdown-loader']
 			},
 			{
 				test: /\.html$/,
-				use: {
-					loader: 'html-loader',
-					options: { attrs: [] }
-				}
+				use: 'html-loader'
 			},
 			{
 				test: /\.coffee$/,
@@ -124,29 +106,16 @@ const baseConfig = {
 		]
 	},
 	plugins: [
-		new webpack.DefinePlugin({
+		new DefinePlugin({
 			'process.env': {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
 		}),
-		new webpack.NoEmitOnErrorsPlugin(),
-		new webpack.ProvidePlugin({
+		new NoEmitOnErrorsPlugin(),
+		new ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery',
 			'window.jQuery': 'jquery'
-		}),
-		new webpack.LoaderOptionsPlugin({
-			options: {
-				customInterpolateName: (url, name, options) => {
-					const prefix = name.replace('[path][name].[ext]', '');
-					const directory = path.dirname(url).replace(/\\/g, '/').split('/').pop();
-					return path.join(
-						prefix,
-						prefix.replace(/\\/g, '/').split('/').indexOf(directory) === -1 ? directory : '',
-						path.basename(url)
-					);
-				}
-			}
 		}),
 		new CopyWebpackPlugin([
 			{
@@ -160,7 +129,7 @@ const baseConfig = {
 				]
 			}
 		]),
-		new webpack.WatchIgnorePlugin([path.join(PROJECT_ROOT, 'node_modules')]),
+		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),
 		new CircularDependencyPlugin({
 			exclude: /node_modules/,
 			failOnError: true

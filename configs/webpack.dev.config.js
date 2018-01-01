@@ -1,6 +1,6 @@
-const path = require('path');
+const { join } = require('path');
 const nib = require('nib');
-const webpack = require('webpack');
+const { HotModuleReplacementPlugin } = require('webpack');
 const webpackMerge = require('webpack-merge');
 const {
 	PROJECT_ROOT,
@@ -33,10 +33,6 @@ const devConfig = {
 					{
 						loader: 'postcss-loader',
 						options: postcssLoaderConfig
-					},
-					{
-						loader: 'resolve-url-loader',
-						options: { includeRoot: true }
 					}
 				]
 			},
@@ -50,12 +46,10 @@ const devConfig = {
 						options: postcssLoaderConfig
 					},
 					{
-						loader: 'resolve-url-loader',
-						options: { includeRoot: true }
-					},
-					{
 						loader: 'sass-loader',
-						options: { sourceMap: true }
+						options: {
+							sourceMap: !!process.env.SOURCEMAP
+						}
 					}
 				]
 			},
@@ -69,12 +63,10 @@ const devConfig = {
 						options: postcssLoaderConfig
 					},
 					{
-						loader: 'resolve-url-loader',
-						options: { includeRoot: true }
-					},
-					{
 						loader: 'less-loader',
-						options: { sourceMap: true }
+						options: {
+							sourceMap: !!process.env.SOURCEMAP
+						}
 					}
 				]
 			},
@@ -88,17 +80,14 @@ const devConfig = {
 						options: postcssLoaderConfig
 					},
 					{
-						loader: 'resolve-url-loader',
-						options: { includeRoot: true }
-					},
-					{
 						loader: 'stylus-loader',
 						options: {
-							sourceMap: true,
+							sourceMap: !!process.env.SOURCEMAP,
 							use: nib(),
 							import: [
-								path.join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
-								path.join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+								join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+								join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+								join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
 								getModifiedNib(require.resolve('verstat-nib'))
 							],
 							preferPathResolver: 'webpack'
@@ -109,7 +98,7 @@ const devConfig = {
 		]
 	},
 	plugins: [
-		new webpack.HotModuleReplacementPlugin()
+		new HotModuleReplacementPlugin()
 	]
 };
 

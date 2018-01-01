@@ -1,26 +1,44 @@
-const fse = require('fs-extra');
-const fs = require('fs');
-const path = require('path');
+const {
+	pathExists,
+	remove,
+	ensureDir
+} = require('fs-extra');
+const {
+	readFileSync,
+	utimes,
+	writeFile
+} = require('fs');
+const {
+	resolve,
+	join,
+	normalize,
+	basename,
+	dirname,
+	isAbsolute,
+	extname,
+	sep
+} = require('path');
 const glob = require('glob');
-const chalk = require('chalk');
-const jsYaml = require('js-yaml');
-const pug = require('pug');
-const _ = require('lodash');
+const { bold } = require('chalk');
+const { safeLoad } = require('js-yaml');
+const {
+	compileFile,
+	compile
+} = require('pug');
+const {
+	merge,
+	isEmpty
+} = require('lodash');
 const pretty = require('pretty');
-const progressBar = require('progress');
 const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
-const verstatFrontMatter = require('verstat-front-matter');
+const { loadFront } = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
 
-// TODO progress для асинхронних обчислень
 // TODO замінить for of
-// TODO відключить індивідальний резолв ассетів
-// TODO destructuring assignment для require
 // TODO зробить adjacent directories
-// TODO передивитись політику шляхів
 
 
 // storages
@@ -29,14 +47,14 @@ const TEMPLATE_DEPENDENCIES = new Map();
 let TEMPLATE_DEPENDENCIES_KEY = null;
 
 // paths
-const PROJECT_ROOT = path.resolve(__dirname, '../');
+const PROJECT_ROOT = resolve(__dirname, '../');
 const MEMORY_DIRECTORY = 'memory-fs';
-const SOURCE_DIRECTORY = path.join(PROJECT_ROOT, 'src');
-const PAGES_DIRECTORY = path.join(SOURCE_DIRECTORY, 'pages');
+const SOURCE_DIRECTORY = join(PROJECT_ROOT, 'src');
+const PAGES_DIRECTORY = join(SOURCE_DIRECTORY, 'pages');
 const OUTPUT_DIRECTORY = 'dist';
-const PROD_OUTPUT_DIRECTORY = path.join(PROJECT_ROOT, OUTPUT_DIRECTORY);
+const PROD_OUTPUT_DIRECTORY = join(PROJECT_ROOT, OUTPUT_DIRECTORY);
 const DEV_OUTPUT_DIRECTORY = '/';
-const POSTCSS_CONFIG = path.join(PROJECT_ROOT, 'configs', 'postcss.config.js');
+const POSTCSS_CONFIG = join(PROJECT_ROOT, 'configs', 'postcss.config.js');
 
 // data
 let TEMPLATES;
@@ -66,11 +84,15 @@ const SUPPORTED_BROWSERS_LIST = [
 
 
 function customReadFile(file, encoding = 'utf8') {
-	return fs.readFileSync(file, { encoding });
+	return readFileSync(file, { encoding });
 }
 
 function isString(str) {
 	return typeof str === 'string' || str instanceof String;
+}
+
+function normalizeArray(arr) {
+	return arr.map(item => normalize(item));
 }
 
 function prettifyHTML(str, options) {
@@ -80,18 +102,18 @@ function prettifyHTML(str, options) {
 			indent_char: '\t',
 			indent_size: 1
 		};
-		return pretty(str, options ? _.merge({}, defaultOptions, options) : defaultOptions);
+		return pretty(str, options ? merge({}, defaultOptions, options) : defaultOptions);
 	}
 }
 
 function getFiles(filePath, index) {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolvePromise, rejectPromise) => {
 		glob(filePath, (err, matches) => {
-			if (err) reject(new Error(err));
+			if (err) rejectPromise(new Error(err));
 			if (index !== undefined) {
-				resolve(matches[index]);
+				resolvePromise(normalize(matches[index]));
 			} else {
-				resolve(matches);
+				resolvePromise(normalizeArray(matches));
 			}
 		});
 	});
@@ -102,7 +124,7 @@ function generateEntry(server) {
 	if (entry.length) {
 		const obj = {};
 		const file = entry[0];
-		const objProp = path.basename(file, '.js');
+		const objProp = basename(file, '.js');
 		obj[objProp] = [file.replace(SOURCE_DIRECTORY, '.')];
 		if (Array.isArray(server)) {
 			server.reverse().forEach(item => obj[objProp].unshift(item));
@@ -114,33 +136,37 @@ function generateEntry(server) {
 
 function gererateVendor() {
 	const vendor = glob.sync(`${PROJECT_ROOT}/src/assets/*.js`);
-	if (vendor.length) return `${path.basename(vendor[0], '.js')}.vendor`;
+	if (vendor.length) {
+		return `${basename(vendor[0], '.js')}.vendor`;
+	}
 	return 'vendor';
 }
 
 function getModifiedNib(filePath) {
-	const dirPath = path.dirname(filePath);
+	const dirPath = dirname(filePath);
 	if (customReadFile(filePath).indexOf('path: fallback') !== -1) {
-		return path.join(dirPath, 'nib-mod-fallback.styl');
+		return join(dirPath, 'nib-mod-fallback.styl');
 	}
-	return path.join(dirPath, 'nib-mod.styl');
+	return join(dirPath, 'nib-mod.styl');
 }
 
 function shortenPath(filePath) {
-	if (path.isAbsolute(filePath)) {
-		return filePath.replace(PROJECT_ROOT, path.basename(PROJECT_ROOT)).replace(/\\/g, '/');
+	if (isAbsolute(filePath)) {
+		return filePath.replace(PROJECT_ROOT, basename(PROJECT_ROOT)).replace(/(\\{2}|\\)/g, '/');
 	}
-	return filePath.replace(/\\/g, '/');
+	return filePath.replace(/(\\{2}|\\)/g, '/');
 }
 
 function boldString(filePath) {
-	if (supportsColor) return chalk.bold(filePath);
+	if (supportsColor) return bold(filePath);
 	return filePath;
 }
 
 async function removeDirectory(filePath) {
 	try {
-		if (await fse.pathExists(filePath)) await fse.remove(filePath);
+		if (await pathExists(filePath)) {
+			await remove(filePath);
+		}
 	} catch (err) {
 		throw new Error(err);
 	}
@@ -154,7 +180,7 @@ async function removeDirectory(filePath) {
 // }
 
 function createDirectory(filePath) {
-	return fse.ensureDir(filePath)
+	return ensureDir(filePath)
 		.then(() => { console.log(boldString('addDir:'), shortenPath(filePath)); })
 		.catch((err) => { throw err; });
 }
@@ -167,13 +193,13 @@ function createDirectory(filePath) {
 function changeFileTimestamp(number, filePath, cb) {
 	if (number < 0) {
 		const timeThen = (Date.now() / 1000) - Math.abs(number);
-		fs.utimes(filePath, timeThen, timeThen, (err) => {
+		utimes(filePath, timeThen, timeThen, (err) => {
 			if (err) throw err;
 			cb();
 		});
 	} else if (number > 0) {
 		const timeThen = (Date.now() / 1000) + Math.abs(number);
-		fs.utimes(filePath, timeThen, timeThen, (err) => {
+		utimes(filePath, timeThen, timeThen, (err) => {
 			if (err) throw err;
 			cb();
 		});
@@ -191,13 +217,13 @@ function changeFileTimestamp(number, filePath, cb) {
 // }
 
 function renderTemplate(data, event = 'add') {
-	if (!_.isEmpty(data)) {
-		const filePath = path.join(PAGES_DIRECTORY, data.filename);
-		return new Promise((resolve, reject) => {
-			fs.writeFile(filePath, data.content, 'utf8', (err) => {
-				if (err) reject(new Error(err));
+	if (!isEmpty(data)) {
+		const filePath = join(PAGES_DIRECTORY, data.filename);
+		return new Promise((resolvePromise, rejectPromise) => {
+			writeFile(filePath, data.content, 'utf8', (err) => {
+				if (err) rejectPromise(new Error(err));
 				changeFileTimestamp(-10, filePath, () => {
-					resolve(console.log(boldString(`${event}:`), shortenPath(filePath)));
+					resolvePromise(console.log(boldString(`${event}:`), shortenPath(filePath)));
 				});
 			});
 		});
@@ -214,42 +240,41 @@ function renderTemplate(data, event = 'add') {
 // }
 
 function siteGridEngine(title, url, layout) {
-	const srcPath = SOURCE_DIRECTORY.replace(/\\/g, '/');
 	SITE_GRID.push({
 		title: title || null,
-		url: url.replace(path.extname(url), '.html').replace(/\\/g, '/').replace(srcPath, ''),
-		layout: layout.replace(path.join(srcPath, path.sep), '').replace(/\\/g, '/')
+		url: url.replace(extname(url), '.html').replace(SOURCE_DIRECTORY, '').replace(/(\\{2}|\\)/g, '/'),
+		layout: layout.replace(join(SOURCE_DIRECTORY, sep), '').replace(/(\\{2}|\\)/g, '/')
 	});
 }
 
 function compileSiteGrid(template) {
-	const fn = pug.compileFile(template, { compileDebug: true });
+	const fn = compileFile(template, { compileDebug: true });
 	const locals = { siteGrid: SITE_GRID };
 	return {
-		filename: `${path.basename(template, path.extname(template))}.html`,
+		filename: `${basename(template, extname(template))}.html`,
 		content: fn(locals)
 	};
 }
 
 function removeSiteGridItem(filePath) {
-	const item = filePath.replace(path.join(SOURCE_DIRECTORY, path.sep), '').replace(path.extname(filePath), '');
+	const item = filePath.replace(join(SOURCE_DIRECTORY, sep), '').replace(extname(filePath), '');
 	const itemIndex = SITE_GRID.findIndex((element) => {
 		const elementLayout = element.layout;
-		return elementLayout ? elementLayout.replace(path.extname(elementLayout), '') === item : false;
+		return elementLayout ? elementLayout.replace(extname(elementLayout), '') === item : false;
 	});
 	if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
 }
 
 function compileBlock(mod, block, isBlocksChanged) {
-	const blocks = isBlocksChanged ? glob.sync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`) : BLOCKS;
-	const index = blocks.findIndex(item => item.indexOf(`/${block}/`) !== -1);
+	const blocks = isBlocksChanged ? normalizeArray(glob.sync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`)) : BLOCKS;
+	const index = blocks.findIndex(item => item.indexOf(normalize(`/${block}/`)) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return pug.compile(`${COMMONS ? customReadFile(COMMONS) : ''}\n${mod}\n${customReadFile(blockPath)}`, { compileDebug: true });
+		return compile(`${customReadFile(COMMONS)}\n${mod}\n${customReadFile(blockPath)}`, { compileDebug: true });
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
-	return pug.compile(`div [block ${block} not found]`, { compileDebug: true });
+	return compile(`div [block ${block} not found]`, { compileDebug: true });
 }
 
 // function renderBlockEngine(blockName, data) {
@@ -260,7 +285,7 @@ function compileBlock(mod, block, isBlocksChanged) {
 // }
 
 function templateDependenciesEngine(template, templateDependencies, data) {
-	TEMPLATE_DEPENDENCIES_KEY = path.basename(data);
+	TEMPLATE_DEPENDENCIES_KEY = basename(data);
 	TEMPLATE_DEPENDENCIES.set(
 		TEMPLATE_DEPENDENCIES_KEY,
 		{
@@ -273,7 +298,7 @@ function templateDependenciesEngine(template, templateDependencies, data) {
 }
 
 function addBlockToTemplateBranch(block) {
-	const blockName = path.basename(block, path.extname(block));
+	const blockName = basename(block, extname(block));
 	for (const [key, value] of TEMPLATE_DEPENDENCIES) {
 		for (const [key2, value2] of value.blocks) {
 			if (key2 === blockName && value2 === null) {
@@ -305,37 +330,37 @@ function getTemplateBranches(templateWithData, template, block) {
 function processGlobalData(arr) {
 	return arr.map((file) => {
 		const obj = {};
-		obj[path.basename(file, path.extname(file))] = jsYaml.safeLoad(customReadFile(file));
+		obj[basename(file, extname(file))] = safeLoad(customReadFile(file));
 		return obj;
 	});
 }
 
 function getGlobalData(data) {
 	if (Array.isArray(data)) {
-		return data.length ? _.merge({}, ...processGlobalData(data)) : {};
+		return data.length ? merge({}, ...processGlobalData(data)) : {};
 	}
-	GLOBAL_DATA[path.basename(data, path.extname(data))] = jsYaml.safeLoad(customReadFile(data));
+	GLOBAL_DATA[basename(data, extname(data))] = safeLoad(customReadFile(data));
 	return GLOBAL_DATA;
 }
 
 function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = false) {
-	const extractedData = verstatFrontMatter.loadFront(filePath, '\/\/---', 'content');
-	const modifiedExtractedData = _.merge({}, extractedData);
+	const extractedData = loadFront(filePath, '\/\/---', 'content');
+	const modifiedExtractedData = merge({}, extractedData);
 	delete modifiedExtractedData.layout;
 	delete modifiedExtractedData.content;
 	const extractedDataLayout = extractedData.layout;
-	const layoutIndex = LAYOUTS.findIndex(item => item.indexOf(extractedData.layout) !== -1);
+	const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) !== -1) : -1;
 	if (layoutIndex !== -1) {
 		const layout = LAYOUTS[layoutIndex];
-		const fn = pug.compileFile(layout, { compileDebug: true });
+		const fn = compileFile(layout, { compileDebug: true });
 		siteGridEngine(
 			extractedData.title,
 			filePath,
-			path.extname(extractedDataLayout).length ? extractedDataLayout : `${extractedDataLayout}${path.extname(layout)}`
+			extname(extractedDataLayout).length ? extractedDataLayout : `${extractedDataLayout}${extname(layout)}`
 		);
 		templateDependenciesEngine(
 			layout,
-			fn.dependencies.map(item => item.replace(/\\/g, '/')).filter(item => item.indexOf('/layouts/') !== -1),
+			fn.dependencies.filter(item => item.indexOf(normalize('/layouts/')) !== -1),
 			filePath
 		);
 		const initialLocals = {
@@ -347,7 +372,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = f
 			},
 			file: modifiedExtractedData,
 			content: (function () {
-				const fn = pug.compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
+				const fn = compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
 				const initialLocals = {
 					renderBlock: function renderBlockEngine(blockName, data) {
 						data.renderBlock = function (blockName, data) {
@@ -356,13 +381,13 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = f
 						return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
 					}
 				};
-				const locals = _.merge({}, initialLocals, modifiedExtractedData, globalData);
+				const locals = merge({}, initialLocals, modifiedExtractedData, globalData);
 				return fn(locals);
 			})()
 		};
-		const locals = _.merge({}, initialLocals, globalData);
+		const locals = merge({}, initialLocals, globalData);
 		return {
-			filename: `${path.basename(filePath, path.extname(filePath))}.html`,
+			filename: `${basename(filePath, extname(filePath))}.html`,
 			content: fn(locals)
 		};
 	}
@@ -370,57 +395,70 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = f
 }
 
 async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSync) {
-	try {
-		TEMPLATES = await getFiles(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
-		TEMPLATES_GRID = await getFiles(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`, 0);
-		TEMPLATES_NO_GRID = TEMPLATES_GRID ? await getFiles(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`) : TEMPLATES.slice();
-		TEMPLATES_NO_GRID_SIZE = TEMPLATES_NO_GRID.length;
-		LAYOUTS = await getFiles(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
-		BLOCKS = await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
-		GLOBAL_DATA = getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
-		COMMONS = await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0);
+	TEMPLATES = await getFiles(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
+	TEMPLATES_GRID = await getFiles(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`, 0);
+	TEMPLATES_NO_GRID = TEMPLATES_GRID ? await getFiles(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`) : TEMPLATES.slice();
+	TEMPLATES_NO_GRID_SIZE = TEMPLATES_NO_GRID.length;
+	LAYOUTS = await getFiles(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+	BLOCKS = await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
+	GLOBAL_DATA = getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
+	COMMONS = await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0);
 
-		const renderesTemplates = [];
+	const renderesTemplates = [];
 
-		if (process.env.SOURCEMAP) {
-			SITE_GRID.push({
-				title: BUNDLE_STATISTICS.title,
-				url: BUNDLE_STATISTICS.url,
-				layout: null
-			});
-		}
+	if (process.env.SOURCEMAP) {
+		SITE_GRID.push({
+			title: BUNDLE_STATISTICS.title,
+			url: BUNDLE_STATISTICS.url,
+			layout: null
+		});
+	}
 
-		await removeDirectory(PROD_OUTPUT_DIRECTORY);
-		await removeDirectory(PAGES_DIRECTORY);
+	await removeDirectory(PROD_OUTPUT_DIRECTORY);
+	await removeDirectory(PAGES_DIRECTORY);
 
-		await createDirectory(PAGES_DIRECTORY);
+	await createDirectory(PAGES_DIRECTORY);
 
-		for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i += 1) {
-			renderesTemplates.push(renderTemplate(compileTemplate(TEMPLATES[i])));
-		}
-		await Promise.all(renderesTemplates);
+	for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i += 1) {
+		console.log(boldString('compile branch:'), shortenPath(TEMPLATES[i]));
+		renderesTemplates.push(renderTemplate(compileTemplate(TEMPLATES[i])));
+	}
+	await Promise.all(renderesTemplates);
 
-		// initAdjacentDirectories(
-		// 	outputPath,
-		// 	outputFileSystem,
-		// 	compiler,
-		// 	browserSync,
-		// 	['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor', '*.*']
-		// );
+	// initAdjacentDirectories(
+	// 	outputPath,
+	// 	outputFileSystem,
+	// 	compiler,
+	// 	browserSync,
+	// 	['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor', '*.*']
+	// );
 
-		if (TEMPLATES_GRID) await renderTemplate(compileSiteGrid(TEMPLATES_GRID));
+	if (TEMPLATES_GRID) {
+		await renderTemplate(compileSiteGrid(TEMPLATES_GRID));
+	}
 
-		if (cb) {
-			cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);
-		}
-	} catch (err) {
-		throw new Error(err);
+	if (cb) {
+		cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);
 	}
 }
 
 function addHtmlWebpackPlugins() {
+	// for (const [key, value] of TEMPLATE_DEPENDENCIES) {
+	// 	const { file, layout, layoutDependencies, blocks } = value;
+	// 	console.log('------------------------------------------------------');
+	// 	console.log('key:', key);
+	// 	console.log('file:', file);
+	// 	console.log('layout:', layout);
+	// 	console.log('layout_dependencies:', layoutDependencies);
+	// 	console.log('blocks:', blocks);
+	// }
+
+	// console.log('------------------------------------------------------');
+	// console.log('SITE_GRID:', SITE_GRID);
+
+
 	return glob.sync(`${PROJECT_ROOT}/src/pages/*.html`).map((item) => {
-		const filename = path.basename(item);
+		const filename = basename(item);
 		let inject;
 		switch (filename) {
 			case 'sitegrid.html':

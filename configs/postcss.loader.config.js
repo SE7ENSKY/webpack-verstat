@@ -5,7 +5,7 @@ const {
 
 
 module.exports = {
-	sourceMap: true,
+	sourceMap: !!process.env.SOURCEMAP,
 	config: {
 		path: POSTCSS_CONFIG,
 		ctx: {
