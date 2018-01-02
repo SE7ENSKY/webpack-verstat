@@ -13,7 +13,7 @@ const {
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
-const webpackHotMiddleware = require('webpack-hot-middleware');
+// const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../configs/webpack.dev.config');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
@@ -42,9 +42,11 @@ const devServerConfig = {
 		ignored: /node_modules/
 	},
 	compress: false,
-	hot: true,
+	hot: false,
+	// hot: true,
 	lazy: false,
-	inline: true,
+	inline: false,
+	// inline: true,
 	https: false,
 	host: 'localhost',
 	port,
@@ -62,31 +64,40 @@ initTemplateEngine(
 		compiler.apply(...addHtmlWebpackPlugins());
 
 		const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
-		const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
+		// const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 
 		let isBlocksChanged = false;
+
+		async function processData(arr, arrSize, data, state) {
+			const renderTemplates = [];
+			const compileTemplates = [];
+
+			for (let i = 0; i < arrSize; i++) {
+				console.log(boldString('recompile branch:'), shortenPath(arr[i]));
+				compileTemplates.push(compileTemplate(arr[i], data, state));
+			}
+
+			const compiledTemplates = await Promise.all(compileTemplates);
+			const compiledTemplatesSize = compiledTemplates.length;
+
+			for (let i = 0; i < compiledTemplatesSize; i++) {
+				renderTemplates.push(renderTemplate(compiledTemplates[i]));
+			}
+
+			await Promise.all(renderTemplates).then(() => {
+				webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+			});
+		}
 
 		function handleChanges(templateWithData, template, block, data) {
 			const templateBasename = template ? basename(template, extname(template)) : template;
 			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
 				if (templatesNoGridSize) {
-					const globalData2 = data ? getGlobalData(data) : data;
-					const renderesTemplates = [];
-					for (let i = 0; i < templatesNoGridSize; i += 1) {
-						console.log(boldString('recompile branch:'), shortenPath(templatesNoGrid[i]));
-						renderesTemplates.push(renderTemplate(compileTemplate(templatesNoGrid[i], globalData2)));
-					}
-					Promise.all(renderesTemplates).then(() => webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload()));
+					processData(templatesNoGrid, templatesNoGridSize, data ? getGlobalData(data) : data);
 				}
 			} else {
 				const templateBranches = getTemplateBranches(templateWithData, template, block);
-				const renderesTemplates = [];
-				for (let i = 0, templateBranchesSize = templateBranches.length; i < templateBranchesSize; i += 1) {
-					const templateBranch = templateBranches[i];
-					console.log(boldString('recompile branch:'), shortenPath(templateBranch));
-					renderesTemplates.push(renderTemplate(compileTemplate(templateBranch, globalData, isBlocksChanged)));
-				}
-				Promise.all(renderesTemplates).then(() => webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload()));
+				processData(templateBranches, templateBranches.length, globalData, isBlocksChanged);
 			}
 		}
 
@@ -97,14 +108,14 @@ initTemplateEngine(
 			open: false,
 			notify: false,
 			reloadOnRestart: true,
-			reloadDebounce: 100,
+			// reloadDebounce: 100,
 			watchOptions: chokidarWatchConfig,
 			port: devServerConfig.port,
 			server: {
 				baseDir: PROD_OUTPUT_DIRECTORY,
 				middleware: [
-					webpackDevMiddlewareInstance,
-					webpackHotMiddlewareInstance
+					webpackDevMiddlewareInstance
+					// webpackHotMiddlewareInstance
 				]
 			},
 			files: [
@@ -132,8 +143,10 @@ initTemplateEngine(
 						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						switch (event) {
 							case 'change':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(resolvedFile, null, null);
+								if (basename(resolvedFile, extname(resolvedFile)) !== 'sitegrid') {
+									console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+									handleChanges(resolvedFile, null, null);
+								}
 								break;
 							case 'add':
 							case 'unlink':
@@ -188,9 +201,23 @@ initTemplateEngine(
 					}
 				},
 				{
-					match: `${PROJECT_ROOT}/src/blocks/**/*.coffee`,
-					fn: (event) => {
-						if (event === 'change') webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+					match: [
+						`${PROJECT_ROOT}/src/assets/**/*.?(coffee|js|css|styl|less|sass|scss)`,
+						`${PROJECT_ROOT}/src/blocks/**/*.?(coffee|js|css|styl|less|sass|scss)`,
+						`${PROJECT_ROOT}/src/globals/**/*.?(coffee|js|css|styl|less|sass|scss)`,
+						`${PROJECT_ROOT}/src/vendor/**/*.?(coffee|js|css|styl|less|sass|scss)`
+					],
+					fn: (event, file) => {
+						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+						switch (event) {
+							case 'add':
+							case 'change':
+							case 'unlink':
+								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+								webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+								break;
+							// no default
+						}
 					}
 				},
 				{

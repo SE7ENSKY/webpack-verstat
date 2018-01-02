@@ -37,10 +37,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
 
-// TODO замінить for of
-// TODO зробить adjacent directories
-
-
 // storages
 const SITE_GRID = [];
 const TEMPLATE_DEPENDENCIES = new Map();
@@ -65,6 +61,7 @@ let LAYOUTS;
 let BLOCKS;
 let GLOBAL_DATA;
 let COMMONS;
+const COMPILE_TEMPLATE_DELAY = 10;
 const ASSETS_NAMING_CONVENTION = {
 	images: 'i',
 	fonts: 'f',
@@ -163,12 +160,10 @@ function boldString(filePath) {
 }
 
 async function removeDirectory(filePath) {
-	try {
-		if (await pathExists(filePath)) {
-			await remove(filePath);
-		}
-	} catch (err) {
-		throw new Error(err);
+	if (await pathExists(filePath)) {
+		return remove(filePath).then(() => {
+			console.log(boldString('unlinkDir:'), shortenPath(filePath));
+		});
 	}
 }
 
@@ -218,8 +213,8 @@ function changeFileTimestamp(number, filePath, cb) {
 
 function renderTemplate(data, event = 'add') {
 	if (!isEmpty(data)) {
-		const filePath = join(PAGES_DIRECTORY, data.filename);
 		return new Promise((resolvePromise, rejectPromise) => {
+			const filePath = join(PAGES_DIRECTORY, data.filename);
 			writeFile(filePath, data.content, 'utf8', (err) => {
 				if (err) rejectPromise(new Error(err));
 				changeFileTimestamp(-10, filePath, () => {
@@ -248,12 +243,16 @@ function siteGridEngine(title, url, layout) {
 }
 
 function compileSiteGrid(template) {
-	const fn = compileFile(template, { compileDebug: true });
-	const locals = { siteGrid: SITE_GRID };
-	return {
-		filename: `${basename(template, extname(template))}.html`,
-		content: fn(locals)
-	};
+	return new Promise((resolvePromise, rejectPromise) => {
+		setTimeout(() => {
+			const fn = compileFile(template, { compileDebug: true });
+			const locals = { siteGrid: SITE_GRID };
+			resolvePromise({
+				filename: `${basename(template, extname(template))}.html`,
+				content: fn(locals)
+			});
+		}, COMPILE_TEMPLATE_DELAY);
+	});
 }
 
 function removeSiteGridItem(filePath) {
@@ -344,54 +343,59 @@ function getGlobalData(data) {
 }
 
 function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = false) {
-	const extractedData = loadFront(filePath, '\/\/---', 'content');
-	const modifiedExtractedData = merge({}, extractedData);
-	delete modifiedExtractedData.layout;
-	delete modifiedExtractedData.content;
-	const extractedDataLayout = extractedData.layout;
-	const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) !== -1) : -1;
-	if (layoutIndex !== -1) {
-		const layout = LAYOUTS[layoutIndex];
-		const fn = compileFile(layout, { compileDebug: true });
-		siteGridEngine(
-			extractedData.title,
-			filePath,
-			extname(extractedDataLayout).length ? extractedDataLayout : `${extractedDataLayout}${extname(layout)}`
-		);
-		templateDependenciesEngine(
-			layout,
-			fn.dependencies.filter(item => item.indexOf(normalize('/layouts/')) !== -1),
-			filePath
-		);
-		const initialLocals = {
-			renderBlock: function renderBlockEngine(blockName, data) {
-				data.renderBlock = function (blockName, data) {
-					return renderBlockEngine(blockName, data);
-				};
-				return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
-			},
-			file: modifiedExtractedData,
-			content: (function () {
-				const fn = compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
+	return new Promise((resolvePromise, rejectPromise) => {
+		setTimeout(() => {
+			const extractedData = loadFront(filePath, '\/\/---', 'content');
+			const modifiedExtractedData = merge({}, extractedData);
+			delete modifiedExtractedData.layout;
+			delete modifiedExtractedData.content;
+			const extractedDataLayout = extractedData.layout;
+			const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) !== -1) : -1;
+			if (layoutIndex !== -1) {
+				const layout = LAYOUTS[layoutIndex];
+				const fn = compileFile(layout, { compileDebug: true });
+				siteGridEngine(
+					extractedData.title,
+					filePath,
+					extname(extractedDataLayout).length ? extractedDataLayout : `${extractedDataLayout}${extname(layout)}`
+				);
+				templateDependenciesEngine(
+					layout,
+					fn.dependencies.filter(item => item.indexOf(normalize('/layouts/')) !== -1),
+					filePath
+				);
 				const initialLocals = {
 					renderBlock: function renderBlockEngine(blockName, data) {
 						data.renderBlock = function (blockName, data) {
 							return renderBlockEngine(blockName, data);
 						};
 						return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
-					}
+					},
+					file: modifiedExtractedData,
+					content: (function () {
+						const fn = compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
+						const initialLocals = {
+							renderBlock: function renderBlockEngine(blockName, data) {
+								data.renderBlock = function (blockName, data) {
+									return renderBlockEngine(blockName, data);
+								};
+								return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
+							}
+						};
+						const locals = merge({}, initialLocals, modifiedExtractedData, globalData);
+						return fn(locals);
+					})()
 				};
-				const locals = merge({}, initialLocals, modifiedExtractedData, globalData);
-				return fn(locals);
-			})()
-		};
-		const locals = merge({}, initialLocals, globalData);
-		return {
-			filename: `${basename(filePath, extname(filePath))}.html`,
-			content: fn(locals)
-		};
-	}
-	return {};
+				const locals = merge({}, initialLocals, globalData);
+				resolvePromise({
+					filename: `${basename(filePath, extname(filePath))}.html`,
+					content: fn(locals)
+				});
+			} else {
+				resolvePromise({});
+			}
+		}, COMPILE_TEMPLATE_DELAY);
+	});
 }
 
 async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSync) {
@@ -404,7 +408,16 @@ async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSyn
 	GLOBAL_DATA = getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
 	COMMONS = await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0);
 
-	const renderesTemplates = [];
+	// initAdjacentDirectories(
+	// 	outputPath,
+	// 	outputFileSystem,
+	// 	compiler,
+	// 	browserSync,
+	// 	['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor', '*.*']
+	// );
+
+	const renderTemplates = [];
+	const compileTemplates = [];
 
 	if (process.env.SOURCEMAP) {
 		SITE_GRID.push({
@@ -419,23 +432,24 @@ async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSyn
 
 	await createDirectory(PAGES_DIRECTORY);
 
-	for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i += 1) {
-		console.log(boldString('compile branch:'), shortenPath(TEMPLATES[i]));
-		renderesTemplates.push(renderTemplate(compileTemplate(TEMPLATES[i])));
+	for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i++) {
+		console.log(boldString('compile branch:'), shortenPath(TEMPLATES_NO_GRID[i]));
+		compileTemplates.push(compileTemplate(TEMPLATES_NO_GRID[i]));
 	}
-	await Promise.all(renderesTemplates);
-
-	// initAdjacentDirectories(
-	// 	outputPath,
-	// 	outputFileSystem,
-	// 	compiler,
-	// 	browserSync,
-	// 	['assets', 'blocks', 'data', 'globals', 'layouts', 'pages', 'vendor', '*.*']
-	// );
 
 	if (TEMPLATES_GRID) {
-		await renderTemplate(compileSiteGrid(TEMPLATES_GRID));
+		console.log(boldString('compile branch:'), shortenPath(TEMPLATES_GRID));
+		compileTemplates.push(compileSiteGrid(TEMPLATES_GRID));
 	}
+
+	const compiledTemplates = await Promise.all(compileTemplates);
+	const compiledTemplatesSize = compiledTemplates.length;
+
+	for (let i = 0; i < compiledTemplatesSize; i++) {
+		renderTemplates.push(renderTemplate(compiledTemplates[i]));
+	}
+
+	await Promise.all(renderTemplates);
 
 	if (cb) {
 		cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);

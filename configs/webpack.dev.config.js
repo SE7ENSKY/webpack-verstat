@@ -1,6 +1,6 @@
 const { join } = require('path');
 const nib = require('nib');
-const { HotModuleReplacementPlugin } = require('webpack');
+// const { HotModuleReplacementPlugin } = require('webpack');
 const webpackMerge = require('webpack-merge');
 const {
 	PROJECT_ROOT,
@@ -14,8 +14,8 @@ const webpackBaseConfig = require('./webpack.base.config');
 
 const devConfig = {
 	entry: generateEntry([
-		'event-source-polyfill',
-		'webpack-hot-middleware/client'
+		'event-source-polyfill'
+		// 'webpack-hot-middleware/client'
 	]),
 	output: {
 		path: DEV_OUTPUT_DIRECTORY,
@@ -96,10 +96,10 @@ const devConfig = {
 				]
 			}
 		]
-	},
-	plugins: [
-		new HotModuleReplacementPlugin()
-	]
+	}
+	// plugins: [
+	// 	new HotModuleReplacementPlugin()
+	// ]
 };
 
 module.exports = webpackMerge(webpackBaseConfig, devConfig);

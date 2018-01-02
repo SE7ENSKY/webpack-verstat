@@ -1,12 +1,12 @@
-if (module.hot) {
-	const originalLog = console.log;
-	console.log = function () {
-		if (arguments[0].toString().indexOf('[HMR]') === -1) {
-			return originalLog.apply(console, arguments);
-		}
-	};
-	module.hot.accept();
-}
+// if (module.hot) {
+// 	const originalLog = console.log;
+// 	console.log = function () {
+// 		if (arguments[0].toString().indexOf('[HMR]') === -1) {
+// 			return originalLog.apply(console, arguments);
+// 		}
+// 	};
+// 	module.hot.accept();
+// }
 
 const getRequiredfiles = file => file.keys().forEach(file);
 
