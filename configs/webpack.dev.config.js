@@ -1,6 +1,8 @@
 const { join } = require('path');
 const nib = require('nib');
 // const { HotModuleReplacementPlugin } = require('webpack');
+const HappyPack = require('happypack');
+const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const webpackMerge = require('webpack-merge');
 const {
 	PROJECT_ROOT,
@@ -27,79 +29,103 @@ const devConfig = {
 		rules: [
 			{
 				test: /\.css$/,
-				use: [
-					'style-loader',
-					'css-loader',
-					{
-						loader: 'postcss-loader',
-						options: postcssLoaderConfig
-					}
-				]
+				use: 'happypack/loader?id=css'
 			},
 			{
 				test: /\.(sass|scss)$/,
-				use: [
-					'style-loader',
-					'css-loader',
-					{
-						loader: 'postcss-loader',
-						options: postcssLoaderConfig
-					},
-					{
-						loader: 'sass-loader',
-						options: {
-							sourceMap: !!process.env.SOURCEMAP
-						}
-					}
-				]
+				use: 'happypack/loader?id=sass'
 			},
 			{
 				test: /\.less$/,
-				use: [
-					'style-loader',
-					'css-loader',
-					{
-						loader: 'postcss-loader',
-						options: postcssLoaderConfig
-					},
-					{
-						loader: 'less-loader',
-						options: {
-							sourceMap: !!process.env.SOURCEMAP
-						}
-					}
-				]
+				use: 'happypack/loader?id=less'
 			},
 			{
 				test: /\.styl$/,
-				use: [
-					'style-loader',
-					'css-loader',
-					{
-						loader: 'postcss-loader',
-						options: postcssLoaderConfig
-					},
-					{
-						loader: 'stylus-loader',
-						options: {
-							sourceMap: !!process.env.SOURCEMAP,
-							use: nib(),
-							import: [
-								join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
-								join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
-								join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
-								getModifiedNib(require.resolve('verstat-nib'))
-							],
-							preferPathResolver: 'webpack'
-						}
-					}
-				]
+				use: 'happypack/loader?id=styl'
 			}
 		]
-	}
-	// plugins: [
-	// 	new HotModuleReplacementPlugin()
-	// ]
+	},
+	plugins: [
+		// new HotModuleReplacementPlugin(),
+		new HappyPack({
+			id: 'css',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'style-loader',
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'sass',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'style-loader',
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				},
+				{
+					path: 'sass-loader',
+					query: {
+						sourceMap: !!process.env.SOURCEMAP
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'less',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'style-loader',
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				},
+				{
+					path: 'less-loader',
+					query: {
+						sourceMap: !!process.env.SOURCEMAP
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'styl',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'style-loader',
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				},
+				{
+					path: 'stylus-loader',
+					query: {
+						sourceMap: !!process.env.SOURCEMAP,
+						use: nib(),
+						import: [
+							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+							getModifiedNib(require.resolve('verstat-nib'))
+						],
+						preferPathResolver: 'webpack'
+					}
+				}
+			]
+		})
+	]
 };
 
 module.exports = webpackMerge(webpackBaseConfig, devConfig);

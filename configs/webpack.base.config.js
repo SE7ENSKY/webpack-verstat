@@ -5,6 +5,8 @@ const {
 	ProvidePlugin,
 	WatchIgnorePlugin
 } = require('webpack');
+const HappyPack = require('happypack');
+const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const {
@@ -51,7 +53,7 @@ const baseConfig = {
 					join(PROJECT_ROOT, 'node_modules'),
 					join(PROJECT_ROOT, 'src', 'vendor')
 				],
-				use: 'file-loader'
+				use: 'happypack/loader?id=file'
 			},
 			{
 				test: /\.(jpg|png|gif|eot|ttf|woff|woff2|svg|mp4|webm)$/,
@@ -59,41 +61,32 @@ const baseConfig = {
 					join(PROJECT_ROOT, 'node_modules'),
 					join(PROJECT_ROOT, 'src', 'vendor')
 				],
-				use: 'file-loader'
+				use: 'happypack/loader?id=file'
 			},
 			{
 				test: /\.json$/,
-				use: 'json-loader'
+				use: 'happypack/loader?id=json'
 			},
 			{
 				test: /\.(yaml|yml)$/,
-				use: 'yaml-loader'
+				use: 'happypack/loader?id=yaml'
 			},
 			{
 				test: /\.md$/,
-				use: ['html-loader', 'markdown-loader']
+				use: 'happypack/loader?id=markdown'
 			},
 			{
 				test: /\.html$/,
-				use: 'html-loader'
+				use: 'happypack/loader?id=html'
 			},
 			{
 				test: /\.coffee$/,
-				use: [
-					{
-						loader: 'babel-loader',
-						options: babelLoaderConfig
-					},
-					'coffee-loader'
-				]
+				use: 'happypack/loader?id=coffeescript'
 			},
 			{
 				test: /\.js$/,
 				exclude: /node_modules/,
-				use: {
-					loader: 'babel-loader',
-					options: babelLoaderConfig
-				}
+				use: 'happypack/loader?id=js'
 			},
 			{
 				test: /\.modernizrrc.js$/,
@@ -133,6 +126,59 @@ const baseConfig = {
 		new CircularDependencyPlugin({
 			exclude: /node_modules/,
 			failOnError: true
+		}),
+		new HappyPack({
+			id: 'file',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['file-loader']
+		}),
+		new HappyPack({
+			id: 'json',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['json-loader']
+		}),
+		new HappyPack({
+			id: 'yaml',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['yaml-loader']
+		}),
+		new HappyPack({
+			id: 'markdown',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['html-loader', 'markdown-loader']
+		}),
+		new HappyPack({
+			id: 'html',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['html-loader']
+		}),
+		new HappyPack({
+			id: 'coffeescript',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				{
+					path: 'babel-loader',
+					query: babelLoaderConfig
+				},
+				'coffee-loader'
+			]
+		}),
+		new HappyPack({
+			id: 'js',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				{
+					path: 'babel-loader',
+					query: babelLoaderConfig
+				}
+			]
 		})
 	]
 };

@@ -12,6 +12,8 @@ const {
 		// CommonsChunkPlugin
 	}
 } = require('webpack');
+const HappyPack = require('happypack');
+const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const webpackMerge = require('webpack-merge');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
@@ -56,79 +58,29 @@ const prodConfig = {
 			{
 				test: /\.css$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						{
-							loader: 'postcss-loader',
-							options: postcssLoaderConfig
-						}
-					],
-					fallback: 'style-loader'
+					use: 'happypack/loader?id=css',
+					fallback: 'happypack/loader?id=style'
 				})
 			},
 			{
 				test: /\.(sass|scss)$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						{
-							loader: 'postcss-loader',
-							options: postcssLoaderConfig
-						},
-						{
-							loader: 'sass-loader',
-							options: {
-								sourceMap: !!process.env.SOURCEMAP
-							}
-						}
-					],
-					fallback: 'style-loader'
+					use: 'happypack/loader?id=sass',
+					fallback: 'happypack/loader?id=style'
 				})
 			},
 			{
 				test: /\.less$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						{
-							loader: 'postcss-loader',
-							options: postcssLoaderConfig
-						},
-						{
-							loader: 'less-loader',
-							options: {
-								sourceMap: !!process.env.SOURCEMAP
-							}
-						}
-					],
-					fallback: 'style-loader'
+					use: 'happypack/loader?id=less',
+					fallback: 'happypack/loader?id=style'
 				})
 			},
 			{
 				test: /\.styl$/,
 				use: ExtractTextPlugin.extract({
-					use: [
-						'css-loader',
-						{
-							loader: 'postcss-loader',
-							options: postcssLoaderConfig
-						},
-						{
-							loader: 'stylus-loader',
-							options: {
-								sourceMap: !!process.env.SOURCEMAP,
-								use: nib(),
-								import: [
-									join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
-									join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
-									join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
-									getModifiedNib(require.resolve('verstat-nib'))
-								],
-								preferPathResolver: 'webpack'
-							}
-						}
-					],
-					fallback: 'style-loader'
+					use: 'happypack/loader?id=styl',
+					fallback: 'happypack/loader?id=style'
 				})
 			}
 		]
@@ -152,14 +104,94 @@ const prodConfig = {
 		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
 		// }),
 		new BeautifyHtmlPlugin({ ocd: true }),
-		new StylesPostprocessorPlugin(stylesPostprocessorConfig)
+		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
 		// new CriticalPlugin({
 		// 	src: 'index.html',
 		// 	inline: true,
 		// 	minify: true,
 		// 	extract: false,
 		// 	dest: 'index.html'
-		// })
+		// }),
+		new HappyPack({
+			id: 'style',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: ['style-loader']
+		}),
+		new HappyPack({
+			id: 'css',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'sass',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				},
+				{
+					path: 'sass-loader',
+					query: {
+						sourceMap: !!process.env.SOURCEMAP
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'less',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				},
+				{
+					path: 'less-loader',
+					query: {
+						sourceMap: !!process.env.SOURCEMAP
+					}
+				}
+			]
+		}),
+		new HappyPack({
+			id: 'styl',
+			verbose: false,
+			threadPool: happyThreadPool,
+			loaders: [
+				'css-loader',
+				{
+					path: 'postcss-loader',
+					query: postcssLoaderConfig
+				},
+				{
+					path: 'stylus-loader',
+					query: {
+						sourceMap: !!process.env.SOURCEMAP,
+						use: nib(),
+						import: [
+							join(PROJECT_ROOT, 'src', 'globals', 'variables.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'functions.styl'),
+							join(PROJECT_ROOT, 'src', 'globals', 'mixins.styl'),
+							getModifiedNib(require.resolve('verstat-nib'))
+						],
+						preferPathResolver: 'webpack'
+					}
+				}
+			]
+		})
 	]
 };
 

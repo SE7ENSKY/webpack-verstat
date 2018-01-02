@@ -365,6 +365,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = f
 					filePath
 				);
 				const initialLocals = {
+					NODE_ENV: process.env.NODE_ENV,
 					renderBlock: function renderBlockEngine(blockName, data) {
 						data.renderBlock = function (blockName, data) {
 							return renderBlockEngine(blockName, data);
