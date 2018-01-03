@@ -24,8 +24,8 @@ Release :tada:
  1. Multi page applications
  2. Cross-platform build system
  3. Webpack
- 4. Code splitting
- 5. Hot Reloading
+ 4. Critical CSS (webpack-plugin-critical)
+ 5. Service Worker (offline-plugin, HTTPS protocol needed)
  6. happypack
  7. Babel/ECMAScript 6+
  8. ESLint
@@ -33,7 +33,7 @@ Release :tada:
 10. UglifyJS
 11. nib
 12. Autoprefixer
-13. cssnext
+13. Webpack Visualizer
 14. perfectionist
 15. CSS MQPacker
 16. cssnano
@@ -41,10 +41,7 @@ Release :tada:
 18. Browsersync
 19. yarn
 20. Modernizr (modernizr-loader)
-21. Critical CSS (webpack-plugin-critical)
-22. Webpack Visualizer
-23. Service Worker (offline-plugin, HTTPS protocol needed)
-24. Lazy Loading (lozad)
+21. Lazy Loading (lozad)
 ```
 
 **Assets naming convention**
@@ -63,7 +60,7 @@ const ASSETS_NAMING_CONVENTION = {
 **Requirements**
 
 ```
-node: ^7.0.0
+node: ^7.6.0
 npm: ^4.0.0
 ```
 
@@ -116,10 +113,22 @@ npm run build:min
 ```
 verstat // project name
 ├── bin 
+│   ├── adjacent.directories.js
+│   ├── core.js
 │   ├── dev.server.js
-│   ├── prod.server.js
-│   └── utils.js
+│   ├── prod.build.js
+│   └── prod.server.js
 ├── configs
+│   ├── babel.loader.config.js
+│   ├── chokidar.watch.config.js
+│   ├── console.output.config.js
+│   ├── cssnano.base.config.js
+│   ├── cssnano.minify.config.js
+│   ├── perfectionist.config.js
+│   ├── postcss.config.js
+│   ├── postcss.loader.config.js
+│   ├── styles.postprocessor.config.js
+│   ├── webpack.base.config.js
 │   ├── webpack.dev.config.js
 │   └── webpack.prod.config.js
 ├── dist
