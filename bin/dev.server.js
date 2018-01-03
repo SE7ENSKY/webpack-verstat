@@ -89,15 +89,15 @@ initTemplateEngine(
 			});
 		}
 
-		function handleChanges(templateWithData, template, block, data) {
+		async function handleChanges(templateWithData, template, block, data) {
 			const templateBasename = template ? basename(template, extname(template)) : template;
 			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
 				if (templatesNoGridSize) {
-					processData(templatesNoGrid, templatesNoGridSize, data ? getGlobalData(data) : data);
+					await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
 				}
 			} else {
 				const templateBranches = getTemplateBranches(templateWithData, template, block);
-				processData(templateBranches, templateBranches.length, globalData, isBlocksChanged);
+				await processData(templateBranches, templateBranches.length, globalData, isBlocksChanged);
 			}
 		}
 
