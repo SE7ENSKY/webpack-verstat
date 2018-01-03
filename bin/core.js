@@ -38,6 +38,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
 
+// TODO async error handling
+
 // storages
 const SITE_GRID = [];
 const TEMPLATE_DEPENDENCIES = new Map();
@@ -125,6 +127,13 @@ function getFiles(filePath, index) {
 			}
 		});
 	});
+}
+
+function getFilesSync(filePath, index) {
+	if (index !== undefined) {
+		return normalize(glob.sync(filePath)[index]);
+	}
+	return normalizeArray(glob.sync(filePath));
 }
 
 function generateEntry(server) {
@@ -275,13 +284,26 @@ function removeSiteGridItem(filePath) {
 	if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
 }
 
-function compileBlock(mod, block, isBlocksChanged) {
-	const blocks = isBlocksChanged ? normalizeArray(glob.sync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`)) : BLOCKS;
+function compileBlock(mod, block, updateBlocks, updateCommons) {
+	let blocks;
+	if (updateBlocks) {
+		blocks = getFilesSync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
+		BLOCKS = blocks;
+	} else {
+		blocks = BLOCKS;
+	}
 	const index = blocks.findIndex(item => item.indexOf(normalize(`/${block}/`)) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return compile(`${customReadFileSync(COMMONS)}\n${mod}\n${customReadFileSync(blockPath)}`, { compileDebug: true });
+		let commons;
+		if (updateCommons) {
+			commons = customReadFileSync(getFilesSync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0));
+			COMMONS = commons;
+		} else {
+			commons = COMMONS;
+		}
+		return compile(`${commons}\n${mod}\n${customReadFileSync(blockPath)}`, { compileDebug: true });
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return compile(`div [block ${block} not found]`, { compileDebug: true });
@@ -339,13 +361,10 @@ function getTemplateBranches(templateWithData, template, block) {
 
 async function processGlobalData(arr) {
 	const globalData = [];
-
 	for (let i = 0, arrSize = arr.length; i < arrSize; i++) {
 		globalData.push(customReadFile(arr[i]));
 	}
-
 	const readGlobalData = await Promise.all(globalData);
-
 	return arr.map((file, index) => {
 		const obj = {};
 		obj[basename(file, extname(file))] = safeLoad(readGlobalData[index]);
@@ -361,7 +380,7 @@ async function getGlobalData(data) {
 	return GLOBAL_DATA;
 }
 
-function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = false) {
+function compileTemplate(filePath, globalData = GLOBAL_DATA, updateBlocks = false, updateCommons = false) {
 	return new Promise((resolvePromise, rejectPromise) => {
 		setTimeout(() => {
 			const extractedData = loadFront(filePath, '\/\/---', 'content');
@@ -389,7 +408,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = f
 						data.renderBlock = function (blockName, data) {
 							return renderBlockEngine(blockName, data);
 						};
-						return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
+						return compileBlock(bemto, blockName[0], updateBlocks, updateCommons)(data);
 					},
 					file: modifiedExtractedData,
 					content: (function () {
@@ -399,7 +418,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, isBlocksChanged = f
 								data.renderBlock = function (blockName, data) {
 									return renderBlockEngine(blockName, data);
 								};
-								return compileBlock(bemto, blockName[0], isBlocksChanged)(data);
+								return compileBlock(bemto, blockName[0], updateBlocks, updateCommons)(data);
 							}
 						};
 						const locals = merge({}, initialLocals, modifiedExtractedData, globalData);
@@ -426,7 +445,7 @@ async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSyn
 	LAYOUTS = await getFiles(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
 	BLOCKS = await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
 	GLOBAL_DATA = await getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
-	COMMONS = await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0);
+	COMMONS = await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0));
 
 	// initAdjacentDirectories(
 	// 	outputPath,

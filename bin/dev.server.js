@@ -65,26 +65,29 @@ initTemplateEngine(
 
 		const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 		// const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
+		let updateBlocks = false;
+		let updateCommons = false;
 
-		let isBlocksChanged = false;
-
-		async function processData(arr, arrSize, data, state) {
+		async function processData(templates, templatesSize, data, blocksState, commonsState) {
 			const renderTemplates = [];
 			const compileTemplates = [];
-
-			for (let i = 0; i < arrSize; i++) {
-				console.log(boldString('recompile branch:'), shortenPath(arr[i]));
-				compileTemplates.push(compileTemplate(arr[i], data, state));
+			for (let i = 0; i < templatesSize; i++) {
+				console.log(boldString('recompile branch:'), shortenPath(templates[i]));
+				compileTemplates.push(compileTemplate(
+					templates[i],
+					data,
+					updateBlocks && i > 0 ? false : blocksState,
+					updateCommons && i > 0 ? false : commonsState,
+				));
 			}
-
 			const compiledTemplates = await Promise.all(compileTemplates);
 			const compiledTemplatesSize = compiledTemplates.length;
-
 			for (let i = 0; i < compiledTemplatesSize; i++) {
 				renderTemplates.push(renderTemplate(compiledTemplates[i]));
 			}
-
 			await Promise.all(renderTemplates).then(() => {
+				updateBlocks = false;
+				updateCommons = false;
 				webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 			});
 		}
@@ -93,11 +96,17 @@ initTemplateEngine(
 			const templateBasename = template ? basename(template, extname(template)) : template;
 			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
 				if (templatesNoGridSize) {
-					await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
+					await processData(
+						templatesNoGrid,
+						templatesNoGridSize,
+						data ? await getGlobalData(data) : data,
+						false,
+						updateCommons
+					);
 				}
 			} else {
 				const templateBranches = getTemplateBranches(templateWithData, template, block);
-				await processData(templateBranches, templateBranches.length, globalData, isBlocksChanged);
+				await processData(templateBranches, templateBranches.length, globalData, updateBlocks);
 			}
 		}
 
@@ -186,14 +195,17 @@ initTemplateEngine(
 						switch (event) {
 							case 'add':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								isBlocksChanged = true;
+								updateBlocks = true;
 								addBlockToTemplateBranch(resolvedFile);
 								handleChanges(null, null, resolvedFile);
 								break;
 							case 'change':
+								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+								handleChanges(null, null, resolvedFile);
+								break;
 							case 'unlink':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								if (event === 'unlink') isBlocksChanged = true;
+								updateBlocks = true;
 								handleChanges(null, null, resolvedFile);
 								break;
 							// no default
@@ -226,6 +238,7 @@ initTemplateEngine(
 						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						if (event === 'change') {
 							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							updateCommons = true;
 							handleChanges(null, null, null);
 						}
 					}
