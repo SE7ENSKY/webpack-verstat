@@ -37,7 +37,6 @@ const { loadFront } = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
-
 // TODO async error handling
 
 // storages
@@ -284,25 +283,11 @@ function removeSiteGridItem(filePath) {
 	if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
 }
 
-function compileBlock(mod, block, updateBlocks, updateCommons) {
-	let blocks;
-	if (updateBlocks) {
-		blocks = getFilesSync(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
-		BLOCKS = blocks;
-	} else {
-		blocks = BLOCKS;
-	}
+function compileBlock(mod, block, blocks, commons) {
 	const index = blocks.findIndex(item => item.indexOf(normalize(`/${block}/`)) !== -1);
 	if (index !== -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		let commons;
-		if (updateCommons) {
-			commons = customReadFileSync(getFilesSync(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0));
-			COMMONS = commons;
-		} else {
-			commons = COMMONS;
-		}
 		return compile(`${commons}\n${mod}\n${customReadFileSync(blockPath)}`, { compileDebug: true });
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
@@ -380,7 +365,7 @@ async function getGlobalData(data) {
 	return GLOBAL_DATA;
 }
 
-function compileTemplate(filePath, globalData = GLOBAL_DATA, updateBlocks = false, updateCommons = false) {
+function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, commons = COMMONS) {
 	return new Promise((resolvePromise, rejectPromise) => {
 		setTimeout(() => {
 			const extractedData = loadFront(filePath, '\/\/---', 'content');
@@ -408,7 +393,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, updateBlocks = fals
 						data.renderBlock = function (blockName, data) {
 							return renderBlockEngine(blockName, data);
 						};
-						return compileBlock(bemto, blockName[0], updateBlocks, updateCommons)(data);
+						return compileBlock(bemto, blockName[0], blocks, commons)(data);
 					},
 					file: modifiedExtractedData,
 					content: (function () {
@@ -418,7 +403,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, updateBlocks = fals
 								data.renderBlock = function (blockName, data) {
 									return renderBlockEngine(blockName, data);
 								};
-								return compileBlock(bemto, blockName[0], updateBlocks, updateCommons)(data);
+								return compileBlock(bemto, blockName[0], blocks, commons)(data);
 							}
 						};
 						const locals = merge({}, initialLocals, modifiedExtractedData, globalData);
@@ -540,6 +525,8 @@ module.exports = {
 	POSTCSS_CONFIG,
 	ASSETS_NAMING_CONVENTION,
 	initTemplateEngine,
+	customReadFile,
+	getFiles,
 	generateEntry,
 	gererateVendor,
 	getGlobalData,

@@ -21,6 +21,8 @@ const consoleOutputConfig = require('../configs/console.output.config');
 const {
 	PROJECT_ROOT,
 	PROD_OUTPUT_DIRECTORY,
+	customReadFile,
+	getFiles,
 	boldString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
@@ -65,20 +67,18 @@ initTemplateEngine(
 
 		const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
 		// const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
-		let updateBlocks = false;
-		let updateCommons = false;
+		let isBlocksUpdate = false;
+		let isCommonsUpdate = false;
 
-		async function processData(templates, templatesSize, data, blocksState, commonsState) {
+		async function processData(templates, templatesSize, data) {
 			const renderTemplates = [];
 			const compileTemplates = [];
+			const blocks = isBlocksUpdate ? await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`) : undefined;
+			const commons = isCommonsUpdate ? await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0)) : undefined;
+
 			for (let i = 0; i < templatesSize; i++) {
 				console.log(boldString('recompile branch:'), shortenPath(templates[i]));
-				compileTemplates.push(compileTemplate(
-					templates[i],
-					data,
-					updateBlocks && i > 0 ? false : blocksState,
-					updateCommons && i > 0 ? false : commonsState,
-				));
+				compileTemplates.push(compileTemplate(templates[i], data, blocks, commons));
 			}
 			const compiledTemplates = await Promise.all(compileTemplates);
 			const compiledTemplatesSize = compiledTemplates.length;
@@ -86,8 +86,8 @@ initTemplateEngine(
 				renderTemplates.push(renderTemplate(compiledTemplates[i]));
 			}
 			await Promise.all(renderTemplates).then(() => {
-				updateBlocks = false;
-				updateCommons = false;
+				isBlocksUpdate = false;
+				isCommonsUpdate = false;
 				webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 			});
 		}
@@ -96,17 +96,11 @@ initTemplateEngine(
 			const templateBasename = template ? basename(template, extname(template)) : template;
 			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
 				if (templatesNoGridSize) {
-					await processData(
-						templatesNoGrid,
-						templatesNoGridSize,
-						data ? await getGlobalData(data) : data,
-						false,
-						updateCommons
-					);
+					await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
 				}
 			} else {
 				const templateBranches = getTemplateBranches(templateWithData, template, block);
-				await processData(templateBranches, templateBranches.length, globalData, updateBlocks);
+				await processData(templateBranches, templateBranches.length, globalData);
 			}
 		}
 
@@ -195,7 +189,7 @@ initTemplateEngine(
 						switch (event) {
 							case 'add':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								updateBlocks = true;
+								isBlocksUpdate = true;
 								addBlockToTemplateBranch(resolvedFile);
 								handleChanges(null, null, resolvedFile);
 								break;
@@ -205,7 +199,7 @@ initTemplateEngine(
 								break;
 							case 'unlink':
 								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								updateBlocks = true;
+								isBlocksUpdate = true;
 								handleChanges(null, null, resolvedFile);
 								break;
 							// no default
@@ -238,7 +232,7 @@ initTemplateEngine(
 						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
 						if (event === 'change') {
 							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-							updateCommons = true;
+							isCommonsUpdate = true;
 							handleChanges(null, null, null);
 						}
 					}
