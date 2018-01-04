@@ -47,7 +47,7 @@ Release :tada:
 **Assets naming convention**
 
 ```
-// bin/utils.js
+// bin/core.js
 const ASSETS_NAMING_CONVENTION = {
   images: 'i',
   fonts: 'f',
@@ -156,7 +156,7 @@ verstat // project name
 │   │   └── root.pug
 │   ├── letters
 │   ├── pages // read-only
-│   ├── vendor // legacy code
+│   ├── vendor // for code that is not in npm
 │   ├── index.pug
 │   ├── sitegrid.pug
 │   └── styles.pug
