@@ -35,7 +35,7 @@ const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
 const { loadFront } = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const chokidarWatchConfig = require('../configs/chokidar.watch.config');
+// const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 
 // TODO async error handling
 
@@ -46,7 +46,7 @@ let TEMPLATE_DEPENDENCIES_KEY = null;
 
 // paths
 const PROJECT_ROOT = resolve(__dirname, '../');
-const MEMORY_DIRECTORY = 'memory-fs';
+// const MEMORY_DIRECTORY = 'memory-fs';
 const SOURCE_DIRECTORY = join(PROJECT_ROOT, 'src');
 const PAGES_DIRECTORY = join(SOURCE_DIRECTORY, 'pages');
 const OUTPUT_DIRECTORY = 'dist';
@@ -96,24 +96,24 @@ function customReadFile(file, encoding = 'utf8') {
 	});
 }
 
-function isString(str) {
-	return typeof str === 'string' || str instanceof String;
-}
+// function isString(str) {
+// 	return typeof str === 'string' || str instanceof String;
+// }
 
 function normalizeArray(arr) {
 	return arr.map(item => normalize(item));
 }
 
-function prettifyHTML(str, options) {
-	if (isString(str)) {
-		const defaultOptions = {
-			ocd: true,
-			indent_char: '\t',
-			indent_size: 1
-		};
-		return pretty(str, options ? merge({}, defaultOptions, options) : defaultOptions);
-	}
-}
+// function prettifyHTML(str, options) {
+// 	if (isString(str)) {
+// 		const defaultOptions = {
+// 			ocd: true,
+// 			indent_char: '\t',
+// 			indent_size: 1
+// 		};
+// 		return pretty(str, options ? merge({}, defaultOptions, options) : defaultOptions);
+// 	}
+// }
 
 function getFiles(filePath, index) {
 	return new Promise((resolvePromise, rejectPromise) => {
@@ -128,12 +128,12 @@ function getFiles(filePath, index) {
 	});
 }
 
-function getFilesSync(filePath, index) {
-	if (index !== undefined) {
-		return normalize(glob.sync(filePath)[index]);
-	}
-	return normalizeArray(glob.sync(filePath));
-}
+// function getFilesSync(filePath, index) {
+// 	if (index !== undefined) {
+// 		return normalize(glob.sync(filePath)[index]);
+// 	}
+// 	return normalizeArray(glob.sync(filePath));
+// }
 
 function generateEntry(server) {
 	const entry = glob.sync(`${PROJECT_ROOT}/src/assets/*.js`);
@@ -266,6 +266,7 @@ function compileSiteGrid(template) {
 		setTimeout(() => {
 			const fn = compileFile(template, { compileDebug: true });
 			const locals = { siteGrid: SITE_GRID };
+			console.log(boldString('compile branch:'), shortenPath(template));
 			resolvePromise({
 				filename: `${basename(template, extname(template))}.html`,
 				content: fn(locals)
@@ -274,14 +275,14 @@ function compileSiteGrid(template) {
 	});
 }
 
-function removeSiteGridItem(filePath) {
-	const item = filePath.replace(join(SOURCE_DIRECTORY, sep), '').replace(extname(filePath), '');
-	const itemIndex = SITE_GRID.findIndex((element) => {
-		const elementLayout = element.layout;
-		return elementLayout ? elementLayout.replace(extname(elementLayout), '') === item : false;
-	});
-	if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
-}
+// function removeSiteGridItem(filePath) {
+// 	const item = filePath.replace(join(SOURCE_DIRECTORY, sep), '').replace(extname(filePath), '');
+// 	const itemIndex = SITE_GRID.findIndex((element) => {
+// 		const elementLayout = element.layout;
+// 		return elementLayout ? elementLayout.replace(extname(elementLayout), '') === item : false;
+// 	});
+// 	if (itemIndex !== -1) SITE_GRID.splice(itemIndex, 1);
+// }
 
 function compileBlock(mod, block, blocks, commons) {
 	const index = blocks.findIndex(item => item.indexOf(normalize(`/${block}/`)) !== -1);
@@ -353,6 +354,7 @@ async function processGlobalData(arr) {
 	return arr.map((file, index) => {
 		const obj = {};
 		obj[basename(file, extname(file))] = safeLoad(readGlobalData[index]);
+		console.log(boldString('compile data:'), shortenPath(file));
 		return obj;
 	});
 }
@@ -362,6 +364,7 @@ async function getGlobalData(data) {
 		return data.length ? merge({}, ...await processGlobalData(data)) : {};
 	}
 	GLOBAL_DATA[basename(data, extname(data))] = safeLoad(await customReadFile(data));
+	console.log(boldString('compile data:'), shortenPath(data));
 	return GLOBAL_DATA;
 }
 
@@ -411,11 +414,13 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 					})()
 				};
 				const locals = merge({}, initialLocals, globalData);
+				console.log(boldString('compile branch:'), shortenPath(filePath));
 				resolvePromise({
 					filename: `${basename(filePath, extname(filePath))}.html`,
 					content: fn(locals)
 				});
 			} else {
+				console.log(boldString('compile branch:'), shortenPath(filePath));
 				resolvePromise({});
 			}
 		}, COMPILE_TEMPLATE_DELAY);
@@ -442,7 +447,6 @@ async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSyn
 
 	const renderTemplates = [];
 	const compileTemplates = [];
-
 	if (process.env.SOURCEMAP) {
 		SITE_GRID.push({
 			title: BUNDLE_STATISTICS.title,
@@ -450,51 +454,27 @@ async function initTemplateEngine(cb, outputPath, memoryFS, compiler, browserSyn
 			layout: null
 		});
 	}
-
 	await removeDirectory(PROD_OUTPUT_DIRECTORY);
 	await removeDirectory(PAGES_DIRECTORY);
-
 	await createDirectory(PAGES_DIRECTORY);
-
 	for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i++) {
-		console.log(boldString('compile branch:'), shortenPath(TEMPLATES_NO_GRID[i]));
 		compileTemplates.push(compileTemplate(TEMPLATES_NO_GRID[i]));
 	}
-
 	if (TEMPLATES_GRID) {
-		console.log(boldString('compile branch:'), shortenPath(TEMPLATES_GRID));
 		compileTemplates.push(compileSiteGrid(TEMPLATES_GRID));
 	}
-
 	const compiledTemplates = await Promise.all(compileTemplates);
 	const compiledTemplatesSize = compiledTemplates.length;
-
 	for (let i = 0; i < compiledTemplatesSize; i++) {
 		renderTemplates.push(renderTemplate(compiledTemplates[i]));
 	}
-
 	await Promise.all(renderTemplates);
-
 	if (cb) {
 		cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);
 	}
 }
 
 function addHtmlWebpackPlugins() {
-	// for (const [key, value] of TEMPLATE_DEPENDENCIES) {
-	// 	const { file, layout, layoutDependencies, blocks } = value;
-	// 	console.log('------------------------------------------------------');
-	// 	console.log('key:', key);
-	// 	console.log('file:', file);
-	// 	console.log('layout:', layout);
-	// 	console.log('layout_dependencies:', layoutDependencies);
-	// 	console.log('blocks:', blocks);
-	// }
-
-	// console.log('------------------------------------------------------');
-	// console.log('SITE_GRID:', SITE_GRID);
-
-
 	return glob.sync(`${PROJECT_ROOT}/src/pages/*.html`).map((item) => {
 		const filename = basename(item);
 		let inject;

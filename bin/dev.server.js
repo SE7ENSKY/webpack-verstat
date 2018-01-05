@@ -75,9 +75,7 @@ initTemplateEngine(
 			const compileTemplates = [];
 			const blocks = isBlocksUpdate ? await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`) : undefined;
 			const commons = isCommonsUpdate ? await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0)) : undefined;
-
 			for (let i = 0; i < templatesSize; i++) {
-				console.log(boldString('recompile branch:'), shortenPath(templates[i]));
 				compileTemplates.push(compileTemplate(templates[i], data, blocks, commons));
 			}
 			const compiledTemplates = await Promise.all(compileTemplates);
