@@ -26,7 +26,6 @@ const {
 	compileFile,
 	compile
 } = require('pug');
-const { isEmpty } = require('lodash');
 // const pretty = require('pretty');
 const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
@@ -228,7 +227,7 @@ function changeFileTimestamp(number, filePath, cb) {
 // }
 
 function renderTemplate(data, event = 'add') {
-	if (!isEmpty(data)) {
+	if (Object.keys(data).length) {
 		return new Promise((resolvePromise, rejectPromise) => {
 			const filePath = join(PAGES_DIRECTORY, data.filename);
 			writeFile(filePath, data.content, 'utf8', (err) => {
