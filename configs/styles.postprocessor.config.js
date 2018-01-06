@@ -1,6 +1,5 @@
 const cssMQpacker = require('css-mqpacker');
 const cssNano = require('cssnano');
-const _ = require('lodash');
 const {
 	PROJECT_ROOT,
 	PROD_OUTPUT_DIRECTORY
@@ -14,6 +13,6 @@ module.exports = {
 	output: PROD_OUTPUT_DIRECTORY,
 	plugins: [
 		cssMQpacker(),
-		cssNano(_.merge({}, cssnanoBaseConfig, process.env.UGLIFY ? cssnanoMinifyConfig : {}))
+		cssNano(Object.assign({}, cssnanoBaseConfig, process.env.UGLIFY ? cssnanoMinifyConfig : {}))
 	]
 };

@@ -26,11 +26,8 @@ const {
 	compileFile,
 	compile
 } = require('pug');
-const {
-	merge,
-	isEmpty
-} = require('lodash');
-const pretty = require('pretty');
+const { isEmpty } = require('lodash');
+// const pretty = require('pretty');
 const bemto = require('verstat-bemto/index-tabs');
 const supportsColor = require('supports-color');
 const { loadFront } = require('verstat-front-matter');
@@ -361,7 +358,7 @@ async function processGlobalData(arr) {
 
 async function getGlobalData(data) {
 	if (Array.isArray(data)) {
-		return data.length ? merge({}, ...await processGlobalData(data)) : {};
+		return data.length ? Object.assign({}, ...await processGlobalData(data)) : {};
 	}
 	GLOBAL_DATA[basename(data, extname(data))] = safeLoad(await customReadFile(data));
 	console.log(boldString('compile data:'), shortenPath(data));
@@ -372,7 +369,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 	return new Promise((resolvePromise, rejectPromise) => {
 		setTimeout(() => {
 			const extractedData = loadFront(filePath, '\/\/---', 'content');
-			const modifiedExtractedData = merge({}, extractedData);
+			const modifiedExtractedData = Object.assign({}, extractedData);
 			delete modifiedExtractedData.layout;
 			delete modifiedExtractedData.content;
 			const extractedDataLayout = extractedData.layout;
@@ -409,11 +406,11 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 								return compileBlock(bemto, blockName[0], blocks, commons)(data);
 							}
 						};
-						const locals = merge({}, initialLocals, modifiedExtractedData, globalData);
+						const locals = Object.assign({}, initialLocals, modifiedExtractedData, globalData);
 						return fn(locals);
 					})()
 				};
-				const locals = merge({}, initialLocals, globalData);
+				const locals = Object.assign({}, initialLocals, globalData);
 				console.log(boldString('compile branch:'), shortenPath(filePath));
 				resolvePromise({
 					filename: `${basename(filePath, extname(filePath))}.html`,
