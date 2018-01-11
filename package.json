@@ -91,6 +91,7 @@
     "yaml-loader": "^0.5.0"
   },
   "dependencies": {
+    "bootstrap": "^4.0.0-beta.3",
     "fastclick": "^1.0.6",
     "jquery": "^3.2.1",
     "lodash": "^4.17.4",
