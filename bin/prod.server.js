@@ -9,7 +9,6 @@ const consoleOutputConfig = require('../configs/console.output.config');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
 const browserSync = require('browser-sync').create();
 const {
-	PROD_OUTPUT_DIRECTORY,
 	initTemplateEngine,
 	addHtmlWebpackPlugins
 } = require('./core');
@@ -29,11 +28,8 @@ const browserSyncConfig = {
 };
 
 const compiler = webpack(webpackProdConfig);
-initTemplateEngine(
-	() => {
-		compiler.apply(...addHtmlWebpackPlugins());
-		compiler.plugin('done', (stats) => browserSync.init(browserSyncConfig));
-		compiler.run((err, stats) => console.log(stats.toString(consoleOutputConfig)));
-	},
-	PROD_OUTPUT_DIRECTORY
-);
+initTemplateEngine(() => {
+	compiler.apply(...addHtmlWebpackPlugins());
+	compiler.plugin('done', (stats) => browserSync.init(browserSyncConfig));
+	compiler.run((err, stats) => console.log(stats.toString(consoleOutputConfig)));
+});

@@ -120,6 +120,17 @@ const baseConfig = {
 					'*.js',
 					'.DS_Store'
 				]
+			},
+			{
+				from: 'emails/**/*',
+				dot: true,
+				ignore: [
+					'*.mjml',
+					'*.pug',
+					'*.jade',
+					'*.html',
+					'.DS_Store'
+				]
 			}
 		]),
 		new WatchIgnorePlugin([join(PROJECT_ROOT, 'node_modules')]),

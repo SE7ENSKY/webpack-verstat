@@ -113,9 +113,9 @@ npm run build:min
 ```
 verstat // project name
 ├── bin 
-│   ├── adjacent.directories.js
 │   ├── core.js
 │   ├── dev.server.js
+│   ├── email.engine.js
 │   ├── prod.build.js
 │   └── prod.server.js
 ├── configs
@@ -144,22 +144,26 @@ verstat // project name
 │   │   └── container
 │   │       └── container.styl
 │   ├── data
-│   │   └── text.yml
+│   │   └── text.(yml|yaml)
+│   ├── emails // https://www.campaignmonitor.com/css/
+│   │   └── email-name-directory
+│   │       ├── email-name.(pug|jade|html|mjml)
+│   │       └── image.(jpg|png|gif)
 │   ├── globals
-│   │   ├── commons.pug
+│   │   ├── commons.(pug|jade)
 │   │   ├── functions.styl
 │   │   ├── mixins.styl
 │   │   └── variables.styl
 │   ├── layouts
-│   │   ├── frontPage.pug
-│   │   ├── main.pug
-│   │   └── root.pug
+│   │   ├── frontPage.(pug|jade)
+│   │   ├── main.(pug|jade)
+│   │   └── root.(pug|jade)
 │   ├── letters
 │   ├── pages // read-only
 │   ├── vendor // for code that is not in npm
-│   ├── index.pug
-│   ├── sitegrid.pug
-│   └── styles.pug
+│   ├── index.(pug|jade)
+│   ├── sitegrid.(pug|jade)
+│   └── styles.(pug|jade)
 ├── .eslintignore
 ├── .eslintrc
 ├── .gitignore

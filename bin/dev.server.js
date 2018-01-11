@@ -10,7 +10,6 @@ const {
 	resolve,
 	normalize
 } = require('path');
-const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 // const webpackHotMiddleware = require('webpack-hot-middleware');
@@ -31,6 +30,7 @@ const {
 	getGlobalData,
 	renderTemplate,
 	compileTemplate,
+	compileEmailTemplate,
 	addHtmlWebpackPlugins,
 	initTemplateEngine
 } = require('./core');
@@ -58,188 +58,205 @@ const devServerConfig = {
 // fix for '[nodemon] app crashed' and pug exceptions
 process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
 
-const memoryFS = new MemoryFileSystem();
 const compiler = webpack(webpackDevConfig);
-compiler.outputFileSystem = memoryFS;
-initTemplateEngine(
-	(templatesNoGrid, templatesNoGridSize, globalData) => {
-		compiler.apply(...addHtmlWebpackPlugins());
+initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
+	compiler.apply(...addHtmlWebpackPlugins());
 
-		const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
-		// const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
-		let isBlocksUpdate = false;
-		let isCommonsUpdate = false;
+	const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
+	// const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
+	let isBlocksUpdate = false;
+	let isCommonsUpdate = false;
 
-		async function processData(templates, templatesSize, data) {
-			const renderTemplates = [];
-			const compileTemplates = [];
-			const blocks = isBlocksUpdate ? await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`) : undefined;
-			const commons = isCommonsUpdate ? await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0)) : undefined;
-			for (let i = 0; i < templatesSize; i++) {
-				compileTemplates.push(compileTemplate(templates[i], data, blocks, commons));
-			}
-			const compiledTemplates = await Promise.all(compileTemplates);
-			const compiledTemplatesSize = compiledTemplates.length;
-			for (let i = 0; i < compiledTemplatesSize; i++) {
-				renderTemplates.push(renderTemplate(compiledTemplates[i]));
-			}
-			await Promise.all(renderTemplates).then(() => {
-				isBlocksUpdate = false;
-				isCommonsUpdate = false;
-				webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-			});
+	async function processData(templates, templatesSize, data) {
+		const renderTemplates = [];
+		const compileTemplates = [];
+		const blocks = isBlocksUpdate ? await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`) : undefined;
+		const commons = isCommonsUpdate ? await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0)) : undefined;
+		for (let i = 0; i < templatesSize; i++) {
+			compileTemplates.push(compileTemplate(templates[i], data, blocks, commons));
 		}
-
-		async function handleChanges(templateWithData, template, block, data) {
-			const templateBasename = template ? basename(template, extname(template)) : template;
-			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
-				if (templatesNoGridSize) {
-					await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
-				}
-			} else {
-				const templateBranches = getTemplateBranches(templateWithData, template, block);
-				await processData(templateBranches, templateBranches.length, globalData);
-			}
+		const compiledTemplates = await Promise.all(compileTemplates);
+		const compiledTemplatesSize = compiledTemplates.length;
+		for (let i = 0; i < compiledTemplatesSize; i++) {
+			const compiledTemplate = compiledTemplates[i];
+			renderTemplates.push(renderTemplate(compiledTemplate, compiledTemplate.to));
 		}
-
-		browserSync.init({
-			ui: {
-				port: uiPort
-			},
-			open: false,
-			notify: false,
-			reloadOnRestart: true,
-			// reloadDebounce: 100,
-			watchOptions: chokidarWatchConfig,
-			port: devServerConfig.port,
-			server: {
-				baseDir: PROD_OUTPUT_DIRECTORY,
-				middleware: [
-					webpackDevMiddlewareInstance
-					// webpackHotMiddlewareInstance
-				]
-			},
-			files: [
-				{
-					match: `${PROJECT_ROOT}/src/data/*.(yml|yaml)`,
-					fn: (event, file) => {
-						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-						switch (event) {
-							case 'change':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(null, null, null, resolvedFile);
-								break;
-							case 'add':
-							case 'unlink':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-								break;
-							// no default
-						}
-					}
-				},
-				{
-					match: `${PROJECT_ROOT}/src/*.?(pug|jade)`,
-					fn: (event, file) => {
-						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-						switch (event) {
-							case 'change':
-								if (basename(resolvedFile, extname(resolvedFile)) !== 'sitegrid') {
-									console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-									handleChanges(resolvedFile, null, null);
-								}
-								break;
-							case 'add':
-							case 'unlink':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-								break;
-							// no default
-						}
-					}
-				},
-				{
-					match: `${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`,
-					fn: (event, file) => {
-						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-						switch (event) {
-							case 'change':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(null, resolvedFile, null);
-								break;
-							case 'add':
-							case 'unlink':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								if (getTemplateBranches(null, resolvedFile, null).length) {
-									changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
-								} else {
-									handleChanges(null, resolvedFile, null);
-								}
-								break;
-							// no default
-						}
-					}
-				},
-				{
-					match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
-					fn: (event, file) => {
-						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-						switch (event) {
-							case 'add':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								isBlocksUpdate = true;
-								addBlockToTemplateBranch(resolvedFile);
-								handleChanges(null, null, resolvedFile);
-								break;
-							case 'change':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								handleChanges(null, null, resolvedFile);
-								break;
-							case 'unlink':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								isBlocksUpdate = true;
-								handleChanges(null, null, resolvedFile);
-								break;
-							// no default
-						}
-					}
-				},
-				{
-					match: [
-						`${PROJECT_ROOT}/src/assets/**/*.?(coffee|js|css|styl|less|sass|scss)`,
-						`${PROJECT_ROOT}/src/blocks/**/*.?(coffee|js|css|styl|less|sass|scss)`,
-						`${PROJECT_ROOT}/src/globals/**/*.?(coffee|js|css|styl|less|sass|scss)`,
-						`${PROJECT_ROOT}/src/vendor/**/*.?(coffee|js|css|styl|less|sass|scss)`
-					],
-					fn: (event, file) => {
-						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-						switch (event) {
-							case 'add':
-							case 'change':
-							case 'unlink':
-								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-								webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-								break;
-							// no default
-						}
-					}
-				},
-				{
-					match: `${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`,
-					fn: (event, file) => {
-						const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-						if (event === 'change') {
-							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-							isCommonsUpdate = true;
-							handleChanges(null, null, null);
-						}
-					}
-				}
-			]
+		await Promise.all(renderTemplates).then(() => {
+			isBlocksUpdate = false;
+			isCommonsUpdate = false;
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		});
-	},
-	webpackDevConfig.output.path,
-	compiler.outputFileSystem,
-	compiler,
-	browserSync
-);
+	}
+
+	async function handleChanges(templateWithData, template, block, data) {
+		const templateBasename = template ? basename(template, extname(template)) : template;
+		if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
+			if (templatesNoGridSize) {
+				await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
+			}
+		} else {
+			const templateBranches = getTemplateBranches(templateWithData, template, block);
+			await processData(templateBranches, templateBranches.length, globalData);
+		}
+	}
+
+	async function handleEmailTemplate(filePath) {
+		const compiledEmailTemplate = await compileEmailTemplate(filePath);
+		await renderTemplate(compiledEmailTemplate, compiledEmailTemplate.to);
+		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+	}
+
+	browserSync.init({
+		ui: {
+			port: uiPort
+		},
+		open: false,
+		notify: false,
+		reloadOnRestart: true,
+		// reloadDebounce: 100,
+		watchOptions: chokidarWatchConfig,
+		port: devServerConfig.port,
+		server: {
+			baseDir: PROD_OUTPUT_DIRECTORY,
+			middleware: [
+				webpackDevMiddlewareInstance
+				// webpackHotMiddlewareInstance
+			]
+		},
+		files: [
+			{
+				match: `${PROJECT_ROOT}/src/data/*.(yml|yaml)`,
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					switch (event) {
+						case 'change':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							handleChanges(null, null, null, resolvedFile);
+							break;
+						case 'add':
+						case 'unlink':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+							break;
+						// no default
+					}
+				}
+			},
+			{
+				match: `${PROJECT_ROOT}/src/*.?(pug|jade)`,
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					switch (event) {
+						case 'change':
+							if (basename(resolvedFile, extname(resolvedFile)) !== 'sitegrid') {
+								console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+								handleChanges(resolvedFile, null, null);
+							}
+							break;
+						case 'add':
+						case 'unlink':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+							break;
+						// no default
+					}
+				}
+			},
+			{
+				match: `${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`,
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					switch (event) {
+						case 'change':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							handleChanges(null, resolvedFile, null);
+							break;
+						case 'add':
+						case 'unlink':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							if (getTemplateBranches(null, resolvedFile, null).length) {
+								changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+							} else {
+								handleChanges(null, resolvedFile, null);
+							}
+							break;
+						// no default
+					}
+				}
+			},
+			{
+				match: `${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`,
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					switch (event) {
+						case 'add':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							isBlocksUpdate = true;
+							addBlockToTemplateBranch(resolvedFile);
+							handleChanges(null, null, resolvedFile);
+							break;
+						case 'change':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							handleChanges(null, null, resolvedFile);
+							break;
+						case 'unlink':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							isBlocksUpdate = true;
+							handleChanges(null, null, resolvedFile);
+							break;
+						// no default
+					}
+				}
+			},
+			{
+				match: [
+					`${PROJECT_ROOT}/src/assets/**/*.?(coffee|js|css|styl|less|sass|scss)`,
+					`${PROJECT_ROOT}/src/blocks/**/*.?(coffee|js|css|styl|less|sass|scss)`,
+					`${PROJECT_ROOT}/src/globals/**/*.?(coffee|js|css|styl|less|sass|scss)`,
+					`${PROJECT_ROOT}/src/vendor/**/*.?(coffee|js|css|styl|less|sass|scss)`
+				],
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					switch (event) {
+						case 'add':
+						case 'change':
+						case 'unlink':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+							break;
+						// no default
+					}
+				}
+			},
+			{
+				match: `${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`,
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					if (event === 'change') {
+						console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+						isCommonsUpdate = true;
+						handleChanges(null, null, null);
+					}
+				}
+			},
+			{
+				match: `${PROJECT_ROOT}/src/emails/**/*.?(mjml|pug|jade|html)`,
+				fn: (event, file) => {
+					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
+					switch (event) {
+						case 'change':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							handleEmailTemplate(resolvedFile);
+							break;
+						case 'add':
+						case 'unlink':
+							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+							changeFileTimestamp(1, join(PROJECT_ROOT, 'bin', 'dev.server.js'));
+							break;
+						// no default
+					}
+				}
+			}
+		]
+	});
+});

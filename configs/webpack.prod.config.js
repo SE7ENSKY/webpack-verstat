@@ -5,6 +5,7 @@ const {
 	green,
 	bold
 } = require('chalk');
+const glob = require('glob');
 const perfectionist = require('perfectionist');
 const {
 	optimize: {
@@ -25,6 +26,7 @@ const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
 const {
 	PROJECT_ROOT,
+	SOURCE_DIRECTORY,
 	PROD_OUTPUT_DIRECTORY,
 	BUNDLE_STATISTICS,
 	generateEntry,
@@ -86,6 +88,12 @@ const prodConfig = {
 		]
 	},
 	plugins: [
+		new BeautifyHtmlPlugin({
+			ocd: true,
+			ignore_files: glob.sync(`${PROJECT_ROOT}/src/emails/**/*.mjml`).map((item) => {
+				return item.replace(`${SOURCE_DIRECTORY}/`, '').replace('.mjml', '.html');
+			})
+		}),
 		new ExtractTextPlugin({
 			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].css`,
 			allChunks: true
@@ -103,7 +111,6 @@ const prodConfig = {
 		// 	filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
 		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
 		// }),
-		new BeautifyHtmlPlugin({ ocd: true }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
 		// new CriticalPlugin({
 		// 	src: 'index.html',
