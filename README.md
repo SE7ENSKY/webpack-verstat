@@ -115,7 +115,6 @@ verstat // project name
 ├── bin 
 │   ├── core.js
 │   ├── dev.server.js
-│   ├── email.engine.js
 │   ├── prod.build.js
 │   └── prod.server.js
 ├── configs
