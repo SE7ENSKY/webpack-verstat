@@ -1,8 +1,9 @@
 {
   "name": "webpack-verstat",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Frontend project for Verstat Template",
   "scripts": {
+    "validate": "node bin/html.validator.js",
     "build:min": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production node bin/prod.build.js",
     "build": "cross-env TIMESTAMP=true NODE_ENV=production node bin/prod.build.js",
     "prod": "cross-env NODE_ENV=production UGLIFY=true SOURCEMAP=true nodemon -e js --watch configs --watch bin bin/prod.server.js",
@@ -27,7 +28,7 @@
     "beautify-html-plugin": "^1.2.0",
     "browser-sync": "^2.23.5",
     "chalk": "^2.3.0",
-    "circular-dependency-plugin": "^4.3.0",
+    "circular-dependency-plugin": "^4.4.0",
     "coffee-loader": "^0.9.0",
     "coffeescript": "^2.1.1",
     "console-stamp": "^0.2.6",
@@ -47,6 +48,7 @@
     "glob": "^7.1.2",
     "happypack": "^4.0.0",
     "html-loader": "^0.5.1",
+    "html-validator": "^2.2.3",
     "html-webpack-plugin": "^2.30.1",
     "imports-loader": "^0.7.1",
     "js-yaml": "^3.10.0",
@@ -60,7 +62,7 @@
     "less": "^2.7.3",
     "less-loader": "^4.0.5",
     "markdown-loader": "^2.0.1",
-    "mjml": "^3.3.5",
+    "mjml": "^4.0.0-alpha.5",
     "modernizr-loader": "^1.0.1",
     "nib": "^1.1.2",
     "node-sass": "^4.7.2",
@@ -91,7 +93,6 @@
     "yaml-loader": "^0.5.0"
   },
   "dependencies": {
-    "bootstrap": "^4.0.0-beta.3",
     "fastclick": "^1.0.6",
     "jquery": "^3.2.1",
     "lodash": "^4.17.4",

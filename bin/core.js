@@ -20,9 +20,12 @@ const {
 	sep
 } = require('path');
 const glob = require('glob');
-const { bold } = require('chalk');
+const {
+	bold,
+	red
+} = require('chalk');
 const { safeLoad } = require('js-yaml');
-const { mjml2html } = require('mjml');
+const mjml = require('mjml');
 // const { merge } = require('lodash');
 const {
 	compileFile,
@@ -34,7 +37,6 @@ const supportsColor = require('supports-color');
 const { loadFront } = require('verstat-front-matter');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-// TODO async error handling
 
 // storages
 const SITE_GRID = [];
@@ -62,6 +64,7 @@ let GLOBAL_DATA;
 let COMMONS;
 let EMAILS;
 let EMAILS_SIZE;
+const COMPILE_TEMPLATE_DELAY = 20;
 const ASSETS_NAMING_CONVENTION = {
 	images: 'i',
 	fonts: 'f',
@@ -86,8 +89,8 @@ function customReadFileSync(file, encoding = 'utf8') {
 
 function customReadFile(file, encoding = 'utf8') {
 	return new Promise((resolvePromise, rejectPromise) => {
-		readFile(file, { encoding }, (err, data) => {
-			if (err) rejectPromise(new Error(err));
+		readFile(file, { encoding }, (error, data) => {
+			if (error) throw error;
 			resolvePromise(data);
 		});
 	});
@@ -112,8 +115,8 @@ function normalizeArray(arr) {
 
 function getFiles(filePath, index) {
 	return new Promise((resolvePromise, rejectPromise) => {
-		glob(filePath, (err, matches) => {
-			if (err) rejectPromise(new Error(err));
+		glob(filePath, (error, matches) => {
+			if (error) throw error;
 			if (index !== undefined) {
 				resolvePromise(normalize(matches[index]));
 			} else {
@@ -138,13 +141,13 @@ function generateEntry(server) {
 	return null;
 }
 
-function gererateVendor() {
-	const vendor = glob.sync(`${PROJECT_ROOT}/src/assets/*.js`);
-	if (vendor.length) {
-		return `${basename(vendor[0], '.js')}.vendor`;
-	}
-	return 'vendor';
-}
+// function gererateVendor() {
+// 	const vendor = glob.sync(`${PROJECT_ROOT}/src/assets/*.js`);
+// 	if (vendor.length) {
+// 		return `${basename(vendor[0], '.js')}.vendor`;
+// 	}
+// 	return 'vendor';
+// }
 
 function getModifiedNib(filePath) {
 	const dirPath = dirname(filePath);
@@ -154,16 +157,25 @@ function getModifiedNib(filePath) {
 	return join(dirPath, 'nib-mod.styl');
 }
 
-function shortenPath(filePath) {
-	if (isAbsolute(filePath)) {
-		return filePath.replace(PROJECT_ROOT, basename(PROJECT_ROOT)).replace(/(\\{2}|\\)/g, '/');
-	}
+function toUNIXPath(filePath) {
 	return filePath.replace(/(\\{2}|\\)/g, '/');
 }
 
-function boldString(filePath) {
-	if (supportsColor) return bold(filePath);
-	return filePath;
+function shortenPath(filePath) {
+	if (isAbsolute(filePath)) {
+		return toUNIXPath(filePath.replace(PROJECT_ROOT, basename(PROJECT_ROOT)));
+	}
+	return toUNIXPath(filePath);
+}
+
+function boldString(str) {
+	if (supportsColor) return bold(str);
+	return str;
+}
+
+function redString(str) {
+	if (supportsColor) return red(str);
+	return str;
 }
 
 function extractTitleFromHTML(fileContent, openTag = '<title>', closeTag = '</title>') {
@@ -181,20 +193,20 @@ async function removeDirectory(filePath) {
 function createDirectory(filePath) {
 	return ensureDir(filePath)
 		.then(() => { console.log(boldString('addDir:'), shortenPath(filePath)); })
-		.catch((err) => { throw err; });
+		.catch((error) => { throw error; });
 }
 
 function changeFileTimestamp(number, filePath, cb) {
 	if (number < 0) {
 		const timeThen = (Date.now() / 1000) - Math.abs(number);
-		utimes(filePath, timeThen, timeThen, (err) => {
-			if (err) throw err;
+		utimes(filePath, timeThen, timeThen, (error) => {
+			if (error) throw error;
 			if (cb) cb();
 		});
 	} else if (number > 0) {
 		const timeThen = (Date.now() / 1000) + Math.abs(number);
-		utimes(filePath, timeThen, timeThen, (err) => {
-			if (err) throw err;
+		utimes(filePath, timeThen, timeThen, (error) => {
+			if (error) throw error;
 			if (cb) cb();
 		});
 	}
@@ -203,10 +215,9 @@ function changeFileTimestamp(number, filePath, cb) {
 function renderTemplate(data, directoryPath) {
 	if (Object.keys(data).length) {
 		return new Promise((resolvePromise, rejectPromise) => {
-			// TODO перевірити на windows
 			const filePath = join(directoryPath, data.filename);
-			outputFile(filePath, data.content, (err) => {
-				if (err) rejectPromise(new Error(err));
+			outputFile(filePath, data.content, (error) => {
+				if (error) throw error;
 				changeFileTimestamp(-10, filePath, () => {
 					resolvePromise(console.log(boldString('add:'), shortenPath(filePath)));
 				});
@@ -218,8 +229,8 @@ function renderTemplate(data, directoryPath) {
 function siteGridEngine(title, url, layout) {
 	SITE_GRID.push({
 		title: title || null,
-		url: url.replace(extname(url), '.html').replace(SOURCE_DIRECTORY, '').replace(/(\\{2}|\\)/g, '/'),
-		layout: layout.replace(join(SOURCE_DIRECTORY, sep), '').replace(/(\\{2}|\\)/g, '/')
+		url: toUNIXPath(url.replace(extname(url), '.html').replace(SOURCE_DIRECTORY, '')),
+		layout: toUNIXPath(layout.replace(join(SOURCE_DIRECTORY, sep), ''))
 	});
 }
 
@@ -312,13 +323,14 @@ async function compilePUG(filePath, fileExtname) {
 }
 
 async function compileMJML(filePath, fileExtname) {
-	const { error, html } = mjml2html(await customReadFile(filePath));
-	if (error) return error;
+	const { errors, html } = mjml(await customReadFile(filePath));
+	if (errors.length) {
+		throw `[${basename(filePath)}] ${errors[0].formattedMessage}`;
+	}
 	return generateEmailTemplateData(filePath, fileExtname, html);
 }
 
 function generateEmailTemplateData(filePath, fileExtname, fileContent) {
-	// TODO перевірити на windows
 	const fileDirname = dirname(filePath);
 	siteGridEngine(
 		fileContent ? extractTitleFromHTML(fileContent) : fileContent,
@@ -371,104 +383,119 @@ async function getGlobalData(data) {
 	return GLOBAL_DATA;
 }
 
-async function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, commons = COMMONS) {
-	const extractedData = loadFront(filePath, '\/\/---', 'content');
-	const modifiedExtractedData = Object.assign({}, extractedData);
-	delete modifiedExtractedData.layout;
-	delete modifiedExtractedData.content;
-	const extractedDataLayout = extractedData.layout;
-	const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) > -1) : -1;
-	if (layoutIndex > -1) {
-		const layout = LAYOUTS[layoutIndex];
-		const fn = compileFile(layout, { compileDebug: true });
-		siteGridEngine(
-			extractedData.title,
-			filePath,
-			extname(extractedDataLayout).length ? extractedDataLayout : `${extractedDataLayout}${extname(layout)}`
-		);
-		templateDependenciesEngine(
-			layout,
-			fn.dependencies.filter(item => item.indexOf(normalize('/layouts/')) > -1),
-			filePath
-		);
-		const initialLocals = {
-			NODE_ENV: process.env.NODE_ENV,
-			renderBlock: function renderBlockEngine(blockName, data) {
-				data.renderBlock = function (blockName, data) {
-					return renderBlockEngine(blockName, data);
-				};
-				return compileBlock(bemto, blockName[0], blocks, commons)(data);
-			},
-			file: modifiedExtractedData,
-			content: (function () {
-				const fn = compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
-				const initialLocals = {
-					renderBlock: function renderBlockEngine(blockName, data) {
-						data.renderBlock = function (blockName, data) {
-							return renderBlockEngine(blockName, data);
-						};
-						return compileBlock(bemto, blockName[0], blocks, commons)(data);
-					}
-				};
-				const locals = Object.assign({}, initialLocals, modifiedExtractedData, globalData);
-				return fn(locals);
-			})()
-		};
-		const locals = Object.assign({}, initialLocals, globalData);
-		console.log(boldString('compile branch:'), shortenPath(filePath));
-		return {
-			filename: `${basename(filePath, extname(filePath))}.html`,
-			from: SOURCE_DIRECTORY,
-			to: PAGES_DIRECTORY,
-			content: fn(locals)
-		};
-	}
-	console.log(boldString('compile branch:'), shortenPath(filePath));
-	return {};
+function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, commons = COMMONS) {
+	return new Promise((resolvePromise, rejectPromise) => {
+		setTimeout(() => {
+			try {
+				const extractedData = loadFront(filePath, '\/\/---', 'content');
+				const modifiedExtractedData = Object.assign({}, extractedData);
+				delete modifiedExtractedData.layout;
+				delete modifiedExtractedData.content;
+				const extractedDataLayout = extractedData.layout;
+				const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) > -1) : -1;
+				if (layoutIndex > -1) {
+					const layout = LAYOUTS[layoutIndex];
+					const fn = compileFile(layout, { compileDebug: true });
+					siteGridEngine(
+						extractedData.title,
+						filePath,
+						extname(extractedDataLayout).length ? extractedDataLayout : `${extractedDataLayout}${extname(layout)}`
+					);
+					templateDependenciesEngine(
+						layout,
+						fn.dependencies.filter(item => item.indexOf(normalize('/layouts/')) > -1),
+						filePath
+					);
+					const initialLocals = {
+						NODE_ENV: process.env.NODE_ENV,
+						renderBlock: function renderBlockEngine(blockName, data) {
+							data.renderBlock = function (blockName, data) {
+								return renderBlockEngine(blockName, data);
+							};
+							return compileBlock(bemto, blockName[0], blocks, commons)(data);
+						},
+						file: modifiedExtractedData,
+						content: (function () {
+							const fn = compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
+							const initialLocals = {
+								renderBlock: function renderBlockEngine(blockName, data) {
+									data.renderBlock = function (blockName, data) {
+										return renderBlockEngine(blockName, data);
+									};
+									return compileBlock(bemto, blockName[0], blocks, commons)(data);
+								}
+							};
+							const locals = Object.assign({}, initialLocals, modifiedExtractedData, globalData);
+							return fn(locals);
+						})()
+					};
+					const locals = Object.assign({}, initialLocals, globalData);
+					console.log(boldString('compile branch:'), shortenPath(filePath));
+					resolvePromise({
+						filename: `${basename(filePath, extname(filePath))}.html`,
+						from: SOURCE_DIRECTORY,
+						to: PAGES_DIRECTORY,
+						content: fn(locals)
+					});
+				} else {
+					console.log(boldString('compile branch:'), shortenPath(filePath));
+					return resolvePromise({});
+				}
+			} catch (error) {
+				if (error.src) delete error.src;
+				rejectPromise(error);
+			}
+		}, COMPILE_TEMPLATE_DELAY);
+	});
 }
 
 async function initTemplateEngine(cb) {
-	await removeDirectory(PROD_OUTPUT_DIRECTORY);
-	await removeDirectory(PAGES_DIRECTORY);
-	await createDirectory(PAGES_DIRECTORY);
-	TEMPLATES = await getFiles(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
-	TEMPLATES_GRID = await getFiles(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`, 0);
-	TEMPLATES_NO_GRID = TEMPLATES_GRID ? await getFiles(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`) : TEMPLATES.slice();
-	TEMPLATES_NO_GRID_SIZE = TEMPLATES_NO_GRID.length;
-	LAYOUTS = await getFiles(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
-	BLOCKS = await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
-	GLOBAL_DATA = await getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
-	COMMONS = await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0));
-	EMAILS = await getFiles(`${PROJECT_ROOT}/src/emails/**/*.?(pug|jade|html|mjml)`);
-	EMAILS_SIZE = EMAILS.length;
-	const renderTemplates = [];
-	const compileTemplates = [];
-	if (process.env.SOURCEMAP) {
-		SITE_GRID.push({
-			title: BUNDLE_STATISTICS.title,
-			url: BUNDLE_STATISTICS.url,
-			layout: null
-		});
-	}
-	for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i++) {
-		compileTemplates.push(compileTemplate(TEMPLATES_NO_GRID[i]));
-	}
-	if (await pathExists(EMAILS_DIRECTORY)) {
-		for (let i = 0; i < EMAILS_SIZE; i++) {
-			compileTemplates.push(compileEmailTemplate(EMAILS[i]));
+	try {
+		await removeDirectory(PROD_OUTPUT_DIRECTORY);
+		await removeDirectory(PAGES_DIRECTORY);
+		await createDirectory(PAGES_DIRECTORY);
+		TEMPLATES = await getFiles(`${PROJECT_ROOT}/src/*.?(pug|jade)`);
+		TEMPLATES_GRID = await getFiles(`${PROJECT_ROOT}/src/sitegrid.?(pug|jade)`, 0);
+		TEMPLATES_NO_GRID = TEMPLATES_GRID ? await getFiles(`${PROJECT_ROOT}/src/!(sitegrid).?(pug|jade)`) : TEMPLATES.slice();
+		TEMPLATES_NO_GRID_SIZE = TEMPLATES_NO_GRID.length;
+		LAYOUTS = await getFiles(`${PROJECT_ROOT}/src/layouts/*.?(pug|jade)`);
+		BLOCKS = await getFiles(`${PROJECT_ROOT}/src/blocks/**/*.?(pug|jade)`);
+		GLOBAL_DATA = await getGlobalData(await getFiles(`${PROJECT_ROOT}/src/data/*.?(yml|yaml)`));
+		COMMONS = await customReadFile(await getFiles(`${PROJECT_ROOT}/src/globals/commons.?(pug|jade)`, 0));
+		EMAILS = await getFiles(`${PROJECT_ROOT}/src/emails/**/*.?(pug|jade|html|mjml)`);
+		EMAILS_SIZE = EMAILS.length;
+		const renderTemplates = [];
+		const compileTemplates = [];
+		if (process.env.SOURCEMAP) {
+			SITE_GRID.push({
+				title: BUNDLE_STATISTICS.title,
+				url: BUNDLE_STATISTICS.url,
+				layout: null
+			});
 		}
-	}
-	const compiledTemplates = await Promise.all(compileTemplates);
-	if (TEMPLATES_GRID) {
-		compiledTemplates.push(await compileSiteGrid(TEMPLATES_GRID));
-	}
-	for (let i = 0, compiledTemplatesSize = compiledTemplates.length; i < compiledTemplatesSize; i++) {
-		const compiledTemplate = compiledTemplates[i];
-		renderTemplates.push(renderTemplate(compiledTemplate, compiledTemplate.to));
-	}
-	await Promise.all(renderTemplates);
-	if (cb) {
-		cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);
+		for (let i = 0; i < TEMPLATES_NO_GRID_SIZE; i++) {
+			compileTemplates.push(compileTemplate(TEMPLATES_NO_GRID[i]));
+		}
+		if (await pathExists(EMAILS_DIRECTORY)) {
+			for (let i = 0; i < EMAILS_SIZE; i++) {
+				compileTemplates.push(compileEmailTemplate(EMAILS[i]));
+			}
+		}
+		const compiledTemplates = await Promise.all(compileTemplates);
+		if (TEMPLATES_GRID) {
+			compiledTemplates.push(await compileSiteGrid(TEMPLATES_GRID));
+		}
+		for (let i = 0, compiledTemplatesSize = compiledTemplates.length; i < compiledTemplatesSize; i++) {
+			const compiledTemplate = compiledTemplates[i];
+			renderTemplates.push(renderTemplate(compiledTemplate, compiledTemplate.to));
+		}
+		await Promise.all(renderTemplates);
+		if (cb) {
+			cb(TEMPLATES_NO_GRID, TEMPLATES_NO_GRID_SIZE, GLOBAL_DATA);
+		}
+	} catch (error) {
+		if (error.src) delete error.src;
+		console.log(boldString(redString('error:')), error);
 	}
 }
 
@@ -481,7 +508,7 @@ function addHtmlWebpackPlugins() {
 		} else {
 			if (item.indexOf('/emails/') > -1) {
 				inject = false;
-				filename = item.replace(`${PAGES_DIRECTORY}/`, '');
+				filename = item.replace(`${toUNIXPath(PAGES_DIRECTORY)}/`, '');
 			} else {
 				inject = 'body';
 			}
@@ -501,6 +528,7 @@ module.exports = {
 	PROJECT_ROOT,
 	PROD_OUTPUT_DIRECTORY,
 	DEV_OUTPUT_DIRECTORY,
+	OUTPUT_DIRECTORY,
 	SOURCE_DIRECTORY,
 	PAGES_DIRECTORY,
 	BUNDLE_STATISTICS,
@@ -512,9 +540,9 @@ module.exports = {
 	customReadFile,
 	getFiles,
 	generateEntry,
-	gererateVendor,
 	getGlobalData,
 	boldString,
+	redString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
 	shortenPath,

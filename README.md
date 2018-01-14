@@ -1,7 +1,6 @@
 # Verstat v2
-Release :tada:
 
-**NOTE:** All paths in css and html start with a sign ```/``` . For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
+**NOTE:** All paths in css and html start with a sign ```/``` . For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader). If you encountered error ```[nodemon] clean exit - waiting for changes before restart``` during build process just type ```rs``` in your terminal.
 
 **Languages**
 ```
@@ -42,6 +41,7 @@ Release :tada:
 19. yarn
 20. Modernizr (modernizr-loader)
 21. Lazy Loading (lozad)
+22. Html validator
 ```
 
 **Assets naming convention**
@@ -109,12 +109,22 @@ yarn build:min
 npm run build:min
 ```
 
+```
+// only for production, after build or build:min
+// yarn
+yarn validate
+
+// npm
+npm run validate
+```
+
 **Project structure**
 ```
 verstat // project name
 ├── bin 
 │   ├── core.js
 │   ├── dev.server.js
+│   ├── html.validator.js
 │   ├── prod.build.js
 │   └── prod.server.js
 ├── configs
@@ -123,6 +133,7 @@ verstat // project name
 │   ├── console.output.config.js
 │   ├── cssnano.base.config.js
 │   ├── cssnano.minify.config.js
+│   ├── html.validator.config.js
 │   ├── perfectionist.config.js
 │   ├── postcss.config.js
 │   ├── postcss.loader.config.js

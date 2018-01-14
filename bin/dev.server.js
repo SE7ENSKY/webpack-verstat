@@ -12,7 +12,6 @@ const {
 } = require('path');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
-// const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../configs/webpack.dev.config');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
@@ -23,6 +22,7 @@ const {
 	customReadFile,
 	getFiles,
 	boldString,
+	redString,
 	addBlockToTemplateBranch,
 	changeFileTimestamp,
 	shortenPath,
@@ -45,10 +45,8 @@ const devServerConfig = {
 	},
 	compress: false,
 	hot: false,
-	// hot: true,
 	lazy: false,
 	inline: false,
-	// inline: true,
 	https: false,
 	host: 'localhost',
 	port,
@@ -56,14 +54,13 @@ const devServerConfig = {
 };
 
 // fix for '[nodemon] app crashed' and pug exceptions
-process.on('uncaughtException', err => console.log(`Caught exception: ${err}`));
+process.on('uncaughtException', error => console.log(boldString(redString('caught exception:')), error));
 
 const compiler = webpack(webpackDevConfig);
 initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 	compiler.apply(...addHtmlWebpackPlugins());
 
 	const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
-	// const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
 	let isBlocksUpdate = false;
 	let isCommonsUpdate = false;
 
@@ -75,35 +72,51 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 		for (let i = 0; i < templatesSize; i++) {
 			compileTemplates.push(compileTemplate(templates[i], data, blocks, commons));
 		}
-		const compiledTemplates = await Promise.all(compileTemplates);
-		const compiledTemplatesSize = compiledTemplates.length;
-		for (let i = 0; i < compiledTemplatesSize; i++) {
-			const compiledTemplate = compiledTemplates[i];
-			renderTemplates.push(renderTemplate(compiledTemplate, compiledTemplate.to));
-		}
-		await Promise.all(renderTemplates).then(() => {
-			isBlocksUpdate = false;
-			isCommonsUpdate = false;
-			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-		});
+		await Promise.all(compileTemplates)
+			.then((compiledTemplates) => {
+				const compiledTemplatesSize = compiledTemplates.length;
+				for (let i = 0; i < compiledTemplatesSize; i++) {
+					const compiledTemplate = compiledTemplates[i];
+					renderTemplates.push(renderTemplate(compiledTemplate, compiledTemplate.to));
+				}
+				Promise.all(renderTemplates).then(() => {
+					isBlocksUpdate = false;
+					isCommonsUpdate = false;
+					webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+				});
+			})
+			.catch((error) => {
+				if (error.src) delete error.src;
+				console.log(boldString(redString('error:')), error);
+			});
 	}
 
 	async function handleChanges(templateWithData, template, block, data) {
-		const templateBasename = template ? basename(template, extname(template)) : template;
-		if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
-			if (templatesNoGridSize) {
-				await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
+		try {
+			const templateBasename = template ? basename(template, extname(template)) : template;
+			if ((!templateWithData && !block) && (!template || templateBasename === 'root' || templateBasename === 'main')) {
+				if (templatesNoGridSize) {
+					await processData(templatesNoGrid, templatesNoGridSize, data ? await getGlobalData(data) : data);
+				}
+			} else {
+				const templateBranches = getTemplateBranches(templateWithData, template, block);
+				await processData(templateBranches, templateBranches.length, globalData);
 			}
-		} else {
-			const templateBranches = getTemplateBranches(templateWithData, template, block);
-			await processData(templateBranches, templateBranches.length, globalData);
+		} catch (error) {
+			if (error.src) delete error.src;
+			console.log(boldString(redString('error 2:')), error);
 		}
 	}
 
 	async function handleEmailTemplate(filePath) {
-		const compiledEmailTemplate = await compileEmailTemplate(filePath);
-		await renderTemplate(compiledEmailTemplate, compiledEmailTemplate.to);
-		webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		try {
+			const compiledEmailTemplate = await compileEmailTemplate(filePath);
+			await renderTemplate(compiledEmailTemplate, compiledEmailTemplate.to);
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		} catch (error) {
+			if (error.src) delete error.src;
+			console.log(boldString(redString('error:')), error);
+		}
 	}
 
 	browserSync.init({
@@ -120,7 +133,6 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 			baseDir: PROD_OUTPUT_DIRECTORY,
 			middleware: [
 				webpackDevMiddlewareInstance
-				// webpackHotMiddlewareInstance
 			]
 		},
 		files: [

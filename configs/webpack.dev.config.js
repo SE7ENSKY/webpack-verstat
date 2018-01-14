@@ -1,6 +1,5 @@
 const { join } = require('path');
 const nib = require('nib');
-// const { HotModuleReplacementPlugin } = require('webpack');
 const HappyPack = require('happypack');
 const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const webpackMerge = require('webpack-merge');
@@ -15,10 +14,7 @@ const webpackBaseConfig = require('./webpack.base.config');
 
 
 const devConfig = {
-	entry: generateEntry([
-		'event-source-polyfill'
-		// 'webpack-hot-middleware/client'
-	]),
+	entry: generateEntry(['event-source-polyfill']),
 	output: {
 		path: DEV_OUTPUT_DIRECTORY,
 		publicPath: '/',
@@ -46,7 +42,6 @@ const devConfig = {
 		]
 	},
 	plugins: [
-		// new HotModuleReplacementPlugin(),
 		new HappyPack({
 			id: 'css',
 			verbose: false,
