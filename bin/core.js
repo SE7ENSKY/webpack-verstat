@@ -316,13 +316,21 @@ function getTemplateBranches(templateWithData, template, block) {
 }
 
 function compilePUG(filePath, fileExtname) {
-	const fn = compile(customReadFileSync(filePath), { compileDebug: true });
+	const content = customReadFileSync(filePath);
+	if (!content.length) {
+		return generateEmailTemplateData(filePath, fileExtname, null);
+	}
+	const fn = compile(content, { compileDebug: true });
 	const locals = {};
 	return generateEmailTemplateData(filePath, fileExtname, fn(locals));
 }
 
 function compileMJML(filePath, fileExtname) {
-	const { errors, html } = mjml(customReadFileSync(filePath));
+	const content = customReadFileSync(filePath);
+	if (!content.length) {
+		return generateEmailTemplateData(filePath, fileExtname, null);
+	}
+	const { errors, html } = mjml(content);
 	if (errors.length) {
 		throw `[${basename(filePath)}] ${errors[0].formattedMessage}`;
 	}
@@ -330,9 +338,10 @@ function compileMJML(filePath, fileExtname) {
 }
 
 function generateEmailTemplateData(filePath, fileExtname, fileContent) {
+	if (!fileContent) return {};
 	const fileDirname = dirname(filePath);
 	siteGridEngine(
-		fileContent ? extractTitleFromHTML(fileContent) : fileContent,
+		extractTitleFromHTML(fileContent),
 		filePath,
 		filePath.replace(`${SOURCE_DIRECTORY}${sep}`, '')
 	);
@@ -354,7 +363,8 @@ function compileEmailTemplate(filePath) {
 		case '.jade':
 			return compilePUG(filePath, fileExtname);
 		case '.html':
-			return generateEmailTemplateData(filePath, fileExtname, customReadFileSync(filePath));
+			const content = customReadFileSync(filePath);
+			return generateEmailTemplateData(filePath, fileExtname, content.length ? content : null);
 		// no default
 	}
 }
