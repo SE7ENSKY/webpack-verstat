@@ -82,6 +82,10 @@ const SUPPORTED_BROWSERS_LIST = [
 ];
 
 
+function customReadFileSync(file, encoding = 'utf8') {
+	return readFileSync(file, { encoding });
+}
+
 function customReadFile(file, encoding = 'utf8') {
 	return new Promise((resolvePromise, rejectPromise) => {
 		readFile(file, { encoding }, (error, data) => {
@@ -146,7 +150,7 @@ function generateEntry(server) {
 
 function getModifiedNib(filePath) {
 	const dirPath = dirname(filePath);
-	if (readFileSync(filePath).indexOf('path: fallback') > -1) {
+	if (customReadFileSync(filePath).indexOf('path: fallback') > -1) {
 		return join(dirPath, 'nib-mod-fallback.styl');
 	}
 	return join(dirPath, 'nib-mod.styl');
@@ -230,7 +234,7 @@ function siteGridEngine(title, url, layout) {
 }
 
 function compileSiteGrid(filePath) {
-	const fn = compile(readFileSync(filePath), { compileDebug: true });
+	const fn = compile(customReadFileSync(filePath), { compileDebug: true });
 	const locals = { siteGrid: SITE_GRID };
 	console.log(boldString('compile sitegrid:'), shortenPath(filePath));
 	return {
@@ -255,7 +259,7 @@ function compileBlock(mod, block, blocks, commons) {
 	if (index > -1) {
 		const blockPath = blocks[index];
 		TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, blockPath);
-		return compile(`${commons}\n${mod}\n${readFileSync(blockPath)}`, { compileDebug: true });
+		return compile(`${commons}\n${mod}\n${customReadFileSync(blockPath)}`, { compileDebug: true });
 	}
 	TEMPLATE_DEPENDENCIES.get(TEMPLATE_DEPENDENCIES_KEY).blocks.set(block, null);
 	return compile(`div [block ${block} not found]`, { compileDebug: true });
@@ -312,13 +316,13 @@ function getTemplateBranches(templateWithData, template, block) {
 }
 
 function compilePUG(filePath, fileExtname) {
-	const fn = compile(readFileSync(filePath), { compileDebug: true });
+	const fn = compile(customReadFileSync(filePath), { compileDebug: true });
 	const locals = {};
 	return generateEmailTemplateData(filePath, fileExtname, fn(locals));
 }
 
 function compileMJML(filePath, fileExtname) {
-	const { errors, html } = mjml(readFileSync(filePath));
+	const { errors, html } = mjml(customReadFileSync(filePath));
 	if (errors.length) {
 		throw `[${basename(filePath)}] ${errors[0].formattedMessage}`;
 	}
@@ -350,7 +354,7 @@ function compileEmailTemplate(filePath) {
 		case '.jade':
 			return compilePUG(filePath, fileExtname);
 		case '.html':
-			return generateEmailTemplateData(filePath, fileExtname, readFileSync(filePath));
+			return generateEmailTemplateData(filePath, fileExtname, customReadFileSync(filePath));
 		// no default
 	}
 }
