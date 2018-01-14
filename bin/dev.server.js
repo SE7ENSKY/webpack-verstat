@@ -72,23 +72,14 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 		for (let i = 0; i < templatesSize; i++) {
 			compileTemplates.push(compileTemplate(templates[i], data, blocks, commons));
 		}
-		await Promise.all(compileTemplates)
-			.then((compiledTemplates) => {
-				const compiledTemplatesSize = compiledTemplates.length;
-				for (let i = 0; i < compiledTemplatesSize; i++) {
-					const compiledTemplate = compiledTemplates[i];
-					renderTemplates.push(renderTemplate(compiledTemplate, compiledTemplate.to));
-				}
-				Promise.all(renderTemplates).then(() => {
-					isBlocksUpdate = false;
-					isCommonsUpdate = false;
-					webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-				});
-			})
-			.catch((error) => {
-				if (error.src) delete error.src;
-				console.log(boldString(redString('error:')), error);
-			});
+		for (let i = 0, compileTemplatesSize = compileTemplates.length; i < compileTemplatesSize; i++) {
+			renderTemplates.push(renderTemplate(compileTemplates[i], compileTemplates[i].to));
+		}
+		Promise.all(renderTemplates).then(() => {
+			isBlocksUpdate = false;
+			isCommonsUpdate = false;
+			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
+		});
 	}
 
 	async function handleChanges(templateWithData, template, block, data) {
@@ -104,13 +95,14 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 			}
 		} catch (error) {
 			if (error.src) delete error.src;
-			console.log(boldString(redString('error 2:')), error);
+			if (error.mark) delete error.mark;
+			console.log(boldString(redString('error:')), error);
 		}
 	}
 
 	async function handleEmailTemplate(filePath) {
 		try {
-			const compiledEmailTemplate = await compileEmailTemplate(filePath);
+			const compiledEmailTemplate = compileEmailTemplate(filePath);
 			await renderTemplate(compiledEmailTemplate, compiledEmailTemplate.to);
 			webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 		} catch (error) {
