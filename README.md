@@ -1,7 +1,6 @@
 # Verstat v2
-Release :tada:
 
-**NOTE:** All paths in css and html start with a sign ```/``` . For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader).
+**NOTE:** All paths in css and html start with a sign ```/``` . For [Modernizr](https://github.com/Modernizr/Modernizr) we use [modernizr-loader](https://github.com/peerigon/modernizr-loader). If you encountered error ```[nodemon] clean exit - waiting for changes before restart``` during build process just type ```rs``` in your terminal.
 
 **Languages**
 ```
@@ -24,8 +23,8 @@ Release :tada:
  1. Multi page applications
  2. Cross-platform build system
  3. Webpack
- 4. Code splitting
- 5. Hot Reloading
+ 4. Critical CSS (webpack-plugin-critical)
+ 5. Service Worker (offline-plugin, HTTPS protocol needed)
  6. happypack
  7. Babel/ECMAScript 6+
  8. ESLint
@@ -33,7 +32,7 @@ Release :tada:
 10. UglifyJS
 11. nib
 12. Autoprefixer
-13. cssnext
+13. Webpack Visualizer
 14. perfectionist
 15. CSS MQPacker
 16. cssnano
@@ -41,16 +40,14 @@ Release :tada:
 18. Browsersync
 19. yarn
 20. Modernizr (modernizr-loader)
-21. Critical CSS (webpack-plugin-critical)
-22. Webpack Visualizer
-23. Service Worker (offline-plugin, HTTPS protocol needed)
-24. Lazy Loading (lozad)
+21. Lazy Loading (lozad)
+22. Html validator
 ```
 
 **Assets naming convention**
 
 ```
-// bin/utils.js
+// bin/core.js
 const ASSETS_NAMING_CONVENTION = {
   images: 'i',
   fonts: 'f',
@@ -63,7 +60,7 @@ const ASSETS_NAMING_CONVENTION = {
 **Requirements**
 
 ```
-node: ^7.0.0
+node: ^7.6.0
 npm: ^4.0.0
 ```
 
@@ -112,14 +109,36 @@ yarn build:min
 npm run build:min
 ```
 
+```
+// only for production, after build or build:min
+// yarn
+yarn validate
+
+// npm
+npm run validate
+```
+
 **Project structure**
 ```
 verstat // project name
 ├── bin 
+│   ├── core.js
 │   ├── dev.server.js
-│   ├── prod.server.js
-│   └── utils.js
-├── config
+│   ├── html.validator.js
+│   ├── prod.build.js
+│   └── prod.server.js
+├── configs
+│   ├── babel.loader.config.js
+│   ├── chokidar.watch.config.js
+│   ├── console.output.config.js
+│   ├── cssnano.base.config.js
+│   ├── cssnano.minify.config.js
+│   ├── html.validator.config.js
+│   ├── perfectionist.config.js
+│   ├── postcss.config.js
+│   ├── postcss.loader.config.js
+│   ├── styles.postprocessor.config.js
+│   ├── webpack.base.config.js
 │   ├── webpack.dev.config.js
 │   └── webpack.prod.config.js
 ├── dist
@@ -135,22 +154,26 @@ verstat // project name
 │   │   └── container
 │   │       └── container.styl
 │   ├── data
-│   │   └── text.yml
+│   │   └── text.(yml|yaml)
+│   ├── emails // https://www.campaignmonitor.com/css/
+│   │   └── email-name-directory
+│   │       ├── email-name.(pug|jade|html|mjml)
+│   │       └── image.(jpg|png|gif)
 │   ├── globals
-│   │   ├── commons.pug
+│   │   ├── commons.(pug|jade)
 │   │   ├── functions.styl
 │   │   ├── mixins.styl
 │   │   └── variables.styl
 │   ├── layouts
-│   │   ├── frontPage.pug
-│   │   ├── main.pug
-│   │   └── root.pug
+│   │   ├── frontPage.(pug|jade)
+│   │   ├── main.(pug|jade)
+│   │   └── root.(pug|jade)
 │   ├── letters
 │   ├── pages // read-only
-│   ├── vendor // legacy code
-│   ├── index.pug
-│   ├── sitegrid.pug
-│   └── styles.pug
+│   ├── vendor // for code that is not in npm
+│   ├── index.(pug|jade)
+│   ├── sitegrid.(pug|jade)
+│   └── styles.(pug|jade)
 ├── .eslintignore
 ├── .eslintrc
 ├── .gitignore
