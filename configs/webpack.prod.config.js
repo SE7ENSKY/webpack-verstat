@@ -51,7 +51,7 @@ const prodConfig = {
 	output: {
 		path: PROD_OUTPUT_DIRECTORY,
 		publicPath: process.env.SOURCEMAP ? '/' : '',
-		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`
+		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js` // .[chunkhash:8].js
 	},
 	devtool: process.env.SOURCEMAP ? 'source-map' : false,
 	watch: false,
@@ -95,7 +95,7 @@ const prodConfig = {
 			})
 		}),
 		new ExtractTextPlugin({
-			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].css`,
+			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`, // .[chunkhash:8].css
 			allChunks: true
 		}),
 		// new ScriptExtHtmlWebpackPlugin({
