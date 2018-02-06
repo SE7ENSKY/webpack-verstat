@@ -7,14 +7,8 @@ const {
 } = require('chalk');
 const glob = require('glob');
 const perfectionist = require('perfectionist');
-const {
-	optimize: {
-		UglifyJsPlugin
-		// CommonsChunkPlugin
-	}
-} = require('webpack');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HappyPack = require('happypack');
-const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const webpackMerge = require('webpack-merge');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BeautifyHtmlPlugin = require('beautify-html-plugin');
@@ -35,7 +29,10 @@ const {
 const postcssLoaderConfig = require('./postcss.loader.config');
 const stylesPostprocessorConfig = require('./styles.postprocessor.config');
 const perfectionistConfig = require('./perfectionist.config');
-const webpackBaseConfig = require('./webpack.base.config');
+const {
+	baseConfig,
+	happyThreadPool
+} = require('./webpack.base.config');
 
 
 if (!process.env.SOURCEMAP) {
@@ -50,7 +47,7 @@ const prodConfig = {
 	entry: generateEntry(),
 	output: {
 		path: PROD_OUTPUT_DIRECTORY,
-		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js` // .[chunkhash:8].js
+		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js`
 	},
 	devtool: process.env.SOURCEMAP ? 'source-map' : false,
 	watch: false,
@@ -94,7 +91,7 @@ const prodConfig = {
 			})
 		}),
 		new ExtractTextPlugin({
-			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`, // .[chunkhash:8].css
+			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
 			allChunks: true
 		}),
 		// new ScriptExtHtmlWebpackPlugin({
@@ -105,11 +102,6 @@ const prodConfig = {
 			width: 40,
 			summary: false
 		}),
-		// new CommonsChunkPlugin({
-		// 	name: gererateVendor(),
-		// 	filename: `assets/${gererateVendor()}${process.env.UGLIFY ? '.min' : ''}.[chunkhash:8].js`,
-		// 	minChunks: (module, count) => (/node_modules/.test(module.resource) || /vendor/.test(module.resource)) && count >= 1
-		// }),
 		new StylesPostprocessorPlugin(stylesPostprocessorConfig),
 		// new CriticalPlugin({
 		// 	src: 'index.html',
@@ -204,17 +196,13 @@ const prodConfig = {
 if (process.env.UGLIFY) {
 	prodConfig.plugins.push(new UglifyJsPlugin({
 		sourceMap: true,
-		mangle: {
-			screw_ie8: true
-		},
-		output: {
-			comments: (node, comment) => comment.value === '!\n * \n * @version: 1.0.0\n * \n * @author: SE7ENSKY Frontend studio <info@se7ensky.com>\n * \n '
-		},
 		cache: false,
 		parallel: true,
-		compress: {
-			screw_ie8: true,
-			warnings: false
+		uglifyOptions: {
+			ie8: false,
+			output: {
+				comments: (node, comment) => comment.value === '!\n * \n * @version: 1.0.0\n * \n * @author: SE7ENSKY Frontend studio <info@se7ensky.com>\n * \n '
+			}
 		}
 	}));
 }
@@ -250,4 +238,4 @@ if (process.env.SOURCEMAP) {
 // 	}));
 // }
 
-module.exports = webpackMerge(webpackBaseConfig, prodConfig);
+module.exports = webpackMerge(baseConfig, prodConfig);

@@ -201,4 +201,7 @@ const baseConfig = {
 	]
 };
 
-module.exports = baseConfig;
+module.exports = {
+	baseConfig,
+	happyThreadPool
+};
