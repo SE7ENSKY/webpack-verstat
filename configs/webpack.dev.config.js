@@ -17,7 +17,6 @@ const devConfig = {
 	entry: generateEntry(['event-source-polyfill']),
 	output: {
 		path: DEV_OUTPUT_DIRECTORY,
-		publicPath: '/',
 		filename: 'assets/[name].js'
 	},
 	devtool: 'cheap-module-eval-source-map',

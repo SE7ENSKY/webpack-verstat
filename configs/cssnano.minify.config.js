@@ -1,6 +1,6 @@
 module.exports = {
 	discardComments: {
-		removeAll: true
+		removeAllButFirst: true
 	},
 	normalizeWhitespace: true
 };

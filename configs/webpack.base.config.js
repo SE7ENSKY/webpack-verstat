@@ -3,7 +3,8 @@ const {
 	DefinePlugin,
 	NoEmitOnErrorsPlugin,
 	ProvidePlugin,
-	WatchIgnorePlugin
+	WatchIgnorePlugin,
+	BannerPlugin
 } = require('webpack');
 const HappyPack = require('happypack');
 const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
@@ -17,6 +18,9 @@ const babelLoaderConfig = require('./babel.loader.config');
 
 
 const baseConfig = {
+	output: {
+		publicPath: '/'
+	},
 	context: join(PROJECT_ROOT, 'src'),
 	resolve: {
 		extensions: [
@@ -103,6 +107,9 @@ const baseConfig = {
 			'process.env': {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
 			}
+		}),
+		new BannerPlugin({
+			banner: '\n' + '@version: 1.0.0' + '\n\n' + '@author: SE7ENSKY Frontend studio <info@se7ensky.com>\n'
 		}),
 		new NoEmitOnErrorsPlugin(),
 		new ProvidePlugin({

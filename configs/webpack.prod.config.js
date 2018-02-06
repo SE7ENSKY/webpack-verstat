@@ -38,9 +38,9 @@ const perfectionistConfig = require('./perfectionist.config');
 const webpackBaseConfig = require('./webpack.base.config');
 
 
-// if (!process.env.SOURCEMAP) {
-// 	stylesPostprocessorConfig.filter = data => data.replace(/assets\//g, '');
-// }
+if (!process.env.SOURCEMAP) {
+	stylesPostprocessorConfig.filter = data => data.replace(/\/assets\//g, '');
+}
 
 if (!process.env.UGLIFY) {
 	stylesPostprocessorConfig.plugins.push(perfectionist(perfectionistConfig));
@@ -50,7 +50,6 @@ const prodConfig = {
 	entry: generateEntry(),
 	output: {
 		path: PROD_OUTPUT_DIRECTORY,
-		publicPath: process.env.SOURCEMAP ? '/' : '',
 		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js` // .[chunkhash:8].js
 	},
 	devtool: process.env.SOURCEMAP ? 'source-map' : false,
@@ -205,9 +204,13 @@ const prodConfig = {
 if (process.env.UGLIFY) {
 	prodConfig.plugins.push(new UglifyJsPlugin({
 		sourceMap: true,
-		mangle: { screw_ie8: true },
-		comments: false,
-		cache: true,
+		mangle: {
+			screw_ie8: true
+		},
+		output: {
+			comments: (node, comment) => comment.value === '!\n * \n * @version: 1.0.0\n * \n * @author: SE7ENSKY Frontend studio <info@se7ensky.com>\n * \n '
+		},
+		cache: false,
 		parallel: true,
 		compress: {
 			screw_ie8: true,
