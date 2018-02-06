@@ -57,28 +57,28 @@ const prodConfig = {
 				test: /\.css$/,
 				use: ExtractTextPlugin.extract({
 					use: 'happypack/loader?id=css',
-					fallback: 'happypack/loader?id=style'
+					fallback: 'style-loader'
 				})
 			},
 			{
 				test: /\.(sass|scss)$/,
 				use: ExtractTextPlugin.extract({
 					use: 'happypack/loader?id=sass',
-					fallback: 'happypack/loader?id=style'
+					fallback: 'style-loader'
 				})
 			},
 			{
 				test: /\.less$/,
 				use: ExtractTextPlugin.extract({
 					use: 'happypack/loader?id=less',
-					fallback: 'happypack/loader?id=style'
+					fallback: 'style-loader'
 				})
 			},
 			{
 				test: /\.styl$/,
 				use: ExtractTextPlugin.extract({
 					use: 'happypack/loader?id=styl',
-					fallback: 'happypack/loader?id=style'
+					fallback: 'style-loader'
 				})
 			}
 		]
@@ -110,12 +110,6 @@ const prodConfig = {
 		// 	extract: false,
 		// 	dest: 'index.html'
 		// }),
-		new HappyPack({
-			id: 'style',
-			verbose: false,
-			threadPool: happyThreadPool,
-			loaders: ['style-loader']
-		}),
 		new HappyPack({
 			id: 'css',
 			verbose: false,
@@ -200,6 +194,7 @@ if (process.env.UGLIFY) {
 		parallel: true,
 		uglifyOptions: {
 			ie8: false,
+			ecma: 8,
 			output: {
 				comments: (node, comment) => comment.value === '!\n * \n * @version: 1.0.0\n * \n * @author: SE7ENSKY Frontend studio <info@se7ensky.com>\n * \n '
 			}
