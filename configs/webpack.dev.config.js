@@ -1,7 +1,6 @@
 const { join } = require('path');
 const nib = require('nib');
 const HappyPack = require('happypack');
-// const happyThreadPool = HappyPack.ThreadPool({ size: 4 });
 const webpackMerge = require('webpack-merge');
 const {
 	PROJECT_ROOT,
@@ -10,7 +9,6 @@ const {
 	getModifiedNib
 } = require('../bin/core');
 const postcssLoaderConfig = require('./postcss.loader.config');
-// const webpackBaseConfig = require('./webpack.base.config');
 const {
 	baseConfig,
 	happyThreadPool

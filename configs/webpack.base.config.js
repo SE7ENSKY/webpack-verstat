@@ -167,13 +167,26 @@ const baseConfig = {
 			id: 'markdown',
 			verbose: false,
 			threadPool: happyThreadPool,
-			loaders: ['html-loader', 'markdown-loader']
+			loaders: [
+				{
+					path: 'html-loader',
+					query: {
+						attrs: false
+					}
+				},
+				'markdown-loader'
+			]
 		}),
 		new HappyPack({
 			id: 'html',
 			verbose: false,
 			threadPool: happyThreadPool,
-			loaders: ['html-loader']
+			loaders: [{
+				path: 'html-loader',
+				query: {
+					attrs: false
+				}
+			}]
 		}),
 		new HappyPack({
 			id: 'coffeescript',
