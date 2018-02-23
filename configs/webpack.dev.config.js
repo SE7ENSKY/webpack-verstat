@@ -1,6 +1,7 @@
 const { join } = require('path');
 const nib = require('nib');
 const HappyPack = require('happypack');
+const { HotModuleReplacementPlugin } = require('webpack');
 const webpackMerge = require('webpack-merge');
 const {
 	PROJECT_ROOT,
@@ -16,7 +17,10 @@ const {
 
 
 const devConfig = {
-	entry: generateEntry(['event-source-polyfill']),
+	entry: generateEntry([
+		'event-source-polyfill',
+		'webpack-hot-middleware/client'
+	]),
 	output: {
 		path: DEV_OUTPUT_DIRECTORY,
 		filename: 'assets/[name].js'
@@ -43,6 +47,7 @@ const devConfig = {
 		]
 	},
 	plugins: [
+		new HotModuleReplacementPlugin(),
 		new HappyPack({
 			id: 'css',
 			verbose: false,

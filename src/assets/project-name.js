@@ -1,3 +1,13 @@
+if (module.hot) {
+	const originalLog = console.log;
+	console.log = function () {
+		if (arguments[0].toString().indexOf('[HMR]') === -1) {
+			return originalLog.apply(console, arguments);
+		}
+	};
+	module.hot.accept();
+}
+
 const getRequiredfiles = file => file.keys().forEach(file);
 
 // ------------------ import vendor styles -------------------
@@ -8,7 +18,6 @@ import 'styles/main.styl';
 
 // ------------------ import vendor scripts ------------------
 // import * as OfflinePluginRuntime from 'offline-plugin/runtime';
-// import 'vendor/';
 
 // ----------------- import system scripts -------------------
 import 'scripts/main.coffee';

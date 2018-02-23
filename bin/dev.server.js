@@ -12,6 +12,7 @@ const {
 } = require('path');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
+const webpackHotMiddleware = require('webpack-hot-middleware');
 const browserSync = require('browser-sync').create();
 const webpackDevConfig = require('../configs/webpack.dev.config');
 const chokidarWatchConfig = require('../configs/chokidar.watch.config');
@@ -44,9 +45,9 @@ const devServerConfig = {
 		ignored: /node_modules/
 	},
 	compress: false,
-	hot: false,
+	hot: true,
 	lazy: false,
-	inline: false,
+	inline: true,
 	https: false,
 	host: 'localhost',
 	port,
@@ -61,6 +62,8 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 	compiler.apply(...addHtmlWebpackPlugins());
 
 	const webpackDevMiddlewareInstance = webpackDevMiddleware(compiler, devServerConfig);
+	const webpackHotMiddlewareInstance = webpackHotMiddleware(compiler);
+
 	let isBlocksUpdate = false;
 	let isCommonsUpdate = false;
 
@@ -124,7 +127,8 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 		server: {
 			baseDir: PROD_OUTPUT_DIRECTORY,
 			middleware: [
-				webpackDevMiddlewareInstance
+				webpackDevMiddlewareInstance,
+				webpackHotMiddlewareInstance
 			]
 		},
 		files: [
@@ -213,22 +217,12 @@ initTemplateEngine((templatesNoGrid, templatesNoGridSize, globalData) => {
 				}
 			},
 			{
-				match: [
-					`${PROJECT_ROOT}/src/assets/**/*.?(coffee|js|css|styl|less|sass|scss)`,
-					`${PROJECT_ROOT}/src/blocks/**/*.?(coffee|js|css|styl|less|sass|scss)`,
-					`${PROJECT_ROOT}/src/globals/**/*.?(coffee|js|css|styl|less|sass|scss)`,
-					`${PROJECT_ROOT}/src/vendor/**/*.?(coffee|js|css|styl|less|sass|scss)`
-				],
+				match: `${PROJECT_ROOT}/src/blocks/**/*.coffee`,
 				fn: (event, file) => {
 					const resolvedFile = normalize(resolve(PROJECT_ROOT, file));
-					switch (event) {
-						case 'add':
-						case 'change':
-						case 'unlink':
-							console.log(boldString(`${event}:`), shortenPath(resolvedFile));
-							webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
-							break;
-						// no default
+					if (event === 'change') {
+						console.log(boldString(`${event}:`), shortenPath(resolvedFile));
+						webpackDevMiddlewareInstance.waitUntilValid(() => browserSync.reload());
 					}
 				}
 			},

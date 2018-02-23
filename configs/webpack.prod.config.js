@@ -189,7 +189,7 @@ const prodConfig = {
 
 if (process.env.UGLIFY) {
 	prodConfig.plugins.push(new UglifyJsPlugin({
-		sourceMap: !!process.env.SOURCEMAP,
+		sourceMap: true,
 		cache: false,
 		parallel: true,
 		uglifyOptions: {
