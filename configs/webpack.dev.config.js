@@ -25,7 +25,8 @@ const devConfig = {
 		path: DEV_OUTPUT_DIRECTORY,
 		filename: 'assets/[name].js'
 	},
-	devtool: 'cheap-module-eval-source-map',
+	devtool: 'eval',
+	cache: true,
 	module: {
 		rules: [
 			{
