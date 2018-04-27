@@ -76,9 +76,8 @@ const BUNDLE_STATISTICS = {
 	url: '/bundle-statistics.html'
 };
 const SUPPORTED_BROWSERS_LIST = [
-	'last 3 versions',
-	'Explorer >= 11',
-	'Safari >= 9'
+	'>0.25%',
+	'not op_mini all'
 ];
 
 
