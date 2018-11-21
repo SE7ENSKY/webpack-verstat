@@ -1,9 +1,21 @@
 extends root
 
 block root
+	
+	+b.header: +i({title: 'Hello world!'})
+	
 	main.main
 		block main
 			!= content
+	
+	+b.footer: +i({
+		date: new Date().getYear() + 1900,
+		link: {
+			url: 'htttps://se7ensky.com',
+			title: 'se7ensky.com'
+		}
+	})
+	
 
 block fonts
 
