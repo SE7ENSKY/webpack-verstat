@@ -400,7 +400,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 	const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) > -1) : -1;
 	if (layoutIndex > -1) {
 		const layout = LAYOUTS[layoutIndex];
-		const fn = compileFile(layout, { compileDebug: true });
+		const fnLayout = compileFile( layout, { compileDebug: true, inlineRuntimeFunctions: true });
 		siteGridEngine(
 			extractedData.title,
 			filePath,
@@ -408,7 +408,7 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 		);
 		templateDependenciesEngine(
 			layout,
-			fn.dependencies.filter(item => item.indexOf(normalize('/layouts/')) > -1),
+			fnLayout.dependencies.filter(item => item.indexOf(normalize('/layouts/')) > -1),
 			filePath
 		);
 		const initialLocals = {
@@ -420,8 +420,11 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 				return compileBlock(bemto, blockName[0], blocks, commons)(data);
 			},
 			file: modifiedExtractedData,
+			includes: `${commons}\n${bemto}\n`,
+			commons: commons,
+			bemto: bemto,
 			content: (function () {
-				const fn = compile(`${bemto}\n${extractedData.content}`, { compileDebug: true });
+				const fn = compile(`${commons}\n${bemto}\n${extractedData.content}`, { compileDebug: true });
 				const initialLocals = {
 					renderBlock: function renderBlockEngine(blockName, data) {
 						data.renderBlock = function (blockName, data) {
@@ -440,10 +443,10 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 			filename: `${basename(filePath, extname(filePath))}.html`,
 			from: SOURCE_DIRECTORY,
 			to: PAGES_DIRECTORY,
-			content: fn(locals)
+			content: fnLayout(locals)
 		};
 	}
-	console.log(boldString('compile branch:'), shortenPath(filePath));
+	console.log(boldString('compile branch {}:'), shortenPath(filePath));
 	return {};
 }
 
