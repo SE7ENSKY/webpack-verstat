@@ -18,6 +18,7 @@ const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 // const OfflinePlugin = require('offline-plugin');
 // const { CriticalPlugin } = require('webpack-plugin-critical');
 const StylesPostprocessorPlugin = require('styles-postprocessor-plugin');
+const NOW_TIME = new Date().getTime();
 const {
 	PROJECT_ROOT,
 	SOURCE_DIRECTORY,
@@ -47,7 +48,7 @@ const prodConfig = {
 	entry: generateEntry(),
 	output: {
 		path: PROD_OUTPUT_DIRECTORY,
-		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js`
+		filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.js?version=${NOW_TIME}`
 	},
 	devtool: process.env.SOURCEMAP ? 'source-map' : false,
 	watch: false,
@@ -91,7 +92,7 @@ const prodConfig = {
 			})
 		}),
 		new ExtractTextPlugin({
-			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css`,
+			filename: `assets/[name]${process.env.UGLIFY ? '.min' : ''}.css?version=${NOW_TIME}`,
 			allChunks: true
 		}),
 		// new ScriptExtHtmlWebpackPlugin({
