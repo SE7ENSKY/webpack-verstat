@@ -400,7 +400,23 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 	const layoutIndex = extractedDataLayout ? LAYOUTS.findIndex(item => item.indexOf(normalize(extractedDataLayout)) > -1) : -1;
 	if (layoutIndex > -1) {
 		const layout = LAYOUTS[layoutIndex];
-		const fnLayout = compileFile( layout, { compileDebug: true, inlineRuntimeFunctions: true });
+		const fnLayout = compileFile( layout, {
+			compileDebug: true,
+			inlineRuntimeFunctions: true,
+			plugins: [
+				{
+					preLex: function(fileSource, someOpts) {
+						const extendsReg = /^extends/;
+						const rootReg = /\/layouts\/root\.?(pug|jade)/;
+						if (rootReg.test(someOpts.filename) || !extendsReg.test(fileSource)) {
+							console.log('Hello from preLex plugin: ', someOpts.filename);
+							return `${commons}\n${bemto}\n${fileSource}`;
+						}
+						return fileSource;
+					}
+				}
+			]
+		});
 		siteGridEngine(
 			extractedData.title,
 			filePath,
