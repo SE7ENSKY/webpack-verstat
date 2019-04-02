@@ -409,7 +409,6 @@ function compileTemplate(filePath, globalData = GLOBAL_DATA, blocks = BLOCKS, co
 						const extendsReg = /^extends/;
 						const rootReg = /\/layouts\/root\.?(pug|jade)/;
 						if (rootReg.test(someOpts.filename) || !extendsReg.test(fileSource)) {
-							console.log('Hello from preLex plugin: ', someOpts.filename);
 							return `${commons}\n${bemto}\n${fileSource}`;
 						}
 						return fileSource;
