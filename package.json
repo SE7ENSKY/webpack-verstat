@@ -1,11 +1,10 @@
 {
   "name": "webpack-verstat",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Frontend project for Verstat Template",
   "scripts": {
     "validate": "node bin/html.validator.js",
-    "build:min": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production node bin/prod.build.js",
-    "build": "cross-env TIMESTAMP=true NODE_ENV=production node bin/prod.build.js",
+    "build": "cross-env TIMESTAMP=true UGLIFY=true NODE_ENV=production node bin/prod.build.js",
     "prod": "cross-env NODE_ENV=production UGLIFY=true SOURCEMAP=true nodemon -e js --watch configs --watch bin bin/prod.server.js",
     "start": "cross-env NODE_ENV=development nodemon -e js --watch configs --watch bin bin/dev.server.js"
   },
